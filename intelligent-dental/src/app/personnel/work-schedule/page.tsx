@@ -7,10 +7,10 @@ const data = [{ key: "1", date: "2026-03-10", shift: "เช้า" }];
 
 export default function DentistWorkSchedulePage() {
   return (
-    <Card title="12 ตารางการทำงาน">
+    <Card title="ตารางการทำงาน">
       <Space style={{ marginBottom: 12 }}>
-        <Link href="/dentist/work-schedule/edit"><Button>20 แก้ไข/ยกเลิกวันเวลาการทำงาน</Button></Link>
-        <Link href="/dentist/work-schedule/new"><Button>21 เพิ่มวันเวลาการทำงาน</Button></Link>
+        <Link href="/dentist/work-schedule/edit"><Button>แก้ไข/ยกเลิกวันเวลาการทำงาน</Button></Link>
+        <Link href="/dentist/work-schedule/new"><Button>เพิ่มวันเวลาการทำงาน</Button></Link>
       </Space>
       <Table
         pagination={false}

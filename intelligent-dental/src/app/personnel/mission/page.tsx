@@ -16,10 +16,10 @@ export default function MissionPage() {
   const rejected = mockMissions.filter((m) => m.status === "3");
 
   return (
-    <Card title="10 ตารางการออกหน่วย">
+    <Card title="ตารางการออกหน่วย">
       <Space style={{ marginBottom: 12 }}>
         <Link href="/personnel/mission/detail">
-          <Button>18 ดูรายละเอียด/แก้ไขการออกหน่วย</Button>
+          <Button>ดูรายละเอียด/แก้ไขการออกหน่วย</Button>
         </Link>
       </Space>
 
