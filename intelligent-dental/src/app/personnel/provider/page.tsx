@@ -24,7 +24,7 @@ import dayjs from "dayjs";
 import * as Icons from "lucide-react";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 dayjs.locale("th");
 
@@ -39,7 +39,7 @@ type User = {
 
 export default function UserIndexPage() {
   const { Title } = Typography;
-  const [loading, setLoading] = useState(true);
+  const loading = false;
   const [form] = Form.useForm();
   const router = useRouter();
 
@@ -126,7 +126,7 @@ export default function UserIndexPage() {
       title: "",
       key: "action",
       align: "center",
-      render: (_, record) => (
+      render: () => (
         <Space size="middle">
           {/* DETAIL */}
           <Tooltip title="Detail">
@@ -165,10 +165,6 @@ export default function UserIndexPage() {
     });
     setCurrentPage(1);
   };
-
-  useEffect(() => {
-    setLoading(false);
-  }, []);
 
   return (
     <>

@@ -28,7 +28,7 @@ export default function PendingTable({ data }: Props) {
     },
     {
       title: "",
-      render: (_, record) => (
+      render: () => (
         <Tooltip title="Detail">
           <Icons.BookOpenText size={16} style={{ cursor: "pointer" }} />
         </Tooltip>
