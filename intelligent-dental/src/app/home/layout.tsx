@@ -11,7 +11,6 @@ export default function HomeLayout({ children }: { children: React.ReactNode }) 
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <HomeHeader />
-
       <Content style={{ padding: 20, background: ThemeWebColor.Background }}>
         {children}
       </Content>
