@@ -1,9 +1,9 @@
 "use client";
 
-import { SafetyCertificateOutlined } from "@ant-design/icons";
 import { ThemeWebColor } from "@/app/utils/constants";
-import { Button, Flex, Layout, Typography } from "antd";
+import { Button, Flex, Grid, Layout, Typography } from "antd";
 import { LogIn } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 const { Header } = Layout;
@@ -11,39 +11,43 @@ const { Text } = Typography;
 
 export default function HomeHeader() {
   const router = useRouter();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   return (
     <Header
       style={{
-        height: 78,
-        paddingInline: 14,
+        height: isMobile ? "auto" : 78,
+        minHeight: isMobile ? 72 : 78,
+        paddingInline: isMobile ? 10 : 14,
+        paddingBlock: isMobile ? 8 : 0,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        gap: 8,
         background: ThemeWebColor.header,
       }}
     >
-      <Flex align="center" gap={10}>
-        <div
-          style={{
-            width: 26,
-            height: 26,
-            borderRadius: "50%",
-            background: ThemeWebColor.Background,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SafetyCertificateOutlined style={{ color: "#68807d", fontSize: 14 }} />
-        </div>
+      <Flex
+        align="center"
+        gap={isMobile ? 8 : 10}
+        style={{ minWidth: 0, flex: 1 }}
+      >
+        <Image
+          src="/icon/icon.png"
+          alt="Clinic Icon"
+          width={isMobile ? 34 : 40}
+          height={isMobile ? 34 : 40}
+        />
 
         <Text
           style={{
             color: "#20d8dc",
-            fontSize: 27,
+            fontSize: isMobile ? 18 : 27,
             fontWeight: 700,
-            lineHeight: 1,
+            lineHeight: isMobile ? 1.15 : 1,
+            whiteSpace: isMobile ? "normal" : "nowrap",
+            overflowWrap: "anywhere",
           }}
         >
           ระบบบริหารจัดการคลินิกทันตกรรม
@@ -52,12 +56,14 @@ export default function HomeHeader() {
 
       <Button
         type="default"
-        icon={<LogIn size={14} />}
+        icon={<LogIn size={isMobile ? 13 : 14} />}
         style={{
-          height: 32,
+          height: isMobile ? 30 : 32,
+          paddingInline: isMobile ? 10 : 14,
           borderRadius: 6,
           fontWeight: 600,
           border: "none",
+          flexShrink: 0,
         }}
         onClick={() => router.push("/login")}
       >
