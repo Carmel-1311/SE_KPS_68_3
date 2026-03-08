@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+  output = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model account {
+  account_id    Int           @id @default(autoincrement())
+  username      String?       @unique @db.VarChar(50)
+  email         String?       @unique @db.VarChar(255)
+  password_hash String?
+  account_role  account_role? @default(patient)
+  company       company?
+  patient       patient?
+  staff         staff?
+}
+
+model appointment {
+  appointment_id       Int                @id @default(autoincrement())
+  staff_id             Int?
+  patient_id           Int
+  appointment_date     DateTime           @db.Date
+  appointment_time     DateTime           @db.Time(6)
+  type                 String             @db.VarChar(50)
+  status               String?            @db.VarChar(50)
+  examination_id       Int?
+  inspection_record_id Int?
+  medical_records      medical_records?   @relation(fields: [examination_id], references: [examination_id], onDelete: NoAction, onUpdate: NoAction, map: "examin_fk2")
+  inspection_record    inspection_record? @relation(fields: [inspection_record_id], references: [inspection_record_id], onDelete: NoAction, onUpdate: NoAction, map: "ir_fk2")
+}
+
+model company {
+  company_id    Int             @id @default(autoincrement())
+  contect_name  String?
+  office_name   String?         @db.VarChar(255)
+  phone         String?         @db.VarChar(10)
+  address       String?
+  email         String?         @db.VarChar(255)
+  account_id    Int?            @unique
+  account       account?        @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "acc_fk1")
+  mobile_dental mobile_dental[]
+}
+
+model dental_examination_detail {
+  dental_examination_detail_id Int              @id @default(autoincrement())
+  type_id                      Int?
+  examination_id               Int?
+  diagnosis_                   String?          @map("diagnosis ")
+  medical_records              medical_records? @relation(fields: [examination_id], references: [examination_id], onDelete: NoAction, onUpdate: NoAction, map: "examinationfk")
+  type                         type?            @relation(fields: [type_id], references: [type_id], onDelete: NoAction, onUpdate: NoAction, map: "ty_fk1")
+
+  @@unique([examination_id, type_id], map: "examtype")
+}
+
+model inspection_record {
+  inspection_record_id Int                 @id @default(autoincrement())
+  date                 DateTime?           @db.Date
+  history              String?
+  status               String?             @db.VarChar(200)
+  patient_id           Int
+  appointment          appointment[]
+  patient              patient             @relation(fields: [patient_id], references: [patient_id], onDelete: NoAction, onUpdate: NoAction, map: "pt_fk2")
+  medical_records      medical_records[]
+  patient_in_mobile    patient_in_mobile[]
+}
+
+model medical_records {
+  examination_id            Int                         @id @default(autoincrement())
+  examination_date          DateTime?                   @db.Date
+  examination_history       String?
+  examination_status        String?                     @db.VarChar(200)
+  patient_id                Int
+  inspection_record_id      Int?
+  appointment               appointment[]
+  dental_examination_detail dental_examination_detail[]
+  inspection_record         inspection_record?          @relation(fields: [inspection_record_id], references: [inspection_record_id], onDelete: NoAction, onUpdate: NoAction, map: "ir_fk1")
+  patient                   patient                     @relation(fields: [patient_id], references: [patient_id], onDelete: NoAction, onUpdate: NoAction, map: "pt_fk1")
+}
+
+model mobile_dental {
+  mobile_dental_id Int            @id @default(autoincrement())
+  company_id       Int?
+  date             DateTime?      @db.Date
+  count            Int?
+  status           status_mobile?
+  address          String?
+  company          company?       @relation(fields: [company_id], references: [company_id], onDelete: NoAction, onUpdate: NoAction, map: "company_fk")
+}
+
+model patient {
+  patient_id        Int                 @id
+  first_name        String?             @db.VarChar(100)
+  last_name         String?             @db.VarChar(100)
+  birthday          DateTime?           @db.Date
+  allergy           String?
+  status            status_user?
+  email             String?             @db.VarChar(255)
+  phone             String?             @db.VarChar(10)
+  account_id        Int?                @unique
+  inspection_record inspection_record[]
+  medical_records   medical_records[]
+  account           account?            @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "account_idfk")
+  patient_in_mobile patient_in_mobile[]
+}
+
+model patient_in_mobile {
+  patient_in_mobile_id Int                @id @default(autoincrement())
+  inspection_record_id Int?
+  mobile_dental_id     Int
+  patient_id           Int
+  inspection_record    inspection_record? @relation(fields: [inspection_record_id], references: [inspection_record_id], onDelete: NoAction, onUpdate: NoAction, map: "inspec_fk2")
+  patient              patient            @relation(fields: [patient_id], references: [patient_id], onDelete: NoAction, onUpdate: NoAction, map: "pa_fk3")
+
+  @@unique([mobile_dental_id, patient_id], map: "pamo_1")
+}
+
+model staff {
+  staff_id       Int             @id @default(autoincrement())
+  first_name     String?         @db.VarChar(100)
+  last_name      String?         @db.VarChar(100)
+  role           role_staff?
+  birthday       DateTime?       @db.Date
+  email          String?         @db.VarChar(255)
+  phone          String?         @db.VarChar(10)
+  license_number String?         @db.VarChar(50)
+  account_id     Int?            @unique
+  account        account?        @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "accountidfk")
+  work_schedule  work_schedule[]
+}
+
+model type {
+  type_id                   Int                         @id @default(autoincrement())
+  name                      String?                     @db.VarChar(50)
+  dental_examination_detail dental_examination_detail[]
+}
+
+model work_schedule {
+  schedule_id Int        @id @default(autoincrement())
+  staff_id    Int
+  date        date_week?
+  start_time  DateTime?  @db.Time(6)
+  end_time    DateTime?  @db.Time(6)
+  is_active   Boolean?
+  staff       staff      @relation(fields: [staff_id], references: [staff_id], onDelete: NoAction, onUpdate: NoAction, map: "stafffk")
+}
+
+enum account_role {
+  company
+  doctor
+  patient
+  staff
+}
+
+enum date_week {
+  Sun
+  Mon
+  Tue
+  Wed
+  Thu
+  Fri
+  Sat
+}
+
+enum role_staff {
+  staff
+  dentist
+}
+
+enum status_mobile {
+  request
+  scheduled
+  completed
+  request_cancel
+  cancel
+}
+
+enum status_user {
+  active
+  inactive
+}
