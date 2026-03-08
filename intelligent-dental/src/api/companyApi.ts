@@ -1,11 +1,12 @@
 // src/api/companyApi.ts
 
 export interface MobileDentalRequest {
-    mobile_dental_id?: number;
-    company_id?: number;
-    date: string;
-    count?: number;
-    status?: string;
+  mobile_dental_id: number;
+  company_id: number;
+  date: string;
+  count: number;
+  status: string;
+  address: string;
 }
 
 export const getMobileDentalRequests = async (

@@ -11,9 +11,16 @@ export async function GET(request: NextRequest) {
         ? store.filter((item) => item.company_id === Number(companyId))
         : store;
 
-    const result = filtered.map(({ mobile_dental_id, date, count, status }) => ({
-        mobile_dental_id, date, count, status
-    }));
+    const result = filtered.map(
+        ({ mobile_dental_id, company_id, date, count, status, address }) => ({
+            mobile_dental_id,
+            company_id,
+            date,
+            count,
+            status,
+            address,
+        })
+    );
 
     return NextResponse.json({ data: result });
 }
