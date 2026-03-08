@@ -38,6 +38,7 @@ export default function HomeHeader() {
           alt="Clinic Icon"
           width={isMobile ? 34 : 40}
           height={isMobile ? 34 : 40}
+          style={{ borderRadius: "50%", objectFit: "cover" }}
         />
 
         <Text
