@@ -22,7 +22,6 @@ import {
 import { useRouter } from "next/navigation";
 import type { ColumnsType } from "antd/es/table";
 
-import { getMobileDentalRequests, MobileDentalRequest } from "@/api/companyApi";
 import { getCurrentCompanyId } from "@/mock/mockUser";
 
 const { Title, Text } = Typography;
@@ -33,6 +32,15 @@ type Status =
   | "completed"
   | "request_cancel"
   | "cancel";
+
+type MobileDentalRequest = {
+  mobile_dental_id: number;
+  company_id: number;
+  date: string;
+  count: number;
+  status: Status;
+  address: string;
+};
 
 const statusConfig: Record<Status, { color: string; label: string }> = {
   request: { color: "blue", label: "รอดำเนินการ" },
@@ -49,13 +57,21 @@ export default function CompanyDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // fetch data
   useEffect(() => {
     const fetchData = async () => {
       try {
         const companyId = getCurrentCompanyId();
-        const result = await getMobileDentalRequests(companyId);
-        setData(result ?? []);
+
+        const res = await fetch(
+          `/api/mobile_dentals?company_id=${companyId}`,
+          { cache: "no-store" }
+        );
+
+        if (!res.ok) throw new Error("fetch failed");
+
+        const json: { data: MobileDentalRequest[] } = await res.json();
+
+        setData(json.data ?? []);
       } catch (err) {
         console.error(err);
         setError("ไม่สามารถโหลดข้อมูลได้");
@@ -67,20 +83,18 @@ export default function CompanyDashboard() {
     fetchData();
   }, []);
 
-  // statistics
   const totalRequests = data.length;
 
   const pendingRequests = useMemo(
-    () => data.filter(d => d.status === "request").length,
+    () => data.filter((d) => d.status === "request").length,
     [data]
   );
 
   const approvedRequests = useMemo(
-    () => data.filter(d => d.status === "scheduled").length,
+    () => data.filter((d) => d.status === "scheduled").length,
     [data]
   );
 
-  // recent requests
   const recentRequests = useMemo(() => {
     return [...data]
       .sort(
@@ -91,7 +105,6 @@ export default function CompanyDashboard() {
       .slice(0, 5);
   }, [data]);
 
-  // table columns
   const columns: ColumnsType<MobileDentalRequest> = [
     {
       title: "รหัสคำขอ",
@@ -106,17 +119,18 @@ export default function CompanyDashboard() {
     {
       title: "วันที่",
       dataIndex: "date",
+      render: (value?: string) => value ?? "-",
     },
     {
       title: "จำนวนผู้ป่วย",
       dataIndex: "count",
+      render: (value?: number) => value ?? "-",
     },
     {
       title: "สถานะ",
       dataIndex: "status",
       render: (status: Status) => {
-        const config =
-          statusConfig[status] ?? { color: "default", label: status };
+        const config = statusConfig[status];
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
@@ -156,7 +170,14 @@ export default function CompanyDashboard() {
           {/* Statistics */}
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={8}>
-              <Card hoverable style={{ borderRadius: 16, background: "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)" }}>
+              <Card
+                hoverable
+                style={{
+                  borderRadius: 16,
+                  background:
+                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                }}
+              >
                 <Statistic
                   title="คำขอทั้งหมด"
                   value={totalRequests}
@@ -167,7 +188,14 @@ export default function CompanyDashboard() {
             </Col>
 
             <Col xs={24} sm={8}>
-              <Card hoverable style={{ borderRadius: 16, background: "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)" }}>
+              <Card
+                hoverable
+                style={{
+                  borderRadius: 16,
+                  background:
+                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                }}
+              >
                 <Statistic
                   title="รอดำเนินการ"
                   value={pendingRequests}
@@ -179,7 +207,14 @@ export default function CompanyDashboard() {
             </Col>
 
             <Col xs={24} sm={8}>
-              <Card hoverable style={{ borderRadius: 16, background: "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)" }}>
+              <Card
+                hoverable
+                style={{
+                  borderRadius: 16,
+                  background:
+                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                }}
+              >
                 <Statistic
                   title="นัดหมายแล้ว"
                   value={approvedRequests}
@@ -210,7 +245,9 @@ export default function CompanyDashboard() {
                   loading={loading}
                   onRow={(record) => ({
                     onClick: () =>
-                      router.push(`/company/status/${record.mobile_dental_id}`),
+                      router.push(
+                        `/company/status/${record.mobile_dental_id}`
+                      ),
                     style: { cursor: "pointer" },
                   })}
                 />
