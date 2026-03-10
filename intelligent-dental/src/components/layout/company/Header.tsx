@@ -2,7 +2,7 @@
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import { Button, Layout, Flex, Typography } from "antd";
-import { Building2, CalendarPlus, LogOut, SearchCheck } from "lucide-react";
+import { Building2, CalendarPlus, House, LogOut, SearchCheck } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 const { Header } = Layout;
@@ -13,6 +13,7 @@ export default function CompanyHeader() {
   const pathname = usePathname();
 
   const menuItems = [
+    { key: "home", icon: <House size={16} />, label: "Home", path: "/company" },
     { key: "status", icon: <SearchCheck size={16} />, label: "Service Status", path: "/company/status" },
     { key: "request", icon: <CalendarPlus size={16} />, label: "Add Outreach Appointment", path: "/company/request" },
   ];

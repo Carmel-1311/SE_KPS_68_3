@@ -1,5 +1,6 @@
 import "antd/dist/antd.css";
 import "./globals.css";
+
 import { ThemeWebColor } from "@/app/utils/constants";
 
 export default function RootLayout({
