@@ -38,7 +38,7 @@ export default function DentistSidebar() {
 
       <Menu
         theme="light"
-        className="dentist-sidebar-menu"
+        className="app-sidebar-menu dentist-sidebar-menu"
         selectedKeys={[getSelectedKey(pathname)]}
         mode="inline"
         style={{
