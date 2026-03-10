@@ -35,3 +35,26 @@ export async function findFreeDentist(
     select: { staff_id: true, first_name: true, last_name: true }
   });
 }
+
+// dentistRepository.ts
+export async function getDentistAppointmentsByDate(date: Date, day: date_week) {
+  return await prisma.staff.findMany({
+    where: {
+      role: "dentist",
+      work_schedule: { some: { date: day, is_active: true } }
+    },
+    select: {
+      staff_id: true,
+      first_name: true,
+      last_name: true,
+      work_schedule: {
+        where: { date: day },
+        select: { start_time: true, end_time: true }
+      },
+      appointment: {
+        where: { appointment_date: date },
+        select: { appointment_time: true }
+      }
+    }
+  });
+}

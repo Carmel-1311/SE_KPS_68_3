@@ -27,7 +27,7 @@ export async function PUT(request: Request,{ params }: { params: Promise<{ id: s
         const user = getCurrentUser()
         requireRole(user.role, ["patient","staff","dentist"])           
         const body = await request.json()
-        const updatedAppointment = await appointmentService.updateAppointment(appointmentId, body)
+        const updatedAppointment = await appointmentService.updateAppointment(appointmentId, body, user)
         return res.ok(updatedAppointment)
     } catch (err: any) {
         return handleError(err)
@@ -40,7 +40,7 @@ export async function DELETE(request: Request,{ params }: { params: Promise<{ id
         const appointmentId = parseInt(id);
         const user = getCurrentUser()
         requireRole(user.role, ["staff"])           
-        await appointmentService.deleteAppointment(appointmentId)
+        await appointmentService.deleteAppointment(appointmentId, user)
         return res.noContent()
     } catch (err: any) {
         return handleError(err)

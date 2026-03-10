@@ -50,7 +50,8 @@ export async function createAppointment(
 
 export async function updateAppointment(
     id: number,
-    data: Partial<UpdateAppointmentDTO>)
+    data: Partial<UpdateAppointmentDTO>,
+    user: { id: number, role: string })
     : Promise<AppointmentResponseDTO> {
         // Check if user exists before deleting to provide meaningful error message
     
@@ -64,7 +65,9 @@ export async function updateAppointment(
     return getAppointmentById(id)
 }
 
-export async function deleteAppointment(id: number): Promise<void> {
+export async function deleteAppointment(id: number,
+    user: { id: number, role: string }
+): Promise<void> {
     // Check if user exists before deleting to provide meaningful error message
 
     const appointment = await repo.findAppointmentById(id)
