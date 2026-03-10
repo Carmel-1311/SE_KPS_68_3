@@ -727,14 +727,17 @@
                             "enum": [
                               "scheduled",
                               "completed",
-                              "cancelled"
+                              "cancelled",
+                              "request_cancel"
                             ]
                           },
                           "medical_record_id": {
-                            "type": "integer"
+                            "type": "integer",
+                            "nullable": true
                           },
                           "inspection_record_id": {
-                            "type": "integer"
+                            "type": "integer",
+                            "nullable": true
                           }
                         },
                         "required": [
@@ -811,10 +814,12 @@
                     "type": "integer"
                   },
                   "appointment_date": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "date-time"
                   },
                   "appointment_time": {
-                    "type": "string"
+                    "type": "string",
+                    "format": "time"
                   },
                   "type": {
                     "type": "string"
@@ -827,7 +832,12 @@
                   "type"
                 ]
               },
-              "example": ""
+              "example": {
+                "patient_id": 35,
+                "appointment_date": "2026-03-09T07:16:56.392Z",
+                "appointment_time": "2026-03-09T07:16:56.392Z",
+                "type": "culpa do aliquip est"
+              }
             }
           },
           "required": true
@@ -893,7 +903,8 @@
                           "enum": [
                             "scheduled",
                             "completed",
-                            "cancelled"
+                            "cancelled",
+                            "request_cancel"
                           ]
                         },
                         "medical_record": {
@@ -910,14 +921,7 @@
                               "type": "string"
                             },
                             "status": {
-                              "type": "string",
-                              "enum": [
-                                "request",
-                                "scheduled",
-                                "completed",
-                                "request_cancel",
-                                "cancel"
-                              ]
+                              "type": "string"
                             },
                             "detail": {
                               "type": "array",
@@ -1018,11 +1022,7 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
+        "security": []
       }
     },
     "/api/appointments/{id}": {
@@ -1039,6 +1039,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 2,
             "schema": {
               "type": "integer"
             }
@@ -1105,7 +1106,8 @@
                           "enum": [
                             "scheduled",
                             "completed",
-                            "cancelled"
+                            "cancelled",
+                            "request_cancel"
                           ]
                         },
                         "medical_record": {
@@ -1122,14 +1124,7 @@
                               "type": "string"
                             },
                             "status": {
-                              "type": "string",
-                              "enum": [
-                                "request",
-                                "scheduled",
-                                "completed",
-                                "request_cancel",
-                                "cancel"
-                              ]
+                              "type": "string"
                             },
                             "detail": {
                               "type": "array",
@@ -1241,6 +1236,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -1276,85 +1272,9 @@
                     "enum": [
                       "scheduled",
                       "completed",
-                      "cancelled"
+                      "cancelled",
+                      "request_cancel"
                     ]
-                  },
-                  "medical_record": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "integer",
-                        "description": "ID"
-                      },
-                      "date": {
-                        "type": "string"
-                      },
-                      "history": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string",
-                        "enum": [
-                          "request",
-                          "scheduled",
-                          "completed",
-                          "request_cancel",
-                          "cancel"
-                        ]
-                      },
-                      "detail": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "type_id": {
-                              "type": "integer"
-                            },
-                            "diagnosis": {
-                              "type": "string"
-                            }
-                          },
-                          "required": [
-                            "type_id",
-                            "diagnosis"
-                          ]
-                        }
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "date",
-                      "history",
-                      "status",
-                      "detail"
-                    ],
-                    "nullable": true
-                  },
-                  "inspection_record": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "integer",
-                        "description": "ID"
-                      },
-                      "date": {
-                        "type": "string",
-                        "format": "date"
-                      },
-                      "history": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "date",
-                      "history",
-                      "status"
-                    ],
-                    "nullable": true
                   },
                   "staff_id": {
                     "type": "integer"
@@ -1368,7 +1288,15 @@
                   "status"
                 ]
               },
-              "examples": {}
+              "example": {
+                "appointment_date": "2026-11-05",
+                "appointment_time": "2026-03-09T07:40:02.877Z",
+                "type": "anim consectetur",
+                "status": "cancelled",
+                "medical_record": null,
+                "inspection_record": null,
+                "staff_id": 87
+              }
             }
           },
           "required": true
@@ -1434,7 +1362,8 @@
                           "enum": [
                             "scheduled",
                             "completed",
-                            "cancelled"
+                            "cancelled",
+                            "request_cancel"
                           ]
                         },
                         "medical_record": {
@@ -1451,14 +1380,7 @@
                               "type": "string"
                             },
                             "status": {
-                              "type": "string",
-                              "enum": [
-                                "request",
-                                "scheduled",
-                                "completed",
-                                "request_cancel",
-                                "cancel"
-                              ]
+                              "type": "string"
                             },
                             "detail": {
                               "type": "array",
@@ -1563,11 +1485,7 @@
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
+        "security": []
       },
       "delete": {
         "summary": "appointments",
@@ -1618,6 +1536,118 @@
             "bearer": []
           }
         ]
+      }
+    },
+    "/api/appointments/available-slots": {
+      "get": {
+        "summary": "available-slots",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "{{$date.now}}",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "available_slots": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "time": {
+                                "type": "string",
+                                "format": "time"
+                              },
+                              "available_dentist_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            "required": [
+                              "time",
+                              "available_dentist_ids"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "available_slots"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "available-slots": [
+                      {
+                        "time": "09:00",
+                        "available_dentist_ids": [
+                          1,
+                          2
+                        ]
+                      },
+                      {
+                        "time": "09:30",
+                        "available_dentist_ids": [
+                          1
+                        ]
+                      },
+                      {
+                        "time": "10:30",
+                        "available_dentist_ids": []
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
       }
     },
     "/api/staff": {
@@ -2066,17 +2096,17 @@
         ],
         "parameters": [
           {
-            "name": "start_time",
+            "name": "appointmentTime",
             "in": "query",
             "description": "",
             "required": true,
             "schema": {
               "type": "string",
-              "format": "time"
+              "format": "date"
             }
           },
           {
-            "name": "end_time",
+            "name": "appointmentTime ",
             "in": "query",
             "description": "",
             "required": true,
@@ -2184,7 +2214,7 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "integer",
+                            "type": "string",
                             "description": "ID"
                           },
                           "date": {
@@ -2210,10 +2240,10 @@
                         },
                         "description": "ข้อมูลที่ส่งคืน",
                         "required": [
+                          "id",
                           "date",
                           "start_time",
-                          "end_time",
-                          "id"
+                          "end_time"
                         ]
                       },
                       "description": "ข้อมูลที่ส่งคืน"
@@ -2317,7 +2347,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "type": "integer",
+                          "type": "string",
                           "description": "ID"
                         },
                         "staff": {
@@ -2337,8 +2367,8 @@
                           },
                           "required": [
                             "name",
-                            "id",
-                            "role"
+                            "role",
+                            "id"
                           ]
                         },
                         "date": {
@@ -2367,11 +2397,12 @@
                       },
                       "description": "ข้อมูลที่ส่งคืน",
                       "required": [
+                        "id",
                         "staff",
                         "date",
-                        "id",
                         "start_time",
-                        "end_time"
+                        "end_time",
+                        "is_active"
                       ]
                     }
                   },
@@ -2559,7 +2590,7 @@
                       "type": "object",
                       "properties": {
                         "id": {
-                          "type": "integer",
+                          "type": "string",
                           "description": "ID"
                         },
                         "staff": {
@@ -2579,8 +2610,8 @@
                           },
                           "required": [
                             "name",
-                            "id",
-                            "role"
+                            "role",
+                            "id"
                           ]
                         },
                         "date": {
@@ -2607,13 +2638,13 @@
                           "type": "boolean"
                         }
                       },
-                      "description": "ข้อมูลที่ส่งคืน",
                       "required": [
+                        "id",
                         "staff",
                         "date",
-                        "id",
                         "start_time",
-                        "end_time"
+                        "end_time",
+                        "is_active"
                       ]
                     }
                   },
@@ -2752,18 +2783,28 @@
                             "description": "ID"
                           },
                           "date": {
-                            "type": "string",
-                            "format": "date"
+                            "type": "string"
+                          },
+                          "history": {
+                            "type": "string"
                           },
                           "status": {
-                            "type": "string",
-                            "description": "status"
+                            "type": "string"
+                          },
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "inspection_record_id": {
+                            "type": "integer"
                           }
                         },
                         "required": [
+                          "id",
                           "date",
+                          "history",
                           "status",
-                          "id"
+                          "patient_id",
+                          "inspection_record_id"
                         ]
                       }
                     }
@@ -3907,14 +3948,7 @@
                         "type": "object",
                         "properties": {
                           "mobile_dental_id": {
-                            "type": "integer",
-                            "enum": [
-                              "requst",
-                              "scheduled",
-                              "completed",
-                              "request_cancel",
-                              "cancel"
-                            ]
+                            "type": "integer"
                           },
                           "company_id": {
                             "type": "integer"
@@ -3927,7 +3961,14 @@
                             "type": "integer"
                           },
                           "status": {
-                            "type": "string"
+                            "type": "string",
+                            "enum": [
+                              "request",
+                              "scheduled",
+                              "completed",
+                              "request_cancel",
+                              "cancel"
+                            ]
                           },
                           "address": {
                             "type": "string"
@@ -4020,14 +4061,7 @@
                       "type": "object",
                       "properties": {
                         "mobile_dental_id": {
-                          "type": "integer",
-                          "enum": [
-                            "requst",
-                            "scheduled",
-                            "completed",
-                            "request_cancel",
-                            "cancel"
-                          ]
+                          "type": "integer"
                         },
                         "company_id": {
                           "type": "integer"
@@ -4040,7 +4074,14 @@
                           "type": "integer"
                         },
                         "status": {
-                          "type": "string"
+                          "type": "string",
+                          "enum": [
+                            "request",
+                            "scheduled",
+                            "completed",
+                            "request_cancel",
+                            "cancel"
+                          ]
                         },
                         "address": {
                           "type": "string"
@@ -4183,7 +4224,14 @@
                 "type": "object",
                 "properties": {
                   "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "request",
+                      "scheduled",
+                      "completed",
+                      "request_cancel",
+                      "cancel"
+                    ]
                   }
                 },
                 "required": [
@@ -4207,14 +4255,7 @@
                       "type": "object",
                       "properties": {
                         "mobile_dental_id": {
-                          "type": "integer",
-                          "enum": [
-                            "requst",
-                            "scheduled",
-                            "completed",
-                            "request_cancel",
-                            "cancel"
-                          ]
+                          "type": "integer"
                         },
                         "company_id": {
                           "type": "integer"
@@ -4498,7 +4539,8 @@
             "enum": [
               "scheduled",
               "completed",
-              "cancelled"
+              "cancelled",
+              "request_cancel"
             ]
           },
           "medical_record": {
@@ -4515,14 +4557,7 @@
                 "type": "string"
               },
               "status": {
-                "type": "string",
-                "enum": [
-                  "request",
-                  "scheduled",
-                  "completed",
-                  "request_cancel",
-                  "cancel"
-                ]
+                "type": "string"
               },
               "detail": {
                 "type": "array",
@@ -4720,14 +4755,7 @@
             "type": "string"
           },
           "status": {
-            "type": "string",
-            "enum": [
-              "request",
-              "scheduled",
-              "completed",
-              "request_cancel",
-              "cancel"
-            ]
+            "type": "string"
           },
           "patient_id": {
             "type": "integer"
@@ -4797,14 +4825,7 @@
         "type": "object",
         "properties": {
           "mobile_dental_id": {
-            "type": "integer",
-            "enum": [
-              "requst",
-              "scheduled",
-              "completed",
-              "request_cancel",
-              "cancel"
-            ]
+            "type": "integer"
           },
           "company_id": {
             "type": "integer"
@@ -4817,7 +4838,14 @@
             "type": "integer"
           },
           "status": {
-            "type": "string"
+            "type": "string",
+            "enum": [
+              "request",
+              "scheduled",
+              "completed",
+              "request_cancel",
+              "cancel"
+            ]
           },
           "address": {
             "type": "string"

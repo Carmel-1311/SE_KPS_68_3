@@ -1,5 +1,4 @@
 import { date_week, Prisma } from "@prisma/client"
-import * as map from "@/app/mappers/appointment.mapper"
 import {prisma} from "@/utils/prisma"
 
 // ใน dentistRepository.ts

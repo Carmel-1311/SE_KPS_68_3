@@ -2,8 +2,15 @@ import { components,paths } from "../../types/api"; // path ไปยังไ�
 import { Prisma, work_schedule, staff } from "@prisma/client";
 
 // นิยาม Type จาก OpenAPI 
-type WorkScheduleResponse = components["schemas"]["work_schedules"];
-type CreateScheduleInput = paths["/api/work_schedules"]["post"]["requestBody"]["content"]["application/json"];
+export type WorkScheduleResponse = components["schemas"]["work_schedules"];
+export type CreateScheduleInput = paths["/api/work_schedules"]["post"]["requestBody"]["content"]["application/json"];
+
+// workScheduleMapper.ts
+export const workScheduleQuery = {
+  include: {
+    staff: true
+  }
+} as const;
 
 export const workScheduleMap = {
   /**
@@ -23,6 +30,10 @@ export const workScheduleMap = {
         end_time: data.end_time ? data.end_time.toISOString().slice(11, 16) : "00:00", // "HH:mm",
       is_active: data.is_active ?? true
     };
+  },
+
+  toResponseList(list: (work_schedule & { staff: staff })[]): WorkScheduleResponse[] {
+    return list.map(item => this.toResponse(item));
   },
 
   /**

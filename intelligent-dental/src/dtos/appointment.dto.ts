@@ -26,7 +26,7 @@ export const AppointmentSchema = z.object({
 
     type: z.string().min(2),
 
-    status: z.enum(["scheduled", "completed", "cancelled"]).default("scheduled"),
+    status: z.enum(["scheduled", "completed","request_cancel", "cancelled"]).default("scheduled"),
     medical_record: z.object({
         id: z.number(),
         date: z.string().refine((date) => !isNaN(Date.parse(date)), {

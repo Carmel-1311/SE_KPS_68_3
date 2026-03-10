@@ -70,7 +70,7 @@ export function toAppointmentResponse(
     appointment_date: a.appointment_date.toISOString(),
     appointment_time: a.appointment_time.toTimeString().slice(0, 5),
     type: a.type,
-    status: a.status as "scheduled" | "completed" | "cancelled",
+    status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
     medical_record: a.medical_records
       ? {
         id: a.medical_records.examination_id,
@@ -153,7 +153,7 @@ export function toAppointmentResponseList(
     appointment_time: a.appointment_time.toTimeString().slice(0, 5),
 
     type: a.type,
-    status: a.status as "scheduled" | "completed" | "cancelled",
+    status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
 
     medical_record_id: a.medical_records?.examination_id || null,
     inspection_record_id: a.inspection_record?.inspection_record_id || null

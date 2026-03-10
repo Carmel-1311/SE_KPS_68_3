@@ -369,9 +369,9 @@ export interface paths {
                                 appointment_time: string;
                                 type: string;
                                 /** @enum {string} */
-                                status: "scheduled" | "completed" | "cancelled";
-                                medical_record_id: number;
-                                inspection_record_id: number;
+                                status: "scheduled" | "completed" | "cancelled" | "request_cancel";
+                                medical_record_id: number | null;
+                                inspection_record_id: number | null;
                             }[];
                         };
                     };
@@ -396,10 +396,19 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    /** @example  */
+                    /**
+                     * @example {
+                     *       "patient_id": 35,
+                     *       "appointment_date": "2026-03-09T07:16:56.392Z",
+                     *       "appointment_time": "2026-03-09T07:16:56.392Z",
+                     *       "type": "culpa do aliquip est"
+                     *     }
+                     */
                     "application/json": {
                         patient_id: number;
+                        /** Format: date-time */
                         appointment_date: string;
+                        /** Format: time */
                         appointment_time: string;
                         type: string;
                     };
@@ -429,14 +438,13 @@ export interface paths {
                                 appointment_time: string;
                                 type: string;
                                 /** @enum {string} */
-                                status: "scheduled" | "completed" | "cancelled";
+                                status: "scheduled" | "completed" | "cancelled" | "request_cancel";
                                 medical_record?: {
                                     /** @description ID */
                                     id: number;
                                     date: string;
                                     history: string;
-                                    /** @enum {string} */
-                                    status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                    status: string;
                                     detail: {
                                         type_id: number;
                                         diagnosis: string;
@@ -481,6 +489,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @example 2 */
                     id: number;
                 };
                 cookie?: never;
@@ -510,14 +519,13 @@ export interface paths {
                                 appointment_time: string;
                                 type: string;
                                 /** @enum {string} */
-                                status: "scheduled" | "completed" | "cancelled";
+                                status: "scheduled" | "completed" | "cancelled" | "request_cancel";
                                 medical_record?: {
                                     /** @description ID */
                                     id: number;
                                     date: string;
                                     history: string;
-                                    /** @enum {string} */
-                                    status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                    status: string;
                                     detail: {
                                         type_id: number;
                                         diagnosis: string;
@@ -550,38 +558,30 @@ export interface paths {
                     "Content-Type"?: string;
                 };
                 path: {
+                    /** @example 1 */
                     id: number;
                 };
                 cookie?: never;
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *       "appointment_date": "2026-11-05",
+                     *       "appointment_time": "2026-03-09T07:40:02.877Z",
+                     *       "type": "anim consectetur",
+                     *       "status": "cancelled",
+                     *       "medical_record": null,
+                     *       "inspection_record": null,
+                     *       "staff_id": 87
+                     *     }
+                     */
                     "application/json": {
                         appointment_date: string;
                         appointment_time: string;
                         type: string;
                         /** @enum {string} */
-                        status: "scheduled" | "completed" | "cancelled";
-                        medical_record?: {
-                            /** @description ID */
-                            id: number;
-                            date: string;
-                            history: string;
-                            /** @enum {string} */
-                            status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
-                            detail: {
-                                type_id: number;
-                                diagnosis: string;
-                            }[];
-                        } | null;
-                        inspection_record?: {
-                            /** @description ID */
-                            id: number;
-                            /** Format: date */
-                            date: string;
-                            history: string;
-                            status: string;
-                        } | null;
+                        status: "scheduled" | "completed" | "cancelled" | "request_cancel";
                         staff_id: number;
                     };
                 };
@@ -610,14 +610,13 @@ export interface paths {
                                 appointment_time: string;
                                 type: string;
                                 /** @enum {string} */
-                                status: "scheduled" | "completed" | "cancelled";
+                                status: "scheduled" | "completed" | "cancelled" | "request_cancel";
                                 medical_record?: {
                                     /** @description ID */
                                     id: number;
                                     date: string;
                                     history: string;
-                                    /** @enum {string} */
-                                    status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                    status: string;
                                     detail: {
                                         type_id: number;
                                         diagnosis: string;
@@ -670,6 +669,81 @@ export interface paths {
                 500: components["responses"]["500 Internal Server Error"];
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/appointments/available-slots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** available-slots */
+        get: {
+            parameters: {
+                query?: {
+                    /** @example {{$date.now}} */
+                    date?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        /**
+                         * @example {
+                         *       "data": {
+                         *         "available-slots": [
+                         *           {
+                         *             "time": "09:00",
+                         *             "available_dentist_ids": [
+                         *               1,
+                         *               2
+                         *             ]
+                         *           },
+                         *           {
+                         *             "time": "09:30",
+                         *             "available_dentist_ids": [
+                         *               1
+                         *             ]
+                         *           },
+                         *           {
+                         *             "time": "10:30",
+                         *             "available_dentist_ids": []
+                         *           }
+                         *         ]
+                         *       }
+                         *     }
+                         */
+                        "application/json": {
+                            data: {
+                                available_slots: {
+                                    /** Format: time */
+                                    time: string;
+                                    available_dentist_ids: (number | null)[];
+                                }[];
+                            };
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -895,8 +969,8 @@ export interface paths {
         get: {
             parameters: {
                 query: {
-                    start_time: string;
-                    end_time: string;
+                    appointmentTime: string;
+                    "appointmentTime ": string;
                 };
                 header?: never;
                 path?: never;
@@ -966,7 +1040,7 @@ export interface paths {
                             /** @description ข้อมูลที่ส่งคืน */
                             data: {
                                 /** @description ID */
-                                id: number;
+                                id: string;
                                 /** @enum {string} */
                                 date: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
                                 /** Format: time */
@@ -1015,7 +1089,7 @@ export interface paths {
                             /** @description ข้อมูลที่ส่งคืน */
                             data: {
                                 /** @description ID */
-                                id: number;
+                                id: string;
                                 staff: {
                                     /** @description ID */
                                     id: string;
@@ -1029,7 +1103,7 @@ export interface paths {
                                 start_time: string;
                                 /** Format: time */
                                 end_time: string;
-                                is_active?: boolean;
+                                is_active: boolean;
                             };
                         };
                     };
@@ -1116,10 +1190,9 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            /** @description ข้อมูลที่ส่งคืน */
                             data: {
                                 /** @description ID */
-                                id: number;
+                                id: string;
                                 staff: {
                                     /** @description ID */
                                     id: string;
@@ -1133,7 +1206,7 @@ export interface paths {
                                 start_time: string;
                                 /** Format: time */
                                 end_time: string;
-                                is_active?: boolean;
+                                is_active: boolean;
                             };
                         };
                     };
@@ -1210,10 +1283,11 @@ export interface paths {
                             data: {
                                 /** @description ID */
                                 id: number;
-                                /** Format: date */
                                 date: string;
-                                /** @description status */
+                                history: string;
                                 status: string;
+                                patient_id: number;
+                                inspection_record_id: number;
                             }[];
                         };
                     };
@@ -1767,13 +1841,13 @@ export interface paths {
                     content: {
                         "application/json": {
                             data: {
-                                /** @enum {integer} */
-                                mobile_dental_id: "requst" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                mobile_dental_id: number;
                                 company_id: number;
                                 /** Format: date */
                                 date: string;
                                 count: number;
-                                status: string;
+                                /** @enum {string} */
+                                status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
                                 address: string;
                             }[];
                         };
@@ -1812,13 +1886,13 @@ export interface paths {
                     content: {
                         "application/json": {
                             data: {
-                                /** @enum {integer} */
-                                mobile_dental_id: "requst" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                mobile_dental_id: number;
                                 company_id: number;
                                 /** Format: date */
                                 date: string;
                                 count: number;
-                                status: string;
+                                /** @enum {string} */
+                                status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
                                 address: string;
                             };
                         };
@@ -1886,7 +1960,8 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        status: string;
+                        /** @enum {string} */
+                        status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
                     };
                 };
             };
@@ -1898,8 +1973,7 @@ export interface paths {
                     content: {
                         "application/json": {
                             data: {
-                                /** @enum {integer} */
-                                mobile_dental_id: "requst" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                                mobile_dental_id: number;
                                 company_id: number;
                                 /** Format: date */
                                 date: string;
@@ -2015,14 +2089,13 @@ export interface components {
             appointment_time: string;
             type: string;
             /** @enum {string} */
-            status: "scheduled" | "completed" | "cancelled";
+            status: "scheduled" | "completed" | "cancelled" | "request_cancel";
             medical_record?: {
                 /** @description ID */
                 id: number;
                 date: string;
                 history: string;
-                /** @enum {string} */
-                status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
+                status: string;
                 detail: {
                     type_id: number;
                     diagnosis: string;
@@ -2094,8 +2167,7 @@ export interface components {
             id: number;
             date: string;
             history: string;
-            /** @enum {string} */
-            status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
+            status: string;
             patient_id: number;
             detail: {
                 type_id: number;
@@ -2113,13 +2185,13 @@ export interface components {
             patient_id: number;
         };
         mobile_dental: {
-            /** @enum {integer} */
-            mobile_dental_id: "requst" | "scheduled" | "completed" | "request_cancel" | "cancel";
+            mobile_dental_id: number;
             company_id: number;
             /** Format: date */
             date: string;
             count: number;
-            status: string;
+            /** @enum {string} */
+            status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
             address: string;
         };
     };
