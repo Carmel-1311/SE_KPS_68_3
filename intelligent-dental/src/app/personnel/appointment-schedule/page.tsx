@@ -1,14 +1,14 @@
 ﻿'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Card, Typography, Button, Input, DatePicker, Space, Tooltip, message } from 'antd';
-import { SearchOutlined, PlusOutlined, ReadOutlined } from '@ant-design/icons';
+import { Table, Tag, Card, Typography, Button, Input, DatePicker, Space, Tooltip, message, Breadcrumb } from 'antd';
+import { SearchOutlined, PlusOutlined, ReadOutlined, HomeOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
 
-// 🌟 ปรับ Status ให้ตรงกับ API จริง (scheduled, completed, cancelled)
 interface AppointmentType {
   id: number;
   patient_id: number;
@@ -19,9 +19,11 @@ interface AppointmentType {
   appointment_time: string;
   treatment: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  is_deleted?: boolean; 
 }
 
 export default function AppointmentListPage() {
+  const router = useRouter(); 
   const [data, setData] = useState<AppointmentType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState('');
@@ -35,7 +37,6 @@ export default function AppointmentListPage() {
     setLoading(true);
     try {
       setTimeout(() => {
-        // Mock Data เริ่มต้น
         const mockData: AppointmentType[] = [
           { 
             id: 1, 
@@ -64,7 +65,8 @@ export default function AppointmentListPage() {
         const storedData = localStorage.getItem('appointments');
         let appointments = [];
         if (storedData) {
-          appointments = JSON.parse(storedData);
+          const parsedData = JSON.parse(storedData);
+          appointments = parsedData.filter((item: AppointmentType) => !item.is_deleted);
         } else {
           appointments = mockData;
           localStorage.setItem('appointments', JSON.stringify(mockData));
@@ -86,7 +88,14 @@ export default function AppointmentListPage() {
   });
 
   const columns: ColumnsType<AppointmentType> = [
-    { title: 'ID', dataIndex: 'id', key: 'id', render: (text) => <Text strong>{text}</Text> },
+    // 🌟 เปลี่ยนจากดึง dataIndex: 'id' เป็นการรันเลขลำดับ (Index) 1, 2, 3...
+    { 
+      title: 'ลำดับ', 
+      key: 'index', 
+      width: 70,
+      align: 'center',
+      render: (text, record, index) => <Text strong>{index + 1}</Text> 
+    },
     {
       title: 'วันและเวลา',
       key: 'datetime',
@@ -105,9 +114,8 @@ export default function AppointmentListPage() {
       key: 'status',
       dataIndex: 'status',
       render: (status: string) => {
-        // 🌟 ปรับ Tag สีให้ล้อตาม API Status
         let color = 'blue'; let text = 'รอดำเนินการ';
-        if (status === 'scheduled') { color = 'cyan'; text = 'กำหนดการแล้ว'; } 
+        if (status === 'scheduled') { color = 'blue'; text = 'รอดำเนินการ'; } 
         else if (status === 'completed') { color = 'green'; text = 'เสร็จสิ้น'; } 
         else if (status === 'cancelled') { color = 'red'; text = 'ยกเลิก'; }
         return <Tag color={color}>{text}</Tag>;
@@ -119,6 +127,7 @@ export default function AppointmentListPage() {
       render: (_, record) => (
         <Space size="middle">
           <Tooltip title="Detail" placement="top">
+            {/* 🌟 ลิงก์ยังคงอ้างอิงจาก record.id (ค่าจริงในระบบ) ไม่ใช่เลขลำดับ */}
             <Link href={`/personnel/appointment-schedule/${record.id}`}>
               <Button 
                 type="text" 
@@ -134,6 +143,15 @@ export default function AppointmentListPage() {
 
   return (
     <div style={{ padding: '24px' }}>
+      
+      <Breadcrumb
+        style={{ marginBottom: '24px', fontSize: '15px' }}
+        items={[
+          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
+          { title: <span><CalendarOutlined /> ตารางการนัดหมาย</span> },
+        ]}
+      />
+
       <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
