@@ -56,6 +56,7 @@ export function toAppointmentResponse(
   a: AppointmentWithRelations
 ): AppointmentResponseDTO {
   return {
+    appointment_id: a.appointment_id,
     patient: {
       id: a.patient.patient_id,
       name: `${a.patient.first_name} ${a.patient.last_name}`
@@ -70,7 +71,7 @@ export function toAppointmentResponse(
     appointment_time: a.appointment_time.toTimeString().slice(0, 5),
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled",
-    medical_records: a.medical_records
+    medical_record: a.medical_records
       ? {
         id: a.medical_records.examination_id,
         date: a.medical_records.examination_date
@@ -84,7 +85,7 @@ export function toAppointmentResponse(
             diagnosis: d.diagnosis_ ?? ""
           })) ?? []
       }
-      : undefined,
+      : null,
 
     inspection_record: a.inspection_record
       ? {
@@ -93,7 +94,7 @@ export function toAppointmentResponse(
         history: a.inspection_record.history ?? "",
         status: a.inspection_record.status ?? ""
       }
-      : undefined
+      : null
   }
 }
 
@@ -135,6 +136,7 @@ export function toAppointmentResponseList(
   appointments: AppointmentList[]
 ): AppointmentResponseDTO[] {
   return appointments.map(a => ({
+    appointment_id: a.appointment_id,
     patient: {
       id: a.patient.patient_id,
       name: `${a.patient.first_name} ${a.patient.last_name}`
@@ -153,8 +155,8 @@ export function toAppointmentResponseList(
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled",
 
-    medical_records_id: a.medical_records?.examination_id,
-    inspection_record_id: a.inspection_record?.inspection_record_id
+    medical_record_id: a.medical_records?.examination_id || null,
+    inspection_record_id: a.inspection_record?.inspection_record_id || null
   }))
 }
 
@@ -164,16 +166,14 @@ export function toCreateAppointmentInput(
 ): Prisma.appointmentCreateInput {
   return {
     appointment_date: new Date(data.appointment_date),
-    appointment_time: data.appointment_time,
+    appointment_time: new Date(`1970-01-01T${data.appointment_time}:00Z`),
     type: data.type,
     status: data.status,
     patient: {
       connect: { patient_id: data.patient_id }
     },
 
-    staff: {
-      connect: { staff_id: data.staff_id }
-    }
+    ...(data.staff_id && { staff: { connect: { staff_id: data.staff_id } } }),
   }
 }
 

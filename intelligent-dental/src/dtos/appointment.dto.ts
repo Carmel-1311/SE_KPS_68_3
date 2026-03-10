@@ -3,6 +3,7 @@ import { da } from "zod/v4/locales";
 
 
 export const AppointmentSchema = z.object({
+    appointment_id: z.number(),
     patient: z.object({
         id: z.number().optional(),
         name: z.string().min(2, "ชื่อผู้ป่วยต้องมีอย่างน้อย 2 ตัวอักษร")
@@ -26,7 +27,7 @@ export const AppointmentSchema = z.object({
     type: z.string().min(2),
 
     status: z.enum(["scheduled", "completed", "cancelled"]).default("scheduled"),
-    medical_records: z.object({
+    medical_record: z.object({
         id: z.number(),
         date: z.string().refine((date) => !isNaN(Date.parse(date)), {
             message: "วันที่ไม่ถูกต้อง"
@@ -37,7 +38,7 @@ export const AppointmentSchema = z.object({
             id: z.number(),
             diagnosis: z.string(),
         }))
-    }).optional(),
+    }).nullable().optional(),
     inspection_record: z.object({
         id: z.number(),
         date: z.string().refine((date) => !isNaN(Date.parse(date)), {
@@ -45,7 +46,7 @@ export const AppointmentSchema = z.object({
         }),
         history: z.string(),
         status: z.string(),
-    }).optional()
+    }).nullable().optional()
 })
 
 export type AppointmentResponseDTO = z.infer<typeof AppointmentSchema>;
@@ -53,7 +54,7 @@ export type AppointmentResponseDTO = z.infer<typeof AppointmentSchema>;
 export const CreateAppointmentSchema = AppointmentSchema.omit({
     patient: true,
     staff: true,
-    medical_records: true,
+    medical_record: true,
     inspection_record: true
 }).extend({
     patient_id: z.number(),

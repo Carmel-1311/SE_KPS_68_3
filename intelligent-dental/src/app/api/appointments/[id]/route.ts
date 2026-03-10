@@ -1,16 +1,18 @@
 import { getCurrentUser } from "@/lib/auth"
 import { requireRole } from "@/lib/permissions"
-import *  as appointmentService from "@/repositories/appointmentRepository"
+import * as appointmentService from "@/services/appointmentService"
 import { handleError } from "@/utils/errorHandler"
 import * as res from "@/utils/responseFormatter"
 
 
-export async function GET(request: Request,{ params }: { params: { id: number } }) {
+export async function GET(request: Request,{ params }: { params: Promise<{ id: string }> }) {
 
     try {
+        const { id } = await params;
+        const appointmentId = parseInt(id);
         const user = getCurrentUser()
         requireRole(user.role, ["staff", "dentist", "patient"])
-        const data = await appointmentService.findAppointmentById(params.id);
+        const data = await appointmentService.getAppointmentById(appointmentId);
 
         return res.ok(data)
     } catch (err: any) {
@@ -18,23 +20,27 @@ export async function GET(request: Request,{ params }: { params: { id: number } 
     }
 }   
 
-export async function PUT(request: Request,{ params }: { params: { id: number } }) {
+export async function PUT(request: Request,{ params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
+        const appointmentId = parseInt(id);
         const user = getCurrentUser()
         requireRole(user.role, ["patient","staff","dentist"])           
         const body = await request.json()
-        const updatedAppointment = await appointmentService.updateAppointment(params.id, body)
+        const updatedAppointment = await appointmentService.updateAppointment(appointmentId, body)
         return res.ok(updatedAppointment)
     } catch (err: any) {
         return handleError(err)
     }   
 }
 
-export async function DELETE(request: Request,{ params }: { params: { id: number } }) {
+export async function DELETE(request: Request,{ params }: { params: Promise<{ id: string }> }) {
     try {
+        const { id } = await params;
+        const appointmentId = parseInt(id);
         const user = getCurrentUser()
         requireRole(user.role, ["staff"])           
-        await appointmentService.deleteAppointment(params.id)
+        await appointmentService.deleteAppointment(appointmentId)
         return res.noContent()
     } catch (err: any) {
         return handleError(err)

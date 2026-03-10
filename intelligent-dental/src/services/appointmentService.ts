@@ -4,6 +4,21 @@ import { AppError } from "@/utils/AppError"
 import { AppointmentResponseDTO, CreateAppointmentDTO, UpdateAppointmentDTO } from "@/dtos/appointment.dto"
 import { getFreeDentist } from "./dentistService"
 
+export async function getAppointmentsForUser(user: { id: number, role: string }) {
+    // แยก Logic ตามบทบาท
+    if (user.role === "patient") {
+        // เช็คว่า user มีสิทธิ์เข้าถึงข้อมูลของตัวเองหรือไม่ (ในกรณีนี้คือ patient_id ต้องตรงกับ user.id)
+        return  await repo.findAppointmentsByPatientId(user.id)
+    }
+
+    if (user.role === "staff" || user.role === "dentist") {
+        return  await repo.findAllAppointments();
+    }
+
+    throw new AppError(403, "AUTH-003", "Access denied for this role", "AUTH");
+}
+
+
 export async function getAppointmentById(id: number): Promise<AppointmentResponseDTO> {
     const appointment = await repo.findAppointmentById(id)
 
@@ -14,21 +29,16 @@ export async function getAppointmentById(id: number): Promise<AppointmentRespons
     return map.toAppointmentResponse(appointment)
 }
 
-export async function getAllAppointments(): Promise<AppointmentResponseDTO[]> {
-    const appointments = await repo.findAllAppointments()
-
-    return map.toAppointmentResponseList(appointments);
-}
-
 export async function createAppointment(
     data: CreateAppointmentDTO
 ): Promise<AppointmentResponseDTO> {
+    console.log("--- TEST API CALLED ---")
     const freeDentist = await getFreeDentist(data.appointment_date, data.appointment_time);
 
     if (!freeDentist) {
         throw new AppError(409, "USER-002", "No available dentist for the selected time", "BUSINESS")
     }
-
+    console.log("Free dentist found:", freeDentist.staff_id);
     const mergedData = {
     ...data,
     staff_id: freeDentist.staff_id
@@ -42,6 +52,8 @@ export async function updateAppointment(
     id: number,
     data: Partial<UpdateAppointmentDTO>)
     : Promise<AppointmentResponseDTO> {
+        // Check if user exists before deleting to provide meaningful error message
+    
     const appointment = await repo.findAppointmentById(id)
 
     if (!appointment) {
@@ -53,6 +65,8 @@ export async function updateAppointment(
 }
 
 export async function deleteAppointment(id: number): Promise<void> {
+    // Check if user exists before deleting to provide meaningful error message
+
     const appointment = await repo.findAppointmentById(id)
 
     if (!appointment) {

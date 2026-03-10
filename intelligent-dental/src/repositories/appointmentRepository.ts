@@ -8,7 +8,7 @@ export async function findAllAppointments(): Promise<map.AppointmentList[]> {
 
 export async function findAppointmentById(
   id: number
-): Promise<map.AppointmentWithRelations | null> {
+){
   return prisma.appointment.findUnique({
     where: { appointment_id: id },
     ...map.appointmentWithRelations
@@ -16,13 +16,13 @@ export async function findAppointmentById(
 }
 
 export async function createAppointment(data: Prisma.appointmentCreateInput) {
-  return prisma.appointment.create({data})
+  return prisma.appointment.create({data,...map.appointmentWithRelations})
 }
 
 export async function updateAppointment(id: number, data: Prisma.appointmentUpdateInput) {
   return prisma.appointment.update({
     where: { appointment_id: id },
-    data
+    data,...map.appointmentWithRelations
   })
 }
 
@@ -31,4 +31,12 @@ export async function deleteAppointment(id: number) {
     where: { appointment_id: id }
   })
 } 
+
+export async function findAppointmentsByPatientId(patientId: number): Promise<map.AppointmentList[]> {
+  return prisma.appointment.findMany({
+    where: { patient_id: patientId },
+    ...map.appointmentWithRelations
+  })
+}
+  
 
