@@ -26,10 +26,10 @@ export default function PersonnelSidebar() {
       path: "/personnel/appointment-schedule",
     },
     {
-      key: "treatments",
+      key: "work-schedule",
       icon: <Icons.FileText size={18} />,
-      label: "ตรวจสอบประวัติการรักษา",
-      path: "/personnel/treatments",
+      label: "ตารางการทำงาน",
+      path: "/personnel/work-schedule",
     },
     {
       key: "mission",
@@ -64,7 +64,7 @@ export default function PersonnelSidebar() {
 
       <Menu
         theme="light"
-        className="personnel-sidebar-menu"
+        className="app-sidebar-menu personnel-sidebar-menu"
         selectedKeys={[getSelectedKey(pathname)]}
         mode="inline"
         style={{
