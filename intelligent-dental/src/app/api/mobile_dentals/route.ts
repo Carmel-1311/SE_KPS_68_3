@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mockMobileDentals, MobileDental } from "@/mock/mockMobileDental";
 import { getCurrentCompanyId } from "@/mock/mockUser"
+import { mobileDentalStore, MobileDental } from "@/mock/mockMobileDental";
 
-// แชร์ข้อมูลจากแหล่งเดียวกัน เพื่อให้ GET/POST/PUT ทุกที่เห็นข้อมูลชุดเดียวกัน
-const store: MobileDental[] = mockMobileDentals;
-
+const store = mobileDentalStore;
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const companyId = searchParams.get("company_id");
@@ -19,10 +17,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
+        const count = Number(body.count);
 
-        if (!body.date || !body.count || !body.address) {
+        if (!body.date || !count || !body.address) {
             return NextResponse.json(
-                { error: "Missing required fields" },
+                {
+                    error: {
+                        code: "VALIDATION_ERROR",
+                        message: "Missing required fields: date, count, address",
+                        traceId: crypto.randomUUID(),
+                    },
+                },
                 { status: 400 }
             );
         }
@@ -34,7 +39,7 @@ export async function POST(request: NextRequest) {
                     : 1,
             company_id: getCurrentCompanyId() ?? 1,
             date: body.date,
-            count: Number(body.count),
+            count,
             status: "request",
             address: body.address,
         };
@@ -42,14 +47,10 @@ export async function POST(request: NextRequest) {
         store.push(newRecord);
 
         return NextResponse.json(
-            {
-                data: newRecord,
-            },
-            { status: 201 }
+            { data: newRecord },
+            { status: 200 }
         );
-    } catch (err) {
-        console.error("API Error:", err);
-
+    } catch {
         return NextResponse.json(
             {
                 error: {

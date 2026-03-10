@@ -1,11 +1,12 @@
-
+// Mock data ตรงตาม swagger definition: #/definitions/mobile_dental
+// Fields: mobile_dental_id (int), company_id (int), date (date), count (int), status (string)
 
 export interface MobileDental {
     mobile_dental_id: number;
     company_id: number;
     date: string;       // format: date (YYYY-MM-DD)
     count: number;
-    status: string;
+    status: "request" | "scheduled" | "request_cancel" | "cancel" | "completed";
     address: string;
 }
 
@@ -51,3 +52,4 @@ export const mockMobileDentals: MobileDental[] = [
         address: "ถนนสาธรใต้ ตึก B"
     },
 ];
+export const mobileDentalStore = mockMobileDentals;
