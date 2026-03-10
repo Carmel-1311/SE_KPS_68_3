@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { Card, Typography, Button, Input, Form, Select, message, Spin, Space, Popconfirm } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Card, Typography, Button, Input, Form, Select, message, Spin, Space, Popconfirm, Breadcrumb } from 'antd';
+import { SaveOutlined, DeleteOutlined, HomeOutlined, EditOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
-import type { FormInstance } from 'antd';
 
 const { Title, Text } = Typography;
 
@@ -19,73 +18,103 @@ const staffMockDB: Record<number, string> = {
   6: 'ทพญ. นภา'
 };
 
-const getPatientName = (id: number) => patientMockDB[id] || `คนไข้รหัส ${id}`;
-const getStaffName = (id: number) => staffMockDB[id] || `ทันตแพทย์รหัส ${id}`;
+const getPatientName = (id: number) => patientMockDB[id] || `ไม่พบรายชื่อ`;
+const getStaffName = (id: number) => staffMockDB[id] || `ไม่พบรายชื่อ`;
 
 export default function EditAppointmentPage() {
   const router = useRouter();
   const params = useParams();
   const idParam = params.id as string;
   
-  const formRef = useRef<FormInstance | null>(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    formRef.current = form;
-  }, [form]);
+  
+  const [displayNames, setDisplayNames] = useState({ patient: '', staff: '' });
+  const [hasInitialStaff, setHasInitialStaff] = useState(false);
+  
+  // 🌟 เพิ่ม State สำหรับเก็บเลขลำดับที่ (ID ที่ตรงกับตาราง)
+  const [displayId, setDisplayId] = useState<number | string>('');
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
-    if (isMounted && formRef.current && idParam) {
+    if (isMounted && form && idParam) {
       fetchAppointmentDetail();
     }
-  }, [idParam, isMounted]);
+  }, [isMounted, idParam, form]);
 
   const fetchAppointmentDetail = async () => {
     try {
       if (typeof window === 'undefined') return;
       
-      setTimeout(() => {
-        const storedData = localStorage.getItem('appointments');
-        if (storedData && formRef.current) {
-          const appointments = JSON.parse(storedData);
-          const targetAppointment = appointments.find((item: any) => item.id === Number(idParam));
-          
-          if (targetAppointment) {
-            let currentStatus = targetAppointment.status;
-            if (!['scheduled', 'completed', 'cancelled'].includes(currentStatus)) {
-              currentStatus = 'scheduled'; 
-            }
+      const storedData = localStorage.getItem('appointments');
+      if (!storedData || !form) {
+        setLoading(false);
+        return;
+      }
 
-            formRef.current.setFieldsValue({
-              patient_id: targetAppointment.patient_id,
-              staff_id: targetAppointment.staff_id || '', 
-              appointment_date: targetAppointment.appointment_date,
-              appointment_time: targetAppointment.appointment_time,
-              type: targetAppointment.treatment || targetAppointment.type, 
-              status: currentStatus 
-            });
-            setLoading(false);
-          } else {
-            message.error('ไม่พบข้อมูลการนัดหมายนี้');
-            setLoading(false);
-            router.push('/personnel/appointment-schedule');
-          }
-        } else {
-          setLoading(false);
+      const appointments = JSON.parse(storedData);
+      
+      // 🌟 กรองข้อมูลที่ถูกลบออกไปก่อน แล้วหาลำดับ (Index) ที่แท้จริงให้ตรงกับตาราง
+      const activeAppointments = appointments.filter((item: any) => !item.is_deleted);
+      const targetIndex = activeAppointments.findIndex((item: any) => item.id === Number(idParam));
+      const targetAppointment = activeAppointments[targetIndex];
+      
+      if (targetAppointment) {
+        // 🌟 เซ็ตเลขลำดับ + 1 (เพราะ Index เริ่มจาก 0)
+        setDisplayId(targetIndex + 1);
+
+        let currentStatus = targetAppointment.status;
+        if (!['scheduled', 'completed', 'cancelled'].includes(currentStatus)) {
+          currentStatus = 'scheduled'; 
         }
-      }, 300);
+
+        const pId = targetAppointment.patient_id || targetAppointment.patient?.id || '';
+        const sId = targetAppointment.staff_id || targetAppointment.staff?.id || '';
+
+        if (sId) {
+          setHasInitialStaff(true);
+        } else {
+          setHasInitialStaff(false);
+        }
+
+        setDisplayNames({
+          patient: targetAppointment.patient_name || targetAppointment.patient?.name || getPatientName(Number(pId)),
+          staff: targetAppointment.staff_name || targetAppointment.staff?.name || (sId ? getStaffName(Number(sId)) : '')
+        });
+
+        form.setFieldsValue({
+          patient_id: pId ? String(pId) : '',
+          staff_id: sId ? String(sId) : '', 
+          appointment_date: targetAppointment.appointment_date,
+          appointment_time: targetAppointment.appointment_time,
+          type: targetAppointment.treatment || targetAppointment.type, 
+          status: currentStatus 
+        });
+      } else {
+        message.error('ไม่พบข้อมูลการนัดหมายนี้');
+        router.push('/personnel/appointment-schedule');
+      }
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching appointment:', error);
       message.error('ดึงข้อมูลล้มเหลว');
       setLoading(false);
       router.push('/personnel/appointment-schedule');
+    }
+  };
+
+  const handleStaffIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    if (val) {
+      setDisplayNames(prev => ({ ...prev, staff: getStaffName(Number(val)) }));
+    } else {
+      setDisplayNames(prev => ({ ...prev, staff: '' }));
     }
   };
 
@@ -108,12 +137,11 @@ export default function EditAppointmentPage() {
           const index = appointments.findIndex((item: any) => item.id === Number(idParam));
           
           if (index !== -1) {
-            // 🌟 แมปปิ้งชื่อจาก ID ที่ผู้ใช้กรอกผ่านฟังก์ชันที่เราเตรียมไว้
             const mockResponse = {
               data: {
                 appointment_id: Number(idParam),
                 patient: {
-                  id: payload.patient_id,
+                  id: payload.patient_id, 
                   name: getPatientName(payload.patient_id)
                 },
                 staff: {
@@ -132,7 +160,7 @@ export default function EditAppointmentPage() {
             const responseData = mockResponse.data;
             appointments[index] = {
               ...appointments[index], 
-              patient_id: responseData.patient.id,
+              patient_id: responseData.patient.id, 
               patient_name: responseData.patient.name,
               staff_id: responseData.staff.id,
               staff_name: responseData.staff.name,
@@ -157,18 +185,27 @@ export default function EditAppointmentPage() {
   const handleDelete = async () => {
     try {
       if (typeof window === 'undefined') return;
+      
       setTimeout(() => {
         const storedData = localStorage.getItem('appointments');
         if (storedData) {
           let appointments = JSON.parse(storedData);
-          appointments = appointments.filter((item: any) => item.id !== Number(idParam));
-          localStorage.setItem('appointments', JSON.stringify(appointments));
+          const index = appointments.findIndex((item: any) => item.id === Number(idParam));
+          
+          if (index !== -1) {
+            appointments[index] = {
+              ...appointments[index],
+              is_deleted: true,
+              status: 'cancelled'
+            };
+            localStorage.setItem('appointments', JSON.stringify(appointments));
+          }
         }
-        message.success('ลบการนัดหมายเรียบร้อยแล้ว');
+        message.success('ยกเลิกการนัดหมายเรียบร้อยแล้ว');
         router.push('/personnel/appointment-schedule');
       }, 400);
     } catch (error) {
-      message.error('ลบการนัดหมายไม่สำเร็จ');
+      message.error('การนัดหมายไม่สำเร็จ');
     }
   };
 
@@ -178,29 +215,46 @@ export default function EditAppointmentPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => router.push('/personnel/appointment-schedule')} style={{ marginBottom: '16px', padding: 0 }}>
-        กลับไปหน้าตาราง
-      </Button>
+      
+      <Breadcrumb
+        style={{ marginBottom: '24px', fontSize: '15px' }}
+        items={[
+          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
+          { title: <a onClick={() => router.push('/personnel/appointment-schedule')}><CalendarOutlined /> ตารางการนัดหมาย</a> },
+          { title: <span><EditOutlined /> แก้ไขการนัดหมาย</span> },
+        ]}
+      />
 
       <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
-            <Title level={3} style={{ marginBottom: '4px' }}>แก้ไขการนัดหมาย (ID: {idParam})</Title>
+            {/* 🌟 เปลี่ยนจาก idParam มาเป็น displayId ที่คำนวณมาแล้ว */}
+            <Title level={3} style={{ marginBottom: '4px' }}>แก้ไขการนัดหมาย (ID: {displayId})</Title>
             <Text type="secondary">ปรับปรุงข้อมูลหรือยกเลิกการนัดหมายนี้</Text>
           </div>
           
           <Popconfirm title="คุณแน่ใจหรือไม่ที่จะยกเลิก/ลบ การนัดหมายนี้?" onConfirm={handleDelete} okText="ยืนยัน" cancelText="ปิด" okButtonProps={{ danger: true }}>
-            <Button danger icon={<DeleteOutlined />}>ลบการนัดหมาย</Button>
+            <Button danger icon={<DeleteOutlined />}>ยกเลิกการนัดหมาย</Button>
           </Popconfirm>
         </div>
 
         <Form form={form} layout="vertical" onFinish={handleUpdate}>
           <div style={{ display: 'flex', gap: '16px' }}>
             <Form.Item name="patient_id" label="รหัสคนไข้ (Patient ID)" style={{ flex: 1 }} rules={[{ required: true, message: 'ระบุรหัสคนไข้' }]}>
-              <Input type="number" size="large" />
+              <Input 
+                size="large" 
+                disabled={true} 
+                addonAfter={`- ${displayNames.patient}`} 
+              />
             </Form.Item>
+
             <Form.Item name="staff_id" label="รหัสทันตแพทย์ (Staff ID)" style={{ flex: 1 }} rules={[{ required: true, message: 'ระบุรหัสทันตแพทย์' }]}>
-              <Input type="number" size="large" />
+              <Input 
+                size="large" 
+                disabled={hasInitialStaff} 
+                onChange={handleStaffIdChange}
+                addonAfter={`- ${displayNames.staff}`} 
+              />
             </Form.Item>
           </div>
 
@@ -219,9 +273,8 @@ export default function EditAppointmentPage() {
 
           <Form.Item name="status" label="สถานะ (Status)">
             <Select size="large">
-              <Select.Option value="scheduled">Scheduled (กำหนดการแล้ว)</Select.Option>
+              <Select.Option value="scheduled">Scheduled (รอดำเนินการ)</Select.Option>
               <Select.Option value="completed">Completed (เสร็จสิ้น)</Select.Option>
-              <Select.Option value="cancelled">Cancelled (ยกเลิก)</Select.Option>
             </Select>
           </Form.Item>
 
