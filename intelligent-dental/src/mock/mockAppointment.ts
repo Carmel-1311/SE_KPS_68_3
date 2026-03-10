@@ -1,4 +1,4 @@
-export type AppointmentStatus = "upcoming" | "completed" | "cancelled";
+﻿export type AppointmentStatus = "scheduled" | "completed" | "cancelled" | "request_cancel";
 
 export type Appointment = {
   id: string;
@@ -14,9 +14,10 @@ export type Appointment = {
 };
 
 export const appointmentStatusLabel: Record<AppointmentStatus, string> = {
-  upcoming: "กำลังจะมาถึง",
+  scheduled: "กำลังจะมาถึง",
   completed: "เสร็จสิ้น",
   cancelled: "ยกเลิก",
+  request_cancel: "ขอยกเลิก",
 };
 
 export const mockAppointments: Appointment[] = [
@@ -27,7 +28,7 @@ export const mockAppointments: Appointment[] = [
     dentist: "ทพญ. ณัฐวดี อมรเดช",
     branch: "อโศก",
     service: "ขูดหินปูน",
-    status: "upcoming",
+    status: "scheduled",
     room: "A-03",
     note: "งดอาหารสีเข้ม 1 ชั่วโมงหลังทำ",
     createdAt: "2026-02-20T09:14:00+07:00",
@@ -39,7 +40,7 @@ export const mockAppointments: Appointment[] = [
     dentist: "ทพ. ธนวัฒน์ เกียรติชัย",
     branch: "บางนา",
     service: "ตรวจสุขภาพช่องปากประจำปี",
-    status: "upcoming",
+    status: "scheduled",
     room: "B-05",
     note: "มาตามเวลานัดล่วงหน้า 15 นาที",
     createdAt: "2026-02-27T13:40:00+07:00",
@@ -51,7 +52,7 @@ export const mockAppointments: Appointment[] = [
     dentist: "ทพ. พิพัฒน์ ชัยรุ่งเรือง",
     branch: "พระราม 9",
     service: "อุดฟัน",
-    status: "upcoming",
+    status: "scheduled",
     room: "R9-02",
     createdAt: "2026-03-01T18:22:00+07:00",
   },
@@ -112,5 +113,16 @@ export const mockAppointments: Appointment[] = [
     status: "cancelled",
     note: "ยกเลิกเนื่องจากทันตแพทย์ติดเคสด่วน",
     createdAt: "2026-01-29T09:31:00+07:00",
+  },
+  {
+    id: "AP-20260328-009",
+    date: "2026-03-28",
+    time: "10:30",
+    dentist: "ทพ. ธนวัฒน์ เกียรติชัย",
+    branch: "บางนา",
+    service: "ขูดหินปูน",
+    status: "request_cancel",
+    note: "รอการยืนยันการยกเลิกนัด",
+    createdAt: "2026-03-05T14:20:00+07:00",
   },
 ];

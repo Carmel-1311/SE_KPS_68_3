@@ -1,7 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Button, Card, Input, Modal, Select, Space, Table, Tag, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Input,
+  Modal,
+  Select,
+  Space,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { CalendarClock, Search } from "lucide-react";
 import {
@@ -13,17 +23,38 @@ import {
 
 const statusMeta: Record<
   AppointmentStatus,
-  { label: string; color: "blue" | "green" | "red" }
+  { label: string; color: "blue" | "green" | "red" | "orange" }
 > = {
-  upcoming: { label: appointmentStatusLabel.upcoming, color: "blue" },
+  scheduled: { label: appointmentStatusLabel.scheduled, color: "blue" },
   completed: { label: appointmentStatusLabel.completed, color: "green" },
   cancelled: { label: appointmentStatusLabel.cancelled, color: "red" },
+  request_cancel: {
+    label: appointmentStatusLabel.request_cancel,
+    color: "orange",
+  },
 };
 
 export default function UserAppointmentsPage() {
   const [appointments, setAppointments] = useState(mockAppointments);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>(
+    "all",
+  );
+
+  const statusSummary = useMemo(() => {
+    return appointments.reduce(
+      (acc, item) => {
+        acc[item.status] = (acc[item.status] ?? 0) + 1;
+        return acc;
+      },
+      {
+        scheduled: 0,
+        completed: 0,
+        cancelled: 0,
+        request_cancel: 0,
+      } as Record<AppointmentStatus, number>,
+    );
+  }, [appointments]);
 
   const filteredAppointments = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -34,7 +65,14 @@ export default function UserAppointmentsPage() {
 
       if (!normalizedSearch) return matchesStatus;
 
-      const matchesSearch = [item.id, item.date, item.time, item.dentist, item.branch, item.service]
+      const matchesSearch = [
+        item.id,
+        item.date,
+        item.time,
+        item.dentist,
+        item.branch,
+        item.service,
+      ]
         .join(" ")
         .toLowerCase()
         .includes(normalizedSearch);
@@ -45,15 +83,17 @@ export default function UserAppointmentsPage() {
 
   const handleCancelAppointment = (record: Appointment) => {
     Modal.confirm({
-      title: "ยืนยันการยกเลิกนัดหมาย",
-      content: `ต้องการยกเลิกนัดหมาย ${record.date} เวลา ${record.time} ใช่หรือไม่?`,
+      title: "ขอยกเลิกนัดหมาย",
+      content: `ต้องการขอยกเลิกนัดหมาย ${record.date} เวลา ${record.time} ใช่หรือไม่?`,
       okText: "ยืนยัน",
       cancelText: "ปิด",
       okButtonProps: { danger: true },
       onOk: () => {
         setAppointments((prev) =>
           prev.map((item) =>
-            item.id === record.id ? { ...item, status: "cancelled" } : item,
+            item.id === record.id
+              ? { ...item, status: "request_cancel" }
+              : item,
           ),
         );
       },
@@ -108,7 +148,7 @@ export default function UserAppointmentsPage() {
         <Button
           danger
           size="small"
-          disabled={record.status !== "upcoming"}
+          disabled={record.status !== "scheduled"}
           onClick={() => handleCancelAppointment(record)}
         >
           ยกเลิกนัด
@@ -146,11 +186,31 @@ export default function UserAppointmentsPage() {
             style={{ minWidth: 180 }}
             options={[
               { value: "all", label: "ทุกสถานะ" },
-              { value: "upcoming", label: appointmentStatusLabel.upcoming },
+              { value: "scheduled", label: appointmentStatusLabel.scheduled },
+              {
+                value: "request_cancel",
+                label: appointmentStatusLabel.request_cancel,
+              },
               { value: "completed", label: appointmentStatusLabel.completed },
               { value: "cancelled", label: appointmentStatusLabel.cancelled },
             ]}
           />
+        </Space>
+
+        <Space wrap>
+          <Tag color="blue">
+            {appointmentStatusLabel.scheduled}: {statusSummary.scheduled}
+          </Tag>
+          <Tag color="orange">
+            {appointmentStatusLabel.request_cancel}:{" "}
+            {statusSummary.request_cancel}
+          </Tag>
+          <Tag color="green">
+            {appointmentStatusLabel.completed}: {statusSummary.completed}
+          </Tag>
+          <Tag color="red">
+            {appointmentStatusLabel.cancelled}: {statusSummary.cancelled}
+          </Tag>
         </Space>
 
         <Table
