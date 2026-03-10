@@ -18,79 +18,41 @@ body {
   border-radius: 15px;
 }
 
-.user-sider-menu .ant-menu-item {
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
+.app-sidebar-menu.ant-menu {
+  background: transparent;
 }
 
-.user-sidebar-menu .ant-menu-item {
-  border-radius: 8px;
+.app-sidebar-menu .ant-menu-item {
+  border-radius: 10px;
   color: #032020;
   font-weight: 600;
+  margin-block: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.user-sidebar-menu .ant-menu-item .ant-menu-item-icon {
+.app-sidebar-menu .ant-menu-item .ant-menu-item-icon {
   color: #032020;
+  transition: color 0.2s ease;
 }
 
-.user-sidebar-menu .ant-menu-item:hover {
-  background-color: #9ff8f8 !important;
-  color: #032020 !important;
+.app-sidebar-menu .ant-menu-item:hover,
+.app-sidebar-menu .ant-menu-item-active {
+  background-color: #b9f9f9 !important;
+  color: #043434 !important;
+  transform: translateX(2px);
 }
 
-.user-sidebar-menu .ant-menu-item-selected {
-  background-color: #086060 !important;
+.app-sidebar-menu .ant-menu-item:hover .ant-menu-item-icon,
+.app-sidebar-menu .ant-menu-item-active .ant-menu-item-icon {
+  color: #043434 !important;
+}
+
+.app-sidebar-menu .ant-menu-item-selected {
+  background-color: #075252 !important;
   color: #ffffff !important;
+  box-shadow: inset 3px 0 0 #b9f9f9;
 }
 
-.user-sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
-  color: #ffffff !important;
-}
-
-.dentist-sidebar-menu .ant-menu-item {
-  border-radius: 8px;
-  color: #032020;
-  font-weight: 600;
-}
-
-.dentist-sidebar-menu .ant-menu-item .ant-menu-item-icon {
-  color: #032020;
-}
-
-.dentist-sidebar-menu .ant-menu-item:hover {
-  background-color: #9ff8f8 !important;
-  color: #032020 !important;
-}
-
-.dentist-sidebar-menu .ant-menu-item-selected {
-  background-color: #086060 !important;
-  color: #ffffff !important;
-}
-
-.dentist-sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
-  color: #ffffff !important;
-}
-
-.personnel-sidebar-menu .ant-menu-item {
-  border-radius: 8px;
-  color: #032020;
-  font-weight: 600;
-}
-
-.personnel-sidebar-menu .ant-menu-item .ant-menu-item-icon {
-  color: #032020;
-}
-
-.personnel-sidebar-menu .ant-menu-item:hover {
-  background-color: #9ff8f8 !important;
-  color: #032020 !important;
-}
-
-.personnel-sidebar-menu .ant-menu-item-selected {
-  background-color: #086060 !important;
-  color: #ffffff !important;
-}
-
-.personnel-sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
+.app-sidebar-menu .ant-menu-item-selected .ant-menu-item-icon {
   color: #ffffff !important;
 }
