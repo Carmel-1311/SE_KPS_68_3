@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Card, Typography, Button, Input, Form, message, Space } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
+import { Card, Typography, Button, Input, Form, message, Space, Breadcrumb } from 'antd';
+// 🌟 เปลี่ยนเป็น FileAddOutlined ให้ตรงกับรูปกระดาษที่มีเครื่องหมายบวก
+import { SaveOutlined, HomeOutlined, CalendarOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
@@ -78,9 +79,16 @@ export default function CreateAppointmentPage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => router.push('/personnel/appointment-schedule')} style={{ marginBottom: '16px', padding: 0 }}>
-        กลับไปหน้าตาราง
-      </Button>
+      
+      {/* 🌟 Breadcrumb นำทางพร้อมไอคอน FileAddOutlined */}
+      <Breadcrumb
+        style={{ marginBottom: '24px', fontSize: '15px' }}
+        items={[
+          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
+          { title: <a onClick={() => router.push('/personnel/appointment-schedule')}><CalendarOutlined /> ตารางการนัดหมาย</a> },
+          { title: <span><FileAddOutlined /> เพิ่มการนัดหมาย</span> },
+        ]}
+      />
 
       <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
         <Title level={3} style={{ marginBottom: '4px' }}>เพิ่มการนัดหมายใหม่</Title>
