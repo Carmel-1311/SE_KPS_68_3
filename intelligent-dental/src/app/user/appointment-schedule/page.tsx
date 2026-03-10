@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
+import type { ChangeEvent } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
   Badge,
@@ -8,16 +9,22 @@ import {
   Calendar,
   Card,
   Col,
+  DatePicker,
   Divider,
   Empty,
   Grid,
+  Input,
   Segmented,
   List,
+  Modal,
+  Select,
   Row,
   Space,
   Statistic,
   Tag,
+  TimePicker,
   Typography,
+  message,
 } from "antd";
 import {
   CalendarDays,
@@ -45,6 +52,31 @@ const statusColor: Record<
 };
 
 const appointmentDateFormat = "YYYY-MM-DD";
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+const formatThaiDateValue = (value: Dayjs) =>
+  `${value.format("DD")} ${thaiMonthsShort[value.month()]} ${value.format(
+    "YYYY",
+  )}`;
+const formatThaiDate = (dateValue: string) => {
+  const date = dayjs(dateValue);
+  if (!date.isValid()) return dateValue;
+  return formatThaiDateValue(date);
+};
+const formatThaiMonthYear = (value: Dayjs) =>
+  `${thaiMonthsShort[value.month()]} ${value.format("YYYY")}`;
 
 const sortAppointmentsByTime = (items: Appointment[]) => {
   return [...items].sort((a, b) => a.time.localeCompare(b.time));
@@ -64,14 +96,35 @@ const filterAppointmentsByStatus = (
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const [appointments, setAppointments] = useState(mockAppointments);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">(
     "all",
   );
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newAppointmentDate, setNewAppointmentDate] = useState<Dayjs | null>(
+    dayjs(),
+  );
+  const [newAppointmentTime, setNewAppointmentTime] = useState<Dayjs | null>(
+    null,
+  );
+  const [newAppointmentService, setNewAppointmentService] = useState("");
+  const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
+  const [newAppointmentBranch, setNewAppointmentBranch] = useState("");
+  const [newAppointmentNote, setNewAppointmentNote] = useState("");
+
+  const resetNewAppointment = () => {
+    setNewAppointmentDate(dayjs());
+    setNewAppointmentTime(null);
+    setNewAppointmentService("");
+    setNewAppointmentDentist("");
+    setNewAppointmentBranch("");
+    setNewAppointmentNote("");
+  };
 
   const appointmentsByDate = useMemo(() => {
-    return mockAppointments.reduce<Record<string, Appointment[]>>(
+    return appointments.reduce<Record<string, Appointment[]>>(
       (acc, item) => {
         acc[item.date] ??= [];
         acc[item.date].push(item);
@@ -79,7 +132,7 @@ export default function UserAppointmentSchedulePage() {
       },
       {},
     );
-  }, []);
+  }, [appointments]);
 
   const selectedDateKey = selectedDate.format(appointmentDateFormat);
   const selectedDateAppointments = useMemo(() => {
@@ -90,13 +143,13 @@ export default function UserAppointmentSchedulePage() {
 
   const upcomingAppointments = useMemo(() => {
     const nowValue = dayjs().valueOf();
-    return mockAppointments
+    return appointments
       .filter((item) => item.status === "scheduled")
       .map((item) => ({ item, timeValue: getAppointmentDateTimeValue(item) }))
       .filter(({ timeValue }) => timeValue >= nowValue)
       .sort((a, b) => a.timeValue - b.timeValue)
       .map(({ item }) => item);
-  }, []);
+  }, [appointments]);
 
   const nextAppointment = upcomingAppointments[0];
 
@@ -117,17 +170,73 @@ export default function UserAppointmentSchedulePage() {
           request_cancel: 0,
         } satisfies Record<AppointmentStatus, number>,
       );
-  }, [viewMonth]);
+  }, [viewMonth, appointments]);
   const summaryTotal =
     summary.scheduled + summary.completed + summary.cancelled + summary.request_cancel;
 
-  const summaryTitle = `ข้อมูลเดือน ${viewMonth.format("MM/YYYY")}`;
+  const summaryTitle = `ข้อมูลเดือน ${formatThaiMonthYear(viewMonth)}`;
 
-  const appointmentCardTitle = `นัดหมายวันที่ ${selectedDate.format(
-    "DD/MM/YYYY",
+  const appointmentCardTitle = `นัดหมายวันที่ ${formatThaiDateValue(
+    selectedDate,
   )}`;
 
   const appointmentListData = selectedDateAppointments;
+
+  const isPastDate = (value: Dayjs) => value.isBefore(dayjs(), "day");
+
+  const uniqueOptions = (key: "service" | "dentist" | "branch") => {
+    const values = new Set(appointments.map((item) => item[key]));
+    return Array.from(values).map((value) => ({ label: value, value }));
+  };
+
+  const createAppointmentId = (dateValue: Dayjs) => {
+    const dateKey = dateValue.format("YYYYMMDD");
+    const existing = appointments.filter((item) =>
+      item.id.startsWith(`AP-${dateKey}`),
+    );
+    const nextNumber = String(existing.length + 1).padStart(3, "0");
+    return `AP-${dateKey}-${nextNumber}`;
+  };
+
+  const handleAddAppointment = () => {
+    if (!newAppointmentDate || !newAppointmentTime) return;
+    if (
+      !newAppointmentService.trim() ||
+      !newAppointmentDentist.trim() ||
+      !newAppointmentBranch.trim()
+    ) {
+      message.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    if (isPastDate(newAppointmentDate)) {
+      message.error("ไม่สามารถเลือกวันที่ผ่านมาแล้วได้");
+      return;
+    }
+
+    const dateValue = newAppointmentDate.format(appointmentDateFormat);
+    const timeValue = newAppointmentTime.format("HH:mm");
+    const createdAt = dayjs().format();
+
+    const newAppointment: Appointment = {
+      id: createAppointmentId(newAppointmentDate),
+      date: dateValue,
+      time: timeValue,
+      dentist: newAppointmentDentist.trim(),
+      branch: newAppointmentBranch.trim(),
+      service: newAppointmentService.trim(),
+      status: "scheduled",
+      note: newAppointmentNote.trim() || undefined,
+      createdAt,
+    };
+
+    setAppointments((prev) => [...prev, newAppointment]);
+    setSelectedDate(newAppointmentDate);
+    setViewMonth(newAppointmentDate);
+    setIsAddOpen(false);
+    resetNewAppointment();
+    message.success("เพิ่มการนัดหมายเรียบร้อยแล้ว");
+  };
 
   const dateCellRender = (value: Dayjs) => {
     const items = appointmentsByDate[value.format(appointmentDateFormat)] ?? [];
@@ -187,8 +296,19 @@ export default function UserAppointmentSchedulePage() {
             <Space>
               <CalendarDays size={18} />
               <span>ตารางแสดงการนัดหมาย</span>
-              <Tag color="default">{selectedDate.format("DD/MM/YYYY")}</Tag>
+              <Tag color="default">{formatThaiDateValue(selectedDate)}</Tag>
             </Space>
+          }
+          extra={
+            <Button
+              type="primary"
+              onClick={() => {
+                resetNewAppointment();
+                setIsAddOpen(true);
+              }}
+            >
+              เพิ่มการนัดหมาย
+            </Button>
           }
           bodyStyle={{ padding: "1rem" }}
         >
@@ -270,7 +390,7 @@ export default function UserAppointmentSchedulePage() {
                         {appointmentStatusLabel.scheduled}
                       </Tag>
                       <Typography.Text strong>
-                        {dayjs(nextAppointment.date).format("DD/MM/YYYY")} •{" "}
+                        {formatThaiDate(nextAppointment.date)} •{" "}
                         {nextAppointment.time} น.
                       </Typography.Text>
                     </Space>
@@ -461,7 +581,7 @@ export default function UserAppointmentSchedulePage() {
                           onClick={() => onChange(prevMonth)}
                         />
                         <Typography.Text strong>
-                          {value.format("MMMM YYYY")}
+                          {formatThaiMonthYear(value)}
                         </Typography.Text>
                         <Button
                           type="text"
@@ -507,6 +627,75 @@ export default function UserAppointmentSchedulePage() {
             </Col>
           </Row>
         </Card>
+        <Modal
+          open={isAddOpen}
+          title="เพิ่มการนัดหมาย"
+          okText="ยืนยัน"
+          cancelText="ยกเลิก"
+          onCancel={() => setIsAddOpen(false)}
+          onOk={handleAddAppointment}
+          okButtonProps={{
+            disabled:
+              !newAppointmentDate ||
+              !newAppointmentTime ||
+              isPastDate(newAppointmentDate),
+          }}
+        >
+          <Space direction="vertical" size={12} style={{ width: "100%" }}>
+            <Typography.Text>เลือกวันที่ต้องการนัดหมาย</Typography.Text>
+            <DatePicker
+              style={{ width: "100%" }}
+              value={newAppointmentDate}
+              onChange={(value) => setNewAppointmentDate(value)}
+              format={(value) => (value ? formatThaiDateValue(value) : "")}
+              disabledDate={(current) =>
+                current ? current.isBefore(dayjs(), "day") : false
+              }
+            />
+            <Typography.Text>เลือกเวลา</Typography.Text>
+            <TimePicker
+              style={{ width: "100%" }}
+              value={newAppointmentTime}
+              onChange={(value) => setNewAppointmentTime(value)}
+              format="HH:mm"
+            />
+            <Typography.Text>บริการ</Typography.Text>
+            <Select
+              showSearch
+              placeholder="เลือกหรือพิมพ์บริการ"
+              options={uniqueOptions("service")}
+              value={newAppointmentService || undefined}
+              onChange={(value) => setNewAppointmentService(value)}
+              onSearch={(value) => setNewAppointmentService(value)}
+            />
+            <Typography.Text>ทันตแพทย์</Typography.Text>
+            <Select
+              showSearch
+              placeholder="เลือกหรือพิมพ์ชื่อทันตแพทย์"
+              options={uniqueOptions("dentist")}
+              value={newAppointmentDentist || undefined}
+              onChange={(value) => setNewAppointmentDentist(value)}
+              onSearch={(value) => setNewAppointmentDentist(value)}
+            />
+            <Typography.Text>สาขา</Typography.Text>
+            <Select
+              showSearch
+              placeholder="เลือกหรือพิมพ์ชื่อสาขา"
+              options={uniqueOptions("branch")}
+              value={newAppointmentBranch || undefined}
+              onChange={(value) => setNewAppointmentBranch(value)}
+              onSearch={(value) => setNewAppointmentBranch(value)}
+            />
+            <Typography.Text>หมายเหตุ (ถ้ามี)</Typography.Text>
+            <Input
+              placeholder="ระบุหมายเหตุเพิ่มเติม"
+              value={newAppointmentNote}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setNewAppointmentNote(event.target.value)
+              }
+            />
+          </Space>
+        </Modal>
         <style jsx global>{`
           .appointment-calendar {
             font-size: 1rem;

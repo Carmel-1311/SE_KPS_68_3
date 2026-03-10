@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
+import dayjs from "dayjs";
 import {
   Avatar,
   Button,
@@ -17,6 +18,28 @@ import {
 } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import { mockUserProfile, type UserProfile } from "@/mock/mockUserProfile";
+
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+const formatThaiDate = (dateValue: string) => {
+  const date = dayjs(dateValue);
+  if (!date.isValid()) return dateValue;
+  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
+    "YYYY",
+  )}`;
+};
 
 function UserForm() {
   const [form] = Form.useForm<UserProfile>();
@@ -114,7 +137,7 @@ function UserForm() {
         <Card title="ข้อมูลทั่วไป">
           <Descriptions column={1} size="small">
             <Descriptions.Item label="วันเกิด (Birthday)">
-              {formData.birthday}
+              {formatThaiDate(formData.birthday)}
             </Descriptions.Item>
           </Descriptions>
         </Card>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import dayjs from "dayjs";
 import {
   Button,
   Card,
@@ -32,6 +33,28 @@ const statusMeta: Record<
     label: appointmentStatusLabel.request_cancel,
     color: "orange",
   },
+};
+
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+const formatThaiDate = (dateValue: string) => {
+  const date = dayjs(dateValue);
+  if (!date.isValid()) return dateValue;
+  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
+    "YYYY",
+  )}`;
 };
 
 export default function UserAppointmentsPage() {
@@ -84,7 +107,9 @@ export default function UserAppointmentsPage() {
   const handleCancelAppointment = (record: Appointment) => {
     Modal.confirm({
       title: "ขอยกเลิกนัดหมาย",
-      content: `ต้องการขอยกเลิกนัดหมาย ${record.date} เวลา ${record.time} ใช่หรือไม่?`,
+      content: `ต้องการขอยกเลิกนัดหมาย ${formatThaiDate(
+        record.date,
+      )} เวลา ${record.time} ใช่หรือไม่?`,
       okText: "ยืนยัน",
       cancelText: "ปิด",
       okButtonProps: { danger: true },
@@ -107,7 +132,7 @@ export default function UserAppointmentsPage() {
       width: 180,
       render: (_, record) => (
         <div>
-          <div>{record.date}</div>
+          <div>{formatThaiDate(record.date)}</div>
           <Typography.Text type="secondary">{record.time} น.</Typography.Text>
         </div>
       ),

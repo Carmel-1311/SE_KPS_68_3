@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
+import dayjs from "dayjs";
 import { Button, Card, Divider, Input, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Search } from "lucide-react";
@@ -11,6 +12,28 @@ import {
 } from "@/mock/mockTreatment";
 
 const { Text } = Typography;
+
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+const formatThaiDate = (dateValue: string) => {
+  const date = dayjs(dateValue);
+  if (!date.isValid()) return dateValue;
+  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
+    "YYYY",
+  )}`;
+};
 
 const getStatusColor = (status: string) =>
   status === "เสร็จสิ้น"
@@ -88,7 +111,7 @@ export default function UserTreatmentsPage() {
               type={item.id === activeId ? "primary" : "default"}
               onClick={() => setActiveId(item.id)}
             >
-              {item.date}
+              {formatThaiDate(item.date)}
             </Button>
           ))}
         </div>
@@ -97,7 +120,9 @@ export default function UserTreatmentsPage() {
       <div className="summary">
         <div>
           <Text className="summary-label">วันที่นัดหมาย</Text>
-          <Text className="summary-value">{activeTreatment.date}</Text>
+          <Text className="summary-value">
+            {formatThaiDate(activeTreatment.date)}
+          </Text>
         </div>
         <div>
           <Text className="summary-label">สถานะ</Text>
@@ -122,7 +147,7 @@ export default function UserTreatmentsPage() {
       <div className="record">
         <Text className="section-title">บันทึกการตรวจ</Text>
         <Text className="record-line">
-          วันที่ตรวจ: {activeTreatment.inspection_record.date}
+          วันที่ตรวจ: {formatThaiDate(activeTreatment.inspection_record.date)}
         </Text>
         <Text className="record-line">
           ประวัติ: {activeTreatment.inspection_record.history}
