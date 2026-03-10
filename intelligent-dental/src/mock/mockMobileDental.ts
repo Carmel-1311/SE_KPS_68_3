@@ -25,7 +25,7 @@ export const mockMobileDentals: MobileDental[] = [
         date: "2026-03-20",
         count: 120,
         status: "scheduled",
-        address: "นิคมอุตสาหกรรมระยอง"
+        address: "อาคารวิทยสถาน ชั้น 13 กทม."
     },
     {
         mobile_dental_id: 3,
