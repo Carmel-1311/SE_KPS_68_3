@@ -1,16 +1,15 @@
 ﻿"use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Spin, Tag } from "antd";
+import { Card, Typography, Spin, Tag, Space } from "antd";
 import { ClockCircleOutlined, UserOutlined, MedicineBoxOutlined } from "@ant-design/icons";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
-// --- Settings ---
+// --- 1. Settings & Data Interface ---
 const START_HOUR = 8;
-const END_HOUR = 19;
+const END_HOUR = 19; // ขยายถึง 19:00 เพื่อความครอบคลุม
 const DAYS_TH = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
-const HOUR_HEIGHT = 90; // เพิ่มความสูงต่อชั่วโมงอีกนิดให้อ่านง่าย
 
 interface Appointment {
   id: string;
@@ -29,6 +28,7 @@ export default function WorkScheduleDashboard() {
   useEffect(() => {
     const fetchAppointments = async () => {
       setLoading(true);
+      // ข้อมูลจำลอง
       const mockData: Appointment[] = [
         { id: "1", dayIndex: 1, startTime: "08:30", endTime: "10:30", patientName: "คุณสมชาย ใจดี", service: "ตรวจฟัน/อุดฟัน", status: "completed" },
         { id: "2", dayIndex: 2, startTime: "13:00", endTime: "14:30", patientName: "คุณวิภาดา สวยงาม", service: "ขูดหินปูน", status: "in-progress" },
@@ -40,14 +40,25 @@ export default function WorkScheduleDashboard() {
     fetchAppointments();
   }, []);
 
+  // --- 2. Helper Functions ---
+  const getStatusConfig = (status: string) => {
+    const config = {
+      completed: { color: "#52c41a", bg: "#f6ffed", label: "เสร็จสิ้น" },
+      "in-progress": { color: "#1890ff", bg: "#e6f7ff", label: "กำลังรักษา" },
+      waiting: { color: "#faad14", bg: "#fff7e6", label: "รอพบแพทย์" },
+    };
+    return config[status as keyof typeof config];
+  };
+
   return (
     <Card 
       bordered={true} 
-      style={{ borderRadius: 0, height: 'calc(100vh - 80px)', display: 'flex', flexDirection: 'column' }}
+      style={{ borderRadius: 0, height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}
       bodyStyle={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
     >
-      <div style={{ padding: '12px 20px', borderBottom: '2px solid #e8e8e8', backgroundColor: '#fff' }}>
-        <Title level={4} style={{ margin: 0, color: '#1a1a1a' }}>
+      {/* Header ของ Card */}
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0' }}>
+        <Title level={4} style={{ margin: 0 }}>
           <MedicineBoxOutlined /> ตารางนัดหมายทันตแพทย์รายสัปดาห์
         </Title>
       </div>
@@ -57,104 +68,92 @@ export default function WorkScheduleDashboard() {
       ) : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto" }}>
           
-          {/* Header Row (Days) */}
-          <div style={{ display: "flex", position: "sticky", top: 0, zIndex: 20, backgroundColor: "#f0f2f5", borderBottom: "2px solid #bfbfbf" }}>
-            <div style={{ width: 70, flexShrink: 0, borderRight: "2px solid #bfbfbf" }} />
+          {/* แถวชื่อวัน (Sticky Header) */}
+          <div style={{ display: "flex", position: "sticky", top: 0, zIndex: 10, backgroundColor: "#fafafa", borderBottom: "2px solid #f0f0f0" }}>
+            <div style={{ width: 80, flexShrink: 0, borderRight: "1px solid #f0f0f0" }} />
             {DAYS_TH.map((day, i) => (
-              <div key={i} style={{ 
-                flex: 1, textAlign: "center", padding: "12px 0", fontWeight: "800", fontSize: "14px", 
-                borderRight: i < 6 ? "1px solid #d9d9d9" : "none", color: '#434343' 
-              }}>
+              <div key={i} style={{ flex: 1, textAlign: "center", padding: "15px 0", fontWeight: "800", fontSize: "15px", borderRight: i < 6 ? "1px solid #f0f0f0" : "none" }}>
                 {day}
               </div>
             ))}
           </div>
 
-          {/* Grid Body */}
-          <div style={{ display: "flex", position: "relative", minWidth: "100%" }}>
+          {/* พื้นที่ตารางเวลา */}
+          <div style={{ display: "flex", position: "relative", minHeight: "800px" }}>
             
-            {/* Time Column (Left) */}
-            <div style={{ width: 70, flexShrink: 0, borderRight: "2px solid #bfbfbf", backgroundColor: "#f9f9f9" }}>
+            {/* Column บอกเวลาด้านซ้าย */}
+            <div style={{ width: 80, flexShrink: 0, borderRight: "1px solid #f0f0f0", backgroundColor: "#fff" }}>
               {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
-                <div key={i} style={{ 
-                  height: HOUR_HEIGHT, borderBottom: "1px solid #d9d9d9", position: "relative"
-                }}>
-                  <span style={{ 
-                    position: 'absolute', top: -10, width: '100%', textAlign: 'center', 
-                    fontSize: '11px', fontWeight: 'bold', color: '#595959' 
-                  }}>
-                    {`${(START_HOUR + i).toString().padStart(2, '0')}:00`}
-                  </span>
+                <div key={i} style={{ height: 80, borderBottom: "1px solid #f0f0f0", textAlign: "center", paddingTop: "5px", fontSize: "13px", color: "#999", fontWeight: "bold" }}>
+                  {`${(START_HOUR + i).toString().padStart(2, '0')}:00`}
                 </div>
               ))}
             </div>
 
-            {/* Main Grid Area */}
-            <div style={{ flex: 1, position: "relative", display: "flex" }}>
-              
-              {/* Background Grid Lines (เส้นแนวนอน) */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
-                {Array.from({ length: (END_HOUR - START_HOUR + 1) * 2 }).map((_, i) => (
-                  <div key={i} style={{ 
-                    height: HOUR_HEIGHT / 2, 
-                    borderBottom: i % 2 === 0 ? "1px dashed #f0f0f0" : "1px solid #e8e8e8", // เส้นประทุกครึ่งชม. เส้นทึบทุกชม.
-                    zIndex: 1
-                  }} />
-                ))}
-              </div>
+            {/* Grid เส้นพื้นหลัง */}
+            <div style={{ position: "absolute", top: 0, left: 80, right: 0, bottom: 0, pointerEvents: 'none' }}>
+              {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
+                <div key={i} style={{ height: 80, borderBottom: "1px solid #f5f5f5" }} />
+              ))}
+            </div>
 
-              {/* Columns for each day */}
-              {DAYS_TH.map((_, dayIdx) => (
-                <div key={dayIdx} style={{ 
-                  flex: 1, position: "relative", borderRight: "1px solid #e8e8e8", zIndex: 2 
-                }}>
-                  {appointments.filter(app => app.dayIndex === dayIdx).map(app => {
-                    const [sH, sM] = app.startTime.split(":").map(Number);
-                    const [eH, eM] = app.endTime.split(":").map(Number);
-                    const top = ((sH - START_HOUR) * HOUR_HEIGHT) + (sM * HOUR_HEIGHT / 60);
-                    const height = ((eH * 60 + eM) - (sH * 60 + sM)) * HOUR_HEIGHT / 60;
-                    
-                    const statusColors = {
-                      completed: { bar: "#52c41a", bg: "#f6ffed", text: "#237804" },
-                      "in-progress": { bar: "#1890ff", bg: "#e6f7ff", text: "#0050b3" },
-                      waiting: { bar: "#faad14", bg: "#fff7e6", text: "#874d00" },
-                    }[app.status];
+            {/* Column ข้อมูลของแต่ละวัน */}
+            {DAYS_TH.map((_, dayIdx) => (
+              <div key={dayIdx} style={{ flex: 1, position: "relative", borderRight: dayIdx < 6 ? "1px solid #f0f0f0" : "none" }}>
+                {appointments.filter(app => app.dayIndex === dayIdx).map(app => {
+                  const [sH, sM] = app.startTime.split(":").map(Number);
+                  const [eH, eM] = app.endTime.split(":").map(Number);
+                  const top = ((sH - START_HOUR) * 80) + (sM * 80 / 60);
+                  const height = ((eH * 60 + eM) - (sH * 60 + sM)) * 80 / 60;
+                  const config = getStatusConfig(app.status);
 
-                    return (
-                      <div key={app.id} style={{
-                        position: "absolute", top: `${top}px`, height: `${height}px`,
-                        width: "90%", left: "5%",
-                        backgroundColor: statusColors.bg,
-                        borderLeft: `4px solid ${statusColors.bar}`,
-                        border: `1px solid ${statusColors.bar}88`,
-                        borderRadius: "2px", padding: "6px",
-                        boxShadow: "2px 2px 5px rgba(0,0,0,0.05)",
-                        zIndex: 5, overflow: "hidden"
-                      }}>
-                        <div style={{ fontSize: "11px", color: statusColors.text, fontWeight: "bold", marginBottom: '2px' }}>
-                          <ClockCircleOutlined /> {app.startTime} - {app.endTime}
-                        </div>
-                        <div style={{ fontWeight: "800", fontSize: "13px", color: "#000", lineHeight: 1.2 }}>
-                          {app.patientName}
-                        </div>
-                        <div style={{ fontSize: "12px", color: "#434343", marginTop: '2px' }}>
-                          {app.service}
-                        </div>
+                  return (
+                    <div key={app.id} style={{
+                      position: "absolute",
+                      top: `${top}px`,
+                      height: `${height}px`,
+                      width: "94%",
+                      left: "3%",
+                      backgroundColor: config.bg,
+                      borderLeft: `5px solid ${config.color}`,
+                      border: `1px solid ${config.color}66`,
+                      borderRadius: "4px",
+                      padding: "8px",
+                      zIndex: 2,
+                      boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "flex-start",
+                      transition: "all 0.2s"
+                    }}>
+                      <div style={{ fontSize: "12px", color: "#666", display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
+                        <ClockCircleOutlined /> <b>{app.startTime} - {app.endTime}</b>
                       </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+                      <div style={{ fontWeight: "800", fontSize: "14px", color: "#222", marginBottom: "4px", lineHeight: "1.2" }}>
+                         {app.patientName}
+                      </div>
+                      <div style={{ fontSize: "13px", color: "#444", flexGrow: 1 }}>
+                        {app.service}
+                      </div>
+                      <Tag color={app.status === 'completed' ? 'green' : app.status === 'in-progress' ? 'blue' : 'orange'} 
+                           style={{ alignSelf: 'flex-start', margin: 0, borderRadius: '2px', fontWeight: 'bold', fontSize: '11px' }}>
+                        {config.label}
+                      </Tag>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         </div>
       )}
       
       <style jsx global>{`
-        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #bfbfbf; border-radius: 5px; border: 2px solid #f1f1f1; }
-        ::-webkit-scrollbar-thumb:hover { background: #999; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
+        .ant-card-body { overflow: hidden; }
       `}</style>
     </Card>
   );
