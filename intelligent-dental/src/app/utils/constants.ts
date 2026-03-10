@@ -9,6 +9,6 @@ export enum ThemeButtonColor {
 export enum ThemeWebColor {
   header = "#032020",
   footer = "#086060",
-  Sidebar = "#27EEEE",
+  Sidebar = "#0FA3A3",
   Background = "#E6FDFD",
 }
