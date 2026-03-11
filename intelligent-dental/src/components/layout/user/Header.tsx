@@ -2,7 +2,15 @@
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import { Button, Layout, Flex, Typography } from "antd";
-import { CalendarCheck, CalendarDays, FileText, LogOut, User, UserCircle2 } from "lucide-react";
+import {
+  CalendarCheck,
+  CalendarDays,
+  FileText,
+  House,
+  LogOut,
+  User,
+  UserCircle2,
+} from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 
 const { Header } = Layout;
@@ -13,10 +21,36 @@ export default function UserHeader() {
   const pathname = usePathname();
 
   const menuItems = [
-    { key: "profile", icon: <User size={16} />, label: "Profile", path: "/user/profile" },
-    { key: "appointments", icon: <CalendarCheck size={16} />, label: "Appointments", path: "/user/appointments" },
-    { key: "treatments", icon: <FileText size={16} />, label: "Treatment History", path: "/user/treatments" },
-    { key: "appointment-schedule", icon: <CalendarDays size={16} />, label: "Schedule", path: "/user/appointment-schedule" },
+    {
+      key: "home",
+      icon: <House size={16} />,
+      label: "Home",
+      path: "/user/home",
+    },
+    {
+      key: "profile",
+      icon: <User size={16} />,
+      label: "Profile",
+      path: "/user/profile",
+    },
+    {
+      key: "appointments",
+      icon: <CalendarCheck size={16} />,
+      label: "Appointments",
+      path: "/user/appointments",
+    },
+    {
+      key: "treatments",
+      icon: <FileText size={16} />,
+      label: "Treatment History",
+      path: "/user/treatments",
+    },
+    {
+      key: "appointment-schedule",
+      icon: <CalendarDays size={16} />,
+      label: "Schedule",
+      path: "/user/appointment-schedule",
+    },
   ];
 
   const selectedKey = pathname.split("/").filter(Boolean)[1] ?? "";
@@ -36,7 +70,9 @@ export default function UserHeader() {
     >
       <Flex align="center" gap={10}>
         <UserCircle2 size={24} color="#fff" />
-        <Text style={{ color: "#fff", whiteSpace: "nowrap" }}>Intelligent Dental</Text>
+        <Text style={{ color: "#fff", whiteSpace: "nowrap" }}>
+          Intelligent Dental
+        </Text>
       </Flex>
 
       <Flex align="center" gap={6} style={{ flex: 1, minWidth: 0 }}>
