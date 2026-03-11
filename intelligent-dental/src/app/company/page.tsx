@@ -20,6 +20,7 @@ import {
   CheckCircleOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 
 import { getCurrentCompanyId } from "@/mock/mockUser";
@@ -51,11 +52,10 @@ const statusConfig: Record<Status, { color: string; label: string }> = {
 };
 
 export default function CompanyDashboard() {
-  const router = useRouter();
-
   const [data, setData] = useState<MobileDentalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,7 +109,16 @@ export default function CompanyDashboard() {
     {
       title: "รหัสคำขอ",
       dataIndex: "mobile_dental_id",
-      render: (id: number) => <Text strong>#{id}</Text>,
+      render: (id: number, record: MobileDentalRequest) => {
+        if (record.status === "scheduled") {
+          return (
+            <Link href={`/company/status/${id}/patients`}>
+              <Text strong style={{ color: '#1677ff' }}>#{id}</Text>
+            </Link>
+          );
+        }
+        return <Text strong>#{id}</Text>;
+      },
     },
     {
       title: "สถานที่",
@@ -243,11 +252,8 @@ export default function CompanyDashboard() {
                   rowKey="mobile_dental_id"
                   pagination={false}
                   loading={loading}
-                  onRow={(record) => ({
-                    onClick: () =>
-                      router.push(
-                        `/company/status/${record.mobile_dental_id}`
-                      ),
+                  onRow={() => ({
+                    onClick: () => router.push("/company/status"),
                     style: { cursor: "pointer" },
                   })}
                 />
