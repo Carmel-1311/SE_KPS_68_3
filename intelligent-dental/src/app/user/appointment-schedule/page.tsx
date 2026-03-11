@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
   Badge,
@@ -8,16 +8,26 @@ import {
   Calendar,
   Card,
   Col,
+  Divider,
   Empty,
   Grid,
   Segmented,
   List,
   Row,
   Space,
+  Statistic,
   Tag,
   Typography,
 } from "antd";
-import { CalendarDays, Clock3, MapPin, Stethoscope } from "lucide-react";
+import Link from "next/link";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  MapPin,
+  Stethoscope,
+} from "lucide-react";
 import {
   appointmentStatusLabel,
   mockAppointments,
@@ -25,23 +35,69 @@ import {
   type AppointmentStatus,
 } from "@/mock/mockAppointment";
 
-const statusColor: Record<AppointmentStatus, "blue" | "green" | "red"> = {
-  upcoming: "blue",
+const statusColor: Record<
+  AppointmentStatus,
+  "blue" | "green" | "red" | "orange"
+> = {
+  scheduled: "blue",
   completed: "green",
   cancelled: "red",
+  request_cancel: "orange",
 };
 
 const appointmentDateFormat = "YYYY-MM-DD";
+const thaiMonthsShort = [
+  "ม.ค.",
+  "ก.พ.",
+  "มี.ค.",
+  "เม.ย.",
+  "พ.ค.",
+  "มิ.ย.",
+  "ก.ค.",
+  "ส.ค.",
+  "ก.ย.",
+  "ต.ค.",
+  "พ.ย.",
+  "ธ.ค.",
+];
+const formatThaiDateValue = (value: Dayjs) =>
+  `${value.format("DD")} ${thaiMonthsShort[value.month()]} ${value.format(
+    "YYYY",
+  )}`;
+const formatThaiDate = (dateValue: string) => {
+  const date = dayjs(dateValue);
+  if (!date.isValid()) return dateValue;
+  return formatThaiDateValue(date);
+};
+const formatThaiMonthYear = (value: Dayjs) =>
+  `${thaiMonthsShort[value.month()]} ${value.format("YYYY")}`;
+
+const storageKey = "userAppointments";
+const mergeAppointments = (base: Appointment[], extra: Appointment[]) => {
+  const map = new Map<string, Appointment>();
+  base.forEach((item) => map.set(item.id, item));
+  extra.forEach((item) => map.set(item.id, item));
+  return Array.from(map.values());
+};
+const readStoredAppointments = (): Appointment[] => {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(storageKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Appointment[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item) => item?.id && item?.date && item?.time);
+  } catch {
+    return [];
+  }
+};
 
 const sortAppointmentsByTime = (items: Appointment[]) => {
   return [...items].sort((a, b) => a.time.localeCompare(b.time));
 };
 
-const sortAppointmentsByDateTime = (items: Appointment[]) => {
-  return [...items].sort((a, b) =>
-    `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`),
-  );
-};
+const getAppointmentDateTimeValue = (item: Appointment) =>
+  dayjs(`${item.date}T${item.time}`).valueOf();
 
 const filterAppointmentsByStatus = (
   items: Appointment[],
@@ -54,15 +110,19 @@ const filterAppointmentsByStatus = (
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const [appointments, setAppointments] = useState(mockAppointments);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
-  const [panelMode, setPanelMode] = useState<"month" | "year">("month");
   const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">(
     "all",
   );
+  useEffect(() => {
+    const stored = readStoredAppointments();
+    setAppointments((prev) => mergeAppointments(prev, stored));
+  }, []);
 
   const appointmentsByDate = useMemo(() => {
-    return mockAppointments.reduce<Record<string, Appointment[]>>(
+    return appointments.reduce<Record<string, Appointment[]>>(
       (acc, item) => {
         acc[item.date] ??= [];
         acc[item.date].push(item);
@@ -70,19 +130,7 @@ export default function UserAppointmentSchedulePage() {
       },
       {},
     );
-  }, []);
-
-  const appointmentsByMonth = useMemo(() => {
-    return mockAppointments.reduce<Record<string, Appointment[]>>(
-      (acc, item) => {
-        const monthKey = dayjs(item.date).format("YYYY-MM");
-        acc[monthKey] ??= [];
-        acc[monthKey].push(item);
-        return acc;
-      },
-      {},
-    );
-  }, []);
+  }, [appointments]);
 
   const selectedDateKey = selectedDate.format(appointmentDateFormat);
   const selectedDateAppointments = useMemo(() => {
@@ -91,20 +139,22 @@ export default function UserAppointmentSchedulePage() {
     return sortAppointmentsByTime(filtered);
   }, [appointmentsByDate, selectedDateKey, statusFilter]);
 
-  const selectedMonthAppointments = useMemo(() => {
-    const monthKey = selectedDate.format("YYYY-MM");
-    const items = appointmentsByMonth[monthKey] ?? [];
-    const filtered = filterAppointmentsByStatus(items, statusFilter);
-    return sortAppointmentsByDateTime(filtered);
-  }, [appointmentsByMonth, selectedDate, statusFilter]);
+  const upcomingAppointments = useMemo(() => {
+    const nowValue = dayjs().valueOf();
+    return appointments
+      .filter((item) => item.status === "scheduled")
+      .map((item) => ({ item, timeValue: getAppointmentDateTimeValue(item) }))
+      .filter(({ timeValue }) => timeValue >= nowValue)
+      .sort((a, b) => a.timeValue - b.timeValue)
+      .map(({ item }) => item);
+  }, [appointments]);
+
+  const nextAppointment = upcomingAppointments[0];
 
   const summary = useMemo(() => {
-    const viewKey =
-      panelMode === "year"
-        ? viewMonth.format("YYYY")
-        : viewMonth.format("YYYY-MM");
+    const viewKey = viewMonth.format("YYYY-MM");
 
-    return mockAppointments
+    return appointments
       .filter((item) => item.date.startsWith(viewKey))
       .reduce(
         (acc, item) => {
@@ -112,25 +162,23 @@ export default function UserAppointmentSchedulePage() {
           return acc;
         },
         {
-          upcoming: 0,
+          scheduled: 0,
           completed: 0,
           cancelled: 0,
+          request_cancel: 0,
         } satisfies Record<AppointmentStatus, number>,
       );
-  }, [panelMode, viewMonth]);
+  }, [viewMonth, appointments]);
+  const summaryTotal =
+    summary.scheduled + summary.completed + summary.cancelled + summary.request_cancel;
 
-  const summaryTitle =
-    panelMode === "year"
-      ? `ข้อมูลปี ${viewMonth.format("YYYY")}`
-      : `ข้อมูลเดือน ${viewMonth.format("MM/YYYY")}`;
+  const summaryTitle = `ข้อมูลเดือน ${formatThaiMonthYear(viewMonth)}`;
 
-  const appointmentCardTitle =
-    panelMode === "year"
-      ? `นัดหมายเดือน ${selectedDate.format("MM/YYYY")}`
-      : `นัดหมายวันที่ ${selectedDate.format("DD/MM/YYYY")}`;
+  const appointmentCardTitle = `นัดหมายวันที่ ${formatThaiDateValue(
+    selectedDate,
+  )}`;
 
-  const appointmentListData =
-    panelMode === "year" ? selectedMonthAppointments : selectedDateAppointments;
+  const appointmentListData = selectedDateAppointments;
 
   const dateCellRender = (value: Dayjs) => {
     const items = appointmentsByDate[value.format(appointmentDateFormat)] ?? [];
@@ -170,48 +218,6 @@ export default function UserAppointmentSchedulePage() {
     );
   };
 
-  const monthCellRender = (value: Dayjs) => {
-    const monthKey = value.format("YYYY-MM");
-    const monthItems = appointmentsByMonth[monthKey] ?? [];
-    if (!monthItems.length) return null;
-    const monthlySummary = monthItems.reduce(
-      (acc, item) => {
-        acc[item.status] += 1;
-        return acc;
-      },
-      {
-        upcoming: 0,
-        completed: 0,
-        cancelled: 0,
-      } satisfies Record<AppointmentStatus, number>,
-    );
-    const monthlyRows = [
-      { color: "blue", count: monthlySummary.upcoming },
-      { color: "green", count: monthlySummary.completed },
-      { color: "red", count: monthlySummary.cancelled },
-    ].filter((row) => row.count > 0);
-
-    return (
-      <div
-        style={{
-          width: "100%",
-          display: "grid",
-          justifyContent: "center",
-          gap: 1,
-        }}
-      >
-        {monthlyRows.map((row) => (
-          <div key={`${monthKey}-${row.color}`} style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: row.color }} />
-            <Typography.Text type="secondary" style={{ fontSize: 8, lineHeight: 1, margin: 0 }}>
-              {row.count}
-            </Typography.Text>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div
       style={{
@@ -223,7 +229,7 @@ export default function UserAppointmentSchedulePage() {
       }}
     >
       <Space
-        direction="vertical"
+        orientation="vertical"
         size={16}
         style={{ width: "100%", maxWidth: 1080, margin: "0 auto" }}
       >
@@ -232,32 +238,133 @@ export default function UserAppointmentSchedulePage() {
             <Space>
               <CalendarDays size={18} />
               <span>ตารางแสดงการนัดหมาย</span>
+              <Tag color="default">{formatThaiDateValue(selectedDate)}</Tag>
             </Space>
+          }
+          extra={
+            <Link href="/user/appointment-schedule/new">
+              <Button type="primary">เพิ่มการนัดหมาย</Button>
+            </Link>
           }
           bodyStyle={{ padding: "1rem" }}
         >
           <Row gutter={[12, 12]}>
             <Col xs={24} md={12}>
               <Card size="small" title="สรุปสถานะ" bordered={false}>
-                <Space
-                  direction="vertical"
-                  size={10}
-                  style={{ width: "100%" }}
-                  wrap
-                >
+                <Space orientation="vertical" size={12} style={{ width: "100%" }}>
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {summaryTitle}
                   </Typography.Text>
-                  <Tag color="blue">
-                    {appointmentStatusLabel.upcoming}: {summary.upcoming}
-                  </Tag>
-                  <Tag color="green">
-                    {appointmentStatusLabel.completed}: {summary.completed}
-                  </Tag>
-                  <Tag color="red">
-                    {appointmentStatusLabel.cancelled}: {summary.cancelled}
-                  </Tag>
+                  <Row gutter={[8, 8]}>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title="ทั้งหมด"
+                        value={summaryTotal}
+                        valueStyle={{ fontSize: 20 }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title={appointmentStatusLabel.scheduled}
+                        value={summary.scheduled}
+                        valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title={appointmentStatusLabel.completed}
+                        value={summary.completed}
+                        valueStyle={{ color: "#52c41a", fontSize: 18 }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title={appointmentStatusLabel.cancelled}
+                        value={summary.cancelled}
+                        valueStyle={{ color: "#ff4d4f", fontSize: 18 }}
+                      />
+                    </Col>
+                    <Col xs={12} sm={6}>
+                      <Statistic
+                        title={appointmentStatusLabel.request_cancel}
+                        value={summary.request_cancel}
+                        valueStyle={{ color: "#fa8c16", fontSize: 18 }}
+                      />
+                    </Col>
+                  </Row>
+                  <Space size={8} wrap>
+                    <Tag color="blue">
+                      {appointmentStatusLabel.scheduled}: {summary.scheduled}
+                    </Tag>
+                    <Tag color="green">
+                      {appointmentStatusLabel.completed}: {summary.completed}
+                    </Tag>
+                    <Tag color="red">
+                      {appointmentStatusLabel.cancelled}: {summary.cancelled}
+                    </Tag>
+                    <Tag color="orange">
+                      {appointmentStatusLabel.request_cancel}: {summary.request_cancel}
+                    </Tag>
+                  </Space>
                 </Space>
+              </Card>
+
+              <Card
+                size="small"
+                title="นัดหมายถัดไป"
+                style={{ marginTop: 12 }}
+                bordered={false}
+              >
+                {nextAppointment ? (
+                  <Space
+                    orientation="vertical"
+                    size={6}
+                    style={{ width: "100%" }}
+                  >
+                    <Space wrap>
+                      <Tag color="blue">
+                        {appointmentStatusLabel.scheduled}
+                      </Tag>
+                      <Typography.Text strong>
+                        {formatThaiDate(nextAppointment.date)} •{" "}
+                        {nextAppointment.time} น.
+                      </Typography.Text>
+                    </Space>
+                    <Space size={6}>
+                      <Stethoscope size={14} />
+                      <Typography.Text>{nextAppointment.service}</Typography.Text>
+                    </Space>
+                    <Typography.Text type="secondary">
+                      ทันตแพทย์: {nextAppointment.dentist}
+                    </Typography.Text>
+                    <Space size={6}>
+                      <MapPin size={14} />
+                      <Typography.Text type="secondary">
+                        {nextAppointment.branch}
+                      </Typography.Text>
+                    </Space>
+                    {nextAppointment.note && (
+                      <Typography.Text type="secondary">
+                        หมายเหตุ: {nextAppointment.note}
+                      </Typography.Text>
+                    )}
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        const nextDate = dayjs(nextAppointment.date);
+                        setSelectedDate(nextDate);
+                        setViewMonth(nextDate);
+                      }}
+                    >
+                      ไปยังนัดหมายถัดไป
+                    </Button>
+                  </Space>
+                ) : (
+                  <Empty
+                    description="ไม่มีนัดหมายที่รออยู่"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
               </Card>
 
               <Card
@@ -275,8 +382,8 @@ export default function UserAppointmentSchedulePage() {
                   options={[
                     { label: "ทั้งหมด", value: "all" },
                     {
-                      label: appointmentStatusLabel.upcoming,
-                      value: "upcoming",
+                      label: appointmentStatusLabel.scheduled,
+                      value: "scheduled",
                     },
                     {
                       label: appointmentStatusLabel.completed,
@@ -285,6 +392,10 @@ export default function UserAppointmentSchedulePage() {
                     {
                       label: appointmentStatusLabel.cancelled,
                       value: "cancelled",
+                    },
+                    {
+                      label: appointmentStatusLabel.request_cancel,
+                      value: "request_cancel",
                     },
                   ]}
                   style={{ marginBottom: 12 }}
@@ -296,7 +407,7 @@ export default function UserAppointmentSchedulePage() {
                     renderItem={(item) => (
                       <List.Item key={item.id} style={{ paddingInline: 0 }}>
                         <Space
-                          direction="vertical"
+                          orientation="vertical"
                           size={4}
                           style={{ width: "100%" }}
                         >
@@ -304,15 +415,11 @@ export default function UserAppointmentSchedulePage() {
                             <Tag color={statusColor[item.status]}>
                               {appointmentStatusLabel[item.status]}
                             </Tag>
-                            {panelMode === "year" && (
-                              <Typography.Text type="secondary">
-                                {dayjs(item.date).format("DD/MM/YYYY")}
-                              </Typography.Text>
-                            )}
                             <Typography.Text strong>
                               {item.time} น.
                             </Typography.Text>
                           </Space>
+                          <Divider style={{ margin: "4px 0" }} />
                           <Space size={6}>
                             <Stethoscope size={14} />
                             <Typography.Text>{item.service}</Typography.Text>
@@ -339,52 +446,90 @@ export default function UserAppointmentSchedulePage() {
                   />
                 ) : (
                   <Empty
-                    description={
-                      panelMode === "year"
-                        ? "ไม่มีนัดหมายในเดือนที่เลือก"
-                        : "ไม่มีนัดหมายในวันที่เลือก"
-                    }
+                    description="ไม่มีนัดหมายในวันที่เลือก"
                     image={Empty.PRESENTED_IMAGE_SIMPLE}
                   />
                 )}
 
-                <Button
-                  icon={<Clock3 size={14} />}
-                  style={{ marginTop: 8 }}
-                  disabled={selectedDate.isSame(dayjs(), "date")}
-                  onClick={() => {
-                    const today = dayjs();
-                    setSelectedDate(today);
-                    setViewMonth(today);
-                  }}
-                >
-                  กลับมาวันนี้
-                </Button>
+                <Space size={8} wrap style={{ marginTop: 8 }}>
+                  <Button
+                    icon={<Clock3 size={14} />}
+                    disabled={selectedDate.isSame(dayjs(), "date")}
+                    onClick={() => {
+                      const today = dayjs();
+                      setSelectedDate(today);
+                      setViewMonth(today);
+                    }}
+                  >
+                    กลับมาวันนี้
+                  </Button>
+                  <Button
+                    type="default"
+                    disabled={!nextAppointment}
+                    onClick={() => {
+                      if (!nextAppointment) return;
+                      const nextDate = dayjs(nextAppointment.date);
+                      setSelectedDate(nextDate);
+                      setViewMonth(nextDate);
+                    }}
+                  >
+                    นัดหมายถัดไป
+                  </Button>
+                </Space>
               </Card>
             </Col>
 
             <Col xs={24} md={12}>
               <Space
-                direction="vertical"
+                orientation="vertical"
                 size={8}
                 style={{
                   width: "100%",
-                  maxWidth: panelMode === "year" ? 460 : 640,
+                  maxWidth: 640,
                   margin: "0 auto",
                 }}
               >
                 <Calendar
                   className="appointment-calendar appointment-calendar-month"
                   fullscreen={false}
+                  mode="month"
                   value={selectedDate}
                   onSelect={setSelectedDate}
-                  onPanelChange={(value, mode) => {
+                  onPanelChange={(value) => {
                     setViewMonth(value);
-                    setPanelMode(mode);
+                  }}
+                  headerRender={({ value, onChange }) => {
+                    const prevMonth = value.subtract(1, "month");
+                    const nextMonth = value.add(1, "month");
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ChevronLeft size={14} />}
+                          onClick={() => onChange(prevMonth)}
+                        />
+                        <Typography.Text strong>
+                          {formatThaiMonthYear(value)}
+                        </Typography.Text>
+                        <Button
+                          type="text"
+                          size="small"
+                          icon={<ChevronRight size={14} />}
+                          onClick={() => onChange(nextMonth)}
+                        />
+                      </div>
+                    );
                   }}
                   cellRender={(value, info) => {
                     if (info.type === "date") return dateCellRender(value);
-                    if (info.type === "month") return monthCellRender(value);
                     return info.originNode;
                   }}
                 />
@@ -392,7 +537,7 @@ export default function UserAppointmentSchedulePage() {
                   <Space size={4}>
                     <Badge color="blue" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {appointmentStatusLabel.upcoming}
+                      {appointmentStatusLabel.scheduled}
                     </Typography.Text>
                   </Space>
                   <Space size={4}>
@@ -405,6 +550,12 @@ export default function UserAppointmentSchedulePage() {
                     <Badge color="red" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                       {appointmentStatusLabel.cancelled}
+                    </Typography.Text>
+                  </Space>
+                  <Space size={4}>
+                    <Badge color="orange" />
+                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                      {appointmentStatusLabel.request_cancel}
                     </Typography.Text>
                   </Space>
                 </Space>
@@ -498,7 +649,6 @@ export default function UserAppointmentSchedulePage() {
               .ant-picker-calendar-date-content {
               margin-top: 0.3em !important;
             }
-
           }
         `}</style>
       </Space>
