@@ -1343,7 +1343,7 @@ export interface paths {
                                 history: string;
                                 /** @description status */
                                 status: string;
-                                detail: {
+                                detail?: {
                                     id: number;
                                     examination_type: {
                                         id: number;
@@ -1351,7 +1351,7 @@ export interface paths {
                                     };
                                     diagnosis: string;
                                 }[];
-                                inspection_record: {
+                                inspection_record?: {
                                     id: number;
                                     /** Format: date */
                                     date: string;
@@ -1403,7 +1403,7 @@ export interface paths {
                                 history: string;
                                 /** @description status */
                                 status: string;
-                                detail: {
+                                detail?: {
                                     id: number;
                                     examination_type: {
                                         /** @description ID */
@@ -1418,7 +1418,7 @@ export interface paths {
                                     date: string;
                                     history: string;
                                     status: string;
-                                };
+                                }| null;
                             };
                         };
                     };
