@@ -289,7 +289,6 @@ export interface paths {
                          * @example active
                          */
                         status?: string | null;
-                        citizen_id: string;
                     };
                 };
             };
@@ -446,6 +445,7 @@ export interface paths {
                                     history: string;
                                     status: string;
                                     detail: {
+                                        id: number;
                                         type_id: number;
                                         diagnosis: string;
                                     }[];
@@ -527,6 +527,7 @@ export interface paths {
                                     history: string;
                                     status: string;
                                     detail: {
+                                        id: number;
                                         type_id: number;
                                         diagnosis: string;
                                     }[];
@@ -618,6 +619,7 @@ export interface paths {
                                     history: string;
                                     status: string;
                                     detail: {
+                                        id: number;
                                         type_id: number;
                                         diagnosis: string;
                                     }[];
@@ -1070,6 +1072,14 @@ export interface paths {
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *       "staff_id": 1,
+                     *       "date": "Sat",
+                     *       "start_time": "05:45",
+                     *       "end_time": "16:26"
+                     *     }
+                     */
                     "application/json": {
                         staff_id: number;
                         /** @enum {string} */
@@ -1165,14 +1175,22 @@ export interface paths {
                     "Content-Type"?: string;
                 };
                 path: {
+                    /** @example 21 */
                     id: number;
                 };
                 cookie?: never;
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *       "date": "Sat",
+                     *       "start_time": "18:30",
+                     *       "end_time": "21:41",
+                     *       "is_active": false
+                     *     }
+                     */
                     "application/json": {
-                        staff_id: number;
                         /** @enum {string} */
                         date: "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun";
                         /** Format: time */
@@ -1343,7 +1361,7 @@ export interface paths {
                                 history: string;
                                 /** @description status */
                                 status: string;
-                                detail?: {
+                                detail: {
                                     id: number;
                                     examination_type: {
                                         id: number;
@@ -1351,7 +1369,7 @@ export interface paths {
                                     };
                                     diagnosis: string;
                                 }[];
-                                inspection_record?: {
+                                inspection_record: {
                                     id: number;
                                     /** Format: date */
                                     date: string;
@@ -1384,7 +1402,18 @@ export interface paths {
             };
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["medical_record"];
+                    "application/json": {
+                        /** @description ID */
+                        id: number;
+                        date: string;
+                        history: string;
+                        status: string;
+                        detail: {
+                            id: number;
+                            type_id: number;
+                            diagnosis: string;
+                        }[];
+                    };
                 };
             };
             responses: {
@@ -1403,7 +1432,7 @@ export interface paths {
                                 history: string;
                                 /** @description status */
                                 status: string;
-                                detail?: {
+                                detail: {
                                     id: number;
                                     examination_type: {
                                         /** @description ID */
@@ -1418,7 +1447,7 @@ export interface paths {
                                     date: string;
                                     history: string;
                                     status: string;
-                                }| null;
+                                };
                             };
                         };
                     };
@@ -1462,9 +1491,9 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
-                        examination_date: string;
-                        examination_history: string;
-                        examination_status: string;
+                        date: string;
+                        history: string;
+                        status: string;
                         patient_id: number;
                         detail: {
                             type_id: number;
@@ -1698,27 +1727,14 @@ export interface paths {
                 500: components["responses"]["500 Internal Server Error"];
             };
         };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/inspection-records/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
         /** inspection_records */
         put: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    /** @example application/json */
+                    "Content-Type"?: string;
+                };
                 path: {
                     id: number;
                 };
@@ -1728,8 +1744,8 @@ export interface paths {
                 content: {
                     "application/json": {
                         /** @description status */
-                        status: string;
-                        history: string;
+                        status: string | null;
+                        history: string | null;
                     };
                 };
             };
@@ -1872,7 +1888,7 @@ export interface paths {
                     "application/json": {
                         date: string;
                         /** @description จำนวนคน */
-                        count: string;
+                        count: number;
                         /** @description สถานที่ */
                         address: string;
                     };
@@ -2097,6 +2113,7 @@ export interface components {
                 history: string;
                 status: string;
                 detail: {
+                    id: number;
                     type_id: number;
                     diagnosis: string;
                 }[];
@@ -2170,6 +2187,7 @@ export interface components {
             status: string;
             patient_id: number;
             detail: {
+                id: number;
                 type_id: number;
                 diagnosis: string;
             }[];

@@ -550,9 +550,6 @@
                     "default": "active",
                     "nullable": true,
                     "example": "active"
-                  },
-                  "citizen_id": {
-                    "type": "string"
                   }
                 },
                 "required": [
@@ -560,8 +557,7 @@
                   "last_name",
                   "birthday",
                   "email",
-                  "phone",
-                  "citizen_id"
+                  "phone"
                 ]
               },
               "examples": {}
@@ -928,6 +924,9 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
                                   "type_id": {
                                     "type": "integer"
                                   },
@@ -937,7 +936,8 @@
                                 },
                                 "required": [
                                   "type_id",
-                                  "diagnosis"
+                                  "diagnosis",
+                                  "id"
                                 ]
                               }
                             }
@@ -1131,6 +1131,9 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
                                   "type_id": {
                                     "type": "integer"
                                   },
@@ -1140,7 +1143,8 @@
                                 },
                                 "required": [
                                   "type_id",
-                                  "diagnosis"
+                                  "diagnosis",
+                                  "id"
                                 ]
                               }
                             }
@@ -1387,6 +1391,9 @@
                               "items": {
                                 "type": "object",
                                 "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
                                   "type_id": {
                                     "type": "integer"
                                   },
@@ -1396,7 +1403,8 @@
                                 },
                                 "required": [
                                   "type_id",
-                                  "diagnosis"
+                                  "diagnosis",
+                                  "id"
                                 ]
                               }
                             }
@@ -2330,7 +2338,12 @@
                   "end_time"
                 ]
               },
-              "examples": {}
+              "example": {
+                "staff_id": 1,
+                "date": "Sat",
+                "start_time": "05:45",
+                "end_time": "16:26"
+              }
             }
           },
           "required": true
@@ -2517,6 +2530,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 21,
             "schema": {
               "type": "integer"
             }
@@ -2538,9 +2552,6 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "staff_id": {
-                    "type": "integer"
-                  },
                   "date": {
                     "type": "string",
                     "enum": [
@@ -2566,14 +2577,18 @@
                   }
                 },
                 "required": [
-                  "staff_id",
                   "date",
                   "start_time",
                   "end_time",
                   "is_active"
                 ]
               },
-              "examples": {}
+              "example": {
+                "date": "Sat",
+                "start_time": "18:30",
+                "end_time": "21:41",
+                "is_active": false
+              }
             }
           },
           "required": true
@@ -3026,7 +3041,51 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/medical_record"
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "description": "ID"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "history": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "type_id": {
+                          "type": "integer"
+                        },
+                        "diagnosis": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type_id",
+                        "diagnosis",
+                        "id"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "date",
+                  "history",
+                  "status",
+                  "detail"
+                ]
               },
               "examples": {}
             }
@@ -3203,13 +3262,13 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "examination_date": {
+                  "date": {
                     "type": "string"
                   },
-                  "examination_history": {
+                  "history": {
                     "type": "string"
                   },
-                  "examination_status": {
+                  "status": {
                     "type": "string"
                   },
                   "patient_id": {
@@ -3238,9 +3297,9 @@
                   }
                 },
                 "required": [
-                  "examination_date",
-                  "examination_history",
-                  "examination_status",
+                  "date",
+                  "history",
+                  "status",
                   "patient_id",
                   "inspection_record_id",
                   "detail"
@@ -3718,9 +3777,7 @@
             "bearer": []
           }
         ]
-      }
-    },
-    "/api/inspection-records/{id}": {
+      },
       "put": {
         "summary": "inspection_records",
         "deprecated": false,
@@ -3737,6 +3794,16 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -3747,10 +3814,12 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "description": "status"
+                    "description": "status",
+                    "nullable": true
                   },
                   "history": {
-                    "type": "string"
+                    "type": "string",
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -4030,7 +4099,7 @@
                     "type": "string"
                   },
                   "count": {
-                    "type": "string",
+                    "type": "integer",
                     "description": "จำนวนคน"
                   },
                   "address": {
@@ -4564,6 +4633,9 @@
                 "items": {
                   "type": "object",
                   "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
                     "type_id": {
                       "type": "integer"
                     },
@@ -4573,7 +4645,8 @@
                   },
                   "required": [
                     "type_id",
-                    "diagnosis"
+                    "diagnosis",
+                    "id"
                   ]
                 }
               }
@@ -4765,6 +4838,9 @@
             "items": {
               "type": "object",
               "properties": {
+                "id": {
+                  "type": "integer"
+                },
                 "type_id": {
                   "type": "integer"
                 },
@@ -4774,7 +4850,8 @@
               },
               "required": [
                 "type_id",
-                "diagnosis"
+                "diagnosis",
+                "id"
               ]
             }
           },
