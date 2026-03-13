@@ -9,14 +9,20 @@ export type UpdateMedicalRecordInput = paths["/api/medical_records/{id}"]["put"]
 export type MedicalRecordList = paths["/api/patients/{patient_id}/medical_records"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
 
 export const medicalRecordQuery = {
-    include: {
-        patient: true,
-        staff: true,
-        inspection_record: true,
-        dental_examination_detail: true,
+  include: {
+    patient: true,
+    inspection_record: true,
+    dental_examination_detail: {
+      include: {
         type: true
+      }
     }
-} as const;
+  }
+} as const
+
+
+export type MedicalRecordWithRelation =
+  Prisma.medical_recordsGetPayload<typeof medicalRecordQuery>
 // medicalRecordMapper.ts
 export const medicalRecordMap = {
     /**
@@ -25,13 +31,7 @@ export const medicalRecordMap = {
      * ในที่นี้เราจะสมมติว่า medical_records มีความสัมพันธ์กับ patient, staff, inspection_record และ dental_examination_detail
      * และเราจะรวมข้อมูลเหล่านั้นใน response ด้วย
      */
-    toResponse(data: medical_records & {
-        patient: patient;
-        inspection_record: inspection_record | null;
-        dental_examination_detail: (dental_examination_detail & {
-            type: type
-        })[];
-    }): MedicalRecordResponse {
+    toResponse(data:MedicalRecordWithRelation): MedicalRecordResponse {
         return {
             id: data.examination_id,
             patients_id: data.patient_id,
@@ -56,13 +56,7 @@ export const medicalRecordMap = {
         };
     },
 
-    toResponseList(list: (medical_records & {
-        patient: patient;
-        inspection_record: inspection_record | null;
-        dental_examination_detail: (dental_examination_detail & {
-            type: type
-        })[];
-    })[]): MedicalRecordList {
+    toResponseList(list: MedicalRecordWithRelation[]): MedicalRecordList {
         return list.map(item => ({
             id: item.examination_id,
             patient_id: item.patient_id,
