@@ -202,7 +202,7 @@ export default function CompanyDashboard() {
                 style={{
                   borderRadius: 16,
                   background:
-                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                    "linear-gradient(135deg, #ffe6e6 0%, #ffffff 100%)",
                 }}
               >
                 <Statistic

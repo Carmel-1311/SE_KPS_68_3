@@ -96,10 +96,9 @@ export default function RequestsPage() {
 
             if (!res.ok) throw new Error("Cancel failed");
 
-            message.success("คำขอนี้ถูกย้ายไปยังประวัติแล้ว");
+            message.success("ส่งคำขอยกเลิกแล้ว รอผู้ดูแลระบบยืนยัน");
 
             await fetchRequests();
-            setActiveTab("3");
         } catch {
             message.error("ยกเลิกคำขอไม่สำเร็จ");
         } finally {
@@ -122,7 +121,6 @@ export default function RequestsPage() {
             message.success("ยกเลิกคำขอยกเลิกเรียบร้อยแล้ว");
 
             await fetchRequests();
-            setActiveTab("1");
         } catch {
             message.error("ยกเลิกคำขอยกเลิกไม่สำเร็จ");
         } finally {
@@ -274,7 +272,7 @@ export default function RequestsPage() {
     ];
 
     const pendingRequests = filteredRequests.filter(
-        (d) => d.status === "request"
+        (d) => d.status === "request" || d.status === "request_cancel"
     );
 
     const scheduledRequests = filteredRequests.filter(
@@ -284,8 +282,7 @@ export default function RequestsPage() {
     const otherRequests = filteredRequests.filter(
         (d) =>
             d.status === "cancel" ||
-            d.status === "completed" ||
-            d.status === "request_cancel"
+            d.status === "completed"
     );
 
     return (
