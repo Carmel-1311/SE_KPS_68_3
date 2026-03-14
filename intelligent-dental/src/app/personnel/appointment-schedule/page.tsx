@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Table, Tag, Card, Typography, Button, Input, DatePicker, 
   Space, Tooltip, message, Breadcrumb, Popconfirm, Tabs, Badge, Select 
-} from 'antd'; // 🌟 1. นำเข้า Select
+} from 'antd'; 
 import { SearchOutlined, PlusOutlined, ReadOutlined, HomeOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
@@ -39,7 +39,7 @@ export default function AppointmentListPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('all'); // 🌟 2. State สำหรับกรองสถานะ
+  const [selectedStatus, setSelectedStatus] = useState<string>('all'); 
   const [activeTab, setActiveTab] = useState<string>('1'); 
 
   useEffect(() => {
@@ -137,6 +137,9 @@ export default function AppointmentListPage() {
   const requestCancelCount = data.filter(item => item.status === 'request_cancel').length;
 
   const finalFilteredData = data.filter((item) => {
+    // 🌟 1. ดักเงื่อนไขตรงนี้: ถ้าสถานะเป็น 'cancelled' (ยกเลิกแล้ว) ไม่ต้องเอามาโชว์ในตารางเลย (ซ่อนทันที)
+    if (item.status === 'cancelled') return false;
+
     const matchTab = activeTab === '1' 
       ? item.status !== 'request_cancel' 
       : item.status === 'request_cancel'; 
@@ -145,7 +148,6 @@ export default function AppointmentListPage() {
     const matchName = fullName.includes(searchText.toLowerCase());
     const matchDate = selectedDate ? item.appointment_date === selectedDate : true;
     
-    // 🌟 3. เงื่อนไขกรองสถานะ
     const matchStatus = selectedStatus === 'all' ? true : item.status === selectedStatus;
 
     return matchTab && matchName && matchDate && matchStatus;
@@ -193,6 +195,7 @@ export default function AppointmentListPage() {
         } else if (status === 'completed') { 
           color = 'green'; text = 'เสร็จสิ้น'; 
         } else if (status === 'cancelled') { 
+          // อันนี้เผื่อไว้ แต่ในตารางจริงจะไม่แสดงแล้วเพราะถูก Filter ซ่อนไป
           color = 'red'; text = 'ยกเลิกแล้ว'; 
         } else if (status === 'request_cancel') { 
           color = 'orange'; text = 'ส่งคำขอยกเลิก'; 
@@ -219,7 +222,7 @@ export default function AppointmentListPage() {
           {record.status === 'request_cancel' && (
             <Popconfirm
               title="ยืนยันการยกเลิก"
-              description={`คุณต้องการยืนยันคำขอยกเลิกนัดหมายของ ${record.patient.first_name} ใช่หรือไม่?`}
+              description={`คุณต้องการยืนยันคำขอยกเลิกนัดหมายของ ${record.patient.first_name} ใช่หรือไม่? (ข้อมูลจะถูกซ่อน)`}
               onConfirm={() => handleConfirmCancel(record.appointment_id)}
               okText="ยืนยัน"
               cancelText="ปิด"
@@ -289,7 +292,6 @@ export default function AppointmentListPage() {
             onChange={(_, dateString) => setSelectedDate(Array.isArray(dateString) ? dateString[0] : dateString)} 
           />
           
-          {/* 🌟 4. เพิ่ม Dropdown กรองสถานะตรงนี้ (ซ่อนเมื่ออยู่ Tab คำขอยกเลิก เพราะมีสถานะเดียวอยู่แล้ว) */}
           {activeTab === '1' && (
             <Select
               defaultValue="all"
@@ -299,7 +301,7 @@ export default function AppointmentListPage() {
                 { value: 'all', label: 'สถานะทั้งหมด' },
                 { value: 'scheduled', label: 'รอดำเนินการ' },
                 { value: 'completed', label: 'เสร็จสิ้น' },
-                { value: 'cancelled', label: 'ยกเลิกแล้ว' },
+                // 🌟 2. ถอด option "ยกเลิกแล้ว" ออกจากตัวกรอง dropdown
               ]}
             />
           )}
