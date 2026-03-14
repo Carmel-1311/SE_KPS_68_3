@@ -1286,6 +1286,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @example 1 */
                     patient_id: number;
                 };
                 cookie?: never;
@@ -1784,6 +1785,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** company */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                id: string;
+                                contect_name: string;
+                                office_name: string;
+                                email: string;
+                            }[];
+                        };
+                    };
+                };
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                404: components["responses"]["404 Not Found"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company/{id}": {
         parameters: {
             query?: never;
@@ -1797,7 +1844,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
+                    id: string;
                 };
                 cookie?: never;
             };
@@ -1809,13 +1856,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: {
-                                contect_name: string;
-                                office_name: string;
-                                phone: string;
-                                address: string;
-                                email: string;
-                            };
+                            data?: components["schemas"]["company"];
                         };
                     };
                 };
@@ -2016,14 +2057,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/mobile-dental/{mobile_dental_id}/patients": {
+    "/api/mobile_dental/{id}/patients": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** patient_in_mobiles */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                id: number;
+                                patient_id: number;
+                                name: string;
+                                status: string;
+                                phone: string;
+                                idcard: string;
+                            }[];
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                409: components["responses"]["409 Conflict"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
         put?: never;
         /** patient_in_mobile */
         post: {
@@ -2031,7 +2107,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    mobile_dental_id: number;
+                    id: number;
                 };
                 cookie?: never;
             };
@@ -2043,7 +2119,8 @@ export interface paths {
                         birthday: string;
                         phone: string;
                         idcard: string;
-                    };
+                        mobile_id: number;
+                    }[];
                 };
             };
             responses: {
@@ -2057,6 +2134,7 @@ export interface paths {
                                 patient_id: number;
                                 name: string;
                                 status: string;
+                                id: number;
                             }[];
                         };
                     };
@@ -2211,6 +2289,14 @@ export interface components {
             /** @enum {string} */
             status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
             address: string;
+        };
+        company: {
+            id: string;
+            contect_name: string;
+            office_name: string;
+            phone: string;
+            address: string;
+            email: string;
         };
     };
     responses: {

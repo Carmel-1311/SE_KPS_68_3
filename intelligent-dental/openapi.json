@@ -3915,6 +3915,75 @@
         ]
       }
     },
+    "/api/company": {
+      "get": {
+        "summary": "company",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "contect_name": {
+                            "type": "string"
+                          },
+                          "office_name": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "contect_name",
+                          "office_name",
+                          "email"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
     "/api/company/{id}": {
       "get": {
         "summary": "company",
@@ -3930,7 +3999,7 @@
             "description": "",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -3943,31 +4012,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "contect_name": {
-                          "type": "string"
-                        },
-                        "office_name": {
-                          "type": "string"
-                        },
-                        "phone": {
-                          "type": "string"
-                        },
-                        "address": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "contect_name",
-                        "office_name",
-                        "phone",
-                        "address",
-                        "email"
-                      ]
+                      "$ref": "#/components/schemas/company"
                     }
                   }
                 }
@@ -4398,7 +4443,7 @@
         ]
       }
     },
-    "/api/mobile-dental/{id}/patients": {
+    "/api/mobile_dental/{id}/patients": {
       "post": {
         "summary": "patient_in_mobile",
         "deprecated": false,
@@ -4439,6 +4484,9 @@
                     },
                     "idcard": {
                       "type": "string"
+                    },
+                    "mobile_id": {
+                      "type": "integer"
                     }
                   },
                   "required": [
@@ -4446,7 +4494,8 @@
                     "last_name",
                     "birthday",
                     "phone",
-                    "idcard"
+                    "idcard",
+                    "mobile_id"
                   ]
                 }
               },
@@ -4476,12 +4525,16 @@
                           },
                           "status": {
                             "type": "string"
+                          },
+                          "id": {
+                            "type": "integer"
                           }
                         },
                         "required": [
                           "patient_id",
                           "name",
-                          "status"
+                          "status",
+                          "id"
                         ]
                       }
                     }
@@ -4552,6 +4605,9 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
                           "patient_id": {
                             "type": "integer"
                           },
@@ -4560,12 +4616,21 @@
                           },
                           "status": {
                             "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "idcard": {
+                            "type": "string"
                           }
                         },
                         "required": [
                           "patient_id",
                           "name",
-                          "status"
+                          "status",
+                          "phone",
+                          "idcard",
+                          "id"
                         ]
                       }
                     }
@@ -5023,6 +5088,37 @@
           "count",
           "status",
           "address"
+        ]
+      },
+      "company": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contect_name": {
+            "type": "string"
+          },
+          "office_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contect_name",
+          "office_name",
+          "phone",
+          "address",
+          "email",
+          "id"
         ]
       }
     },

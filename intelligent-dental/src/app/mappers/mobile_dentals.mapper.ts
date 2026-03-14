@@ -1,6 +1,5 @@
 import { components, paths } from "../../types/api"; // path ไปยังไฟล์ api.ts ของคุณ
 import { Prisma, mobile_dental, company } from "@prisma/client";
-import { toUpdateAppointmentInput } from "./appointment.mapper";
 
 
 export const mobileDentalQuery = {
