@@ -12,7 +12,7 @@ type CreateStaffBody = {
   role?: string;
 };
 
-export async function getStaffsController(request: Request) {
+export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
@@ -48,7 +48,7 @@ export async function getStaffsController(request: Request) {
   }
 }
 
-export async function createStaffController(request: Request) {
+export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CreateStaffBody;
 
