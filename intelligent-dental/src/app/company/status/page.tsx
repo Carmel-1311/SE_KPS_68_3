@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { getCurrentCompanyId } from "@/mock/mockUser";
 import {
     Table,
@@ -8,20 +8,18 @@ import {
     Typography,
     Breadcrumb,
     Card,
-    Button,
     Tabs,
     message,
     Popconfirm,
     Input,
+    Space,
+    Tooltip,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import {
-    HomeOutlined,
-    UnorderedListOutlined,
-    TeamOutlined,
-} from "@ant-design/icons";
+import { BookOpenText, X, RotateCcw, Users, SearchCheck, House } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 const { Title } = Typography;
 
@@ -42,23 +40,42 @@ type MobileDental = {
 };
 
 export default function RequestsPage() {
+    return (
+        <Suspense fallback={<div>กำลังโหลด...</div>}>
+            <RequestsPageContent />
+        </Suspense>
+    );
+}
+
+function RequestsPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [activeTab, setActiveTab] = useState("1");
+
+    useEffect(() => {
+        const tab = searchParams.get("tab");
+        if (tab && ["1", "2", "3"].includes(tab)) {
+            setActiveTab(tab);
+        }
+
+        const highlight = searchParams.get("highlight");
+        if (highlight) {
+            setHighlightId(Number(highlight));
+            // ล้าง highlight หลังจาก 3 วินาที
+            const timer = setTimeout(() => {
+                setHighlightId(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [searchParams]);
+
     const [requests, setRequests] = useState<MobileDental[]>([]);
     const [loading, setLoading] = useState(false);
     const [cancelingId, setCancelingId] = useState<number | null>(null);
     const [searchText, setSearchText] = useState("");
-
+    const [highlightId, setHighlightId] = useState<number | null>(null);
+    const [pageSize, setPageSize] = useState(10);
     const companyId = getCurrentCompanyId() ?? 1;
-
-    const filteredRequests = requests.filter((item) => {
-        if (!searchText) return true;
-
-        return (
-            item.mobile_dental_id.toString().includes(searchText) ||
-            item.address?.toLowerCase().includes(searchText.toLowerCase())
-        );
-    });
 
     const fetchRequests = useCallback(async () => {
         try {
@@ -80,11 +97,36 @@ export default function RequestsPage() {
         }
     }, [companyId]);
 
+    const filteredRequests = useMemo(() => {
+        return requests.filter((item) => {
+            if (!searchText) return true;
+
+            return (
+                item.mobile_dental_id.toString().includes(searchText) ||
+                item.address?.toLowerCase().includes(searchText.toLowerCase())
+            );
+        });
+    }, [requests, searchText]);
+
     useEffect(() => {
         fetchRequests();
     }, [fetchRequests]);
 
-    const handleCancelRequest = async (id: number) => {
+
+    useEffect(() => {
+        if (highlightId && !loading) {
+            // รอให้ Table render แถวเสร็จก่อน (delay สั้นๆ)
+            const scrollTimer = setTimeout(() => {
+                const element = document.querySelector('.row-highlight');
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
+            return () => clearTimeout(scrollTimer);
+        }
+    }, [highlightId, loading]);
+
+    const handleCancelRequest = useCallback(async (id: number) => {
         try {
             setCancelingId(id);
 
@@ -104,9 +146,9 @@ export default function RequestsPage() {
         } finally {
             setCancelingId(null);
         }
-    };
-    console.log(requests)
-    const handleUndoCancelRequest = async (id: number) => {
+    }, [fetchRequests]);
+
+    const handleUndoCancelRequest = useCallback(async (id: number) => {
         try {
             setCancelingId(id);
 
@@ -126,20 +168,20 @@ export default function RequestsPage() {
         } finally {
             setCancelingId(null);
         }
-    };
+    }, [fetchRequests]);
 
     const statusMap: Record<
         MobileDentalStatus,
         { color: string; text: string }
-    > = {
+    > = useMemo(() => ({
         request: { color: "blue", text: "ส่งคำขอแล้ว" },
         scheduled: { color: "green", text: "นัดหมายแล้ว" },
         request_cancel: { color: "orange", text: "แจ้งขอยกเลิก" },
         cancel: { color: "red", text: "ยกเลิกแล้ว" },
         completed: { color: "default", text: "เสร็จสิ้น" },
-    };
+    }), []);
 
-    const columns: ColumnsType<MobileDental> = [
+    const columns: ColumnsType<MobileDental> = useMemo(() => [
         {
             title: "รหัสคำขอ",
             dataIndex: "mobile_dental_id",
@@ -187,37 +229,34 @@ export default function RequestsPage() {
 
                 if (record.status === "request_cancel") {
                     return (
-                        <Popconfirm
-                            title="ยืนยันการยกเลิกคำขอยกเลิก"
-                            description="ต้องการยกเลิกคำขอยกเลิกนี้ใช่หรือไม่?"
-                            okText="ยืนยัน"
-                            cancelText="ไม่"
-                            onConfirm={() =>
-                                handleUndoCancelRequest(record.mobile_dental_id)
-                            }
-                        >
-                            <Button
-                                type="link"
-                                loading={cancelingId === record.mobile_dental_id}
+                        <Space size="middle">
+                            <Popconfirm
+                                title="ยืนยันการยกเลิกคำขอยกเลิก"
+                                description="ต้องการยกเลิกคำขอยกเลิกนี้ใช่หรือไม่?"
+                                okText="ยืนยัน"
+                                cancelText="ไม่"
+                                onConfirm={() =>
+                                    handleUndoCancelRequest(record.mobile_dental_id)
+                                }
                             >
-                                ยกเลิกคำขอยกเลิก
-                            </Button>
-                        </Popconfirm>
+                                <Tooltip title="ยกเลิกคำขอยกเลิก">
+                                    {cancelingId === record.mobile_dental_id ? (
+                                        <RotateCcw size={18} style={{ opacity: 0.5 }} />
+                                    ) : (
+                                        <RotateCcw size={18} style={{ cursor: "pointer", color: "#1890ff" }} />
+                                    )}
+                                </Tooltip>
+                            </Popconfirm>
+                        </Space>
                     );
                 }
 
                 if (record.status === "request") {
                     return (
-                        <div
-                            style={{
-                                display: "flex",
-                                gap: 8,
-                                justifyContent: "center",
-                            }}
-                        >
-                            <Button type="text" disabled style={{ color: "#ccc" }}>
-                                รอการนัดหมาย
-                            </Button>
+                        <Space size="middle">
+                            <Tooltip title="รอการนัดหมาย">
+                                <BookOpenText size={18} style={{ cursor: "not-allowed", color: "#ccc" }} />
+                            </Tooltip>
 
                             <Popconfirm
                                 title="ยืนยันการยกเลิก"
@@ -227,81 +266,102 @@ export default function RequestsPage() {
                                     handleCancelRequest(record.mobile_dental_id)
                                 }
                             >
-                                <Button
-                                    danger
-                                    type="text"
-                                    loading={cancelingId === record.mobile_dental_id}
-                                >
-                                    ยกเลิกคำขอ
-                                </Button>
+                                <Tooltip title="ยกเลิกคำขอ">
+                                    {cancelingId === record.mobile_dental_id ? (
+                                        <X size={18} style={{ opacity: 0.5 }} />
+                                    ) : (
+                                        <X size={18} style={{ cursor: "pointer", color: "#ff4d4f" }} />
+                                    )}
+                                </Tooltip>
                             </Popconfirm>
-                        </div>
+                        </Space>
                     );
                 }
 
                 if (record.status === "scheduled") {
                     return (
-                        <Button
-                            type="primary"
-                            icon={<TeamOutlined />}
-                            onClick={() =>
-                                router.push(
-                                    `/company/status/${record.mobile_dental_id}/patients`
-                                )
-                            }
-                        >
-                            ส่งรายชื่อผู้รับบริการ
-                        </Button>
+                        <Space size="middle">
+                            <Tooltip title="ส่งรายชื่อผู้รับบริการ">
+                                <Users
+                                    size={18}
+                                    style={{ cursor: "pointer", color: "#1890ff" }}
+                                    onClick={() =>
+                                        router.push(
+                                            `/company/status/${record.mobile_dental_id}/patients`
+                                        )
+                                    }
+                                />
+                            </Tooltip>
+                        </Space>
                     );
                 }
 
                 return (
-                    <Button
-                        icon={<TeamOutlined />}
-                        onClick={() =>
-                            router.push(
-                                `/company/status/${record.mobile_dental_id}/patients`
-                            )
-                        }
-                    >
-                        ดูรายชื่อ
-                    </Button>
+                    <Space size="middle">
+                        <Tooltip title="ดูรายชื่อ">
+                            <BookOpenText
+                                size={18}
+                                style={{ cursor: "pointer", color: "#1890ff" }}
+                                onClick={() =>
+                                    router.push(
+                                        `/company/status/${record.mobile_dental_id}/patients`
+                                    )
+                                }
+                            />
+                        </Tooltip>
+                    </Space>
                 );
             },
         },
-    ];
+    ], [statusMap, router, cancelingId, handleUndoCancelRequest, handleCancelRequest]);
 
-    const pendingRequests = filteredRequests.filter(
+    const pendingRequests = useMemo(() => filteredRequests.filter(
         (d) => d.status === "request" || d.status === "request_cancel"
-    );
+    ), [filteredRequests]);
 
-    const scheduledRequests = filteredRequests.filter(
+    const scheduledRequests = useMemo(() => filteredRequests.filter(
         (d) => d.status === "scheduled"
-    );
+    ), [filteredRequests]);
 
-    const otherRequests = filteredRequests.filter(
+    const otherRequests = useMemo(() => filteredRequests.filter(
         (d) =>
             d.status === "cancel" ||
             d.status === "completed"
-    );
+    ), [filteredRequests]);
 
     return (
         <div style={{ padding: 24 }}>
+            <style jsx global>{`
+                @keyframes highlight-fade {
+                    0% { transform: scale(1); background-color: #fffbe6; }
+                    50% { transform: scale(1.02); background-color: #fff1b8; }
+                    100% { transform: scale(1); background-color: transparent; }
+                }
+                .row-highlight {
+                    animation: highlight-fade 3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                    box-shadow: 0 0 15px rgba(255, 214, 102, 0.5);
+                    z-index: 10;
+                    position: relative;
+                    will-change: transform, background-color;
+                }
+            `}</style>
             <Breadcrumb
                 style={{ marginBottom: 16 }}
                 items={[
                     {
                         title: (
-                            <Link href="/company">
-                                <HomeOutlined /> หน้าหลัก
+                            <Link href="/company" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                                <House size={16} />
+                                <span>หน้าหลัก</span>
                             </Link>
                         ),
                     },
                     {
                         title: (
-                            <>
-                                <UnorderedListOutlined /> ตรวจสอบสถานะ
-                            </>
+                            <Space size={8}>
+                                <SearchCheck size={16} />
+                                <span>ตรวจสอบสถานะ</span>
+                            </Space>
                         ),
                     },
                 ]}
@@ -337,7 +397,16 @@ export default function RequestsPage() {
                                     dataSource={pendingRequests}
                                     columns={columns}
                                     rowKey="mobile_dental_id"
-                                    pagination={{ pageSize: 10 }}
+                                    pagination={{
+                                        pageSize: pageSize,
+                                        showSizeChanger: true,
+                                        pageSizeOptions: ["10", "15", "20", "50", "100"],
+                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                    }}
+                                    sticky={{ offsetHeader: 1 }}
+                                    rowClassName={(record) =>
+                                        record.mobile_dental_id === highlightId ? 'row-highlight' : ''
+                                    }
                                 />
                             ),
                         },
@@ -350,7 +419,16 @@ export default function RequestsPage() {
                                     dataSource={scheduledRequests}
                                     columns={columns}
                                     rowKey="mobile_dental_id"
-                                    pagination={{ pageSize: 10 }}
+                                    pagination={{
+                                        pageSize: pageSize,
+                                        showSizeChanger: true,
+                                        pageSizeOptions: ["10", "20", "50", "100"],
+                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                    }}
+                                    sticky={{ offsetHeader: 1 }}
+                                    rowClassName={(record) =>
+                                        record.mobile_dental_id === highlightId ? 'row-highlight' : ''
+                                    }
                                 />
                             ),
                         },
@@ -364,7 +442,16 @@ export default function RequestsPage() {
                                     dataSource={otherRequests}
                                     columns={columns}
                                     rowKey="mobile_dental_id"
-                                    pagination={{ pageSize: 10 }}
+                                    pagination={{
+                                        pageSize: pageSize,
+                                        showSizeChanger: true,
+                                        pageSizeOptions: ["10", "20", "50", "100"],
+                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                    }}
+                                    sticky={{ offsetHeader: 1 }}
+                                    rowClassName={(record) =>
+                                        record.mobile_dental_id === highlightId ? 'row-highlight' : ''
+                                    }
                                 />
                             ),
                         },
