@@ -1,12 +1,11 @@
 ﻿"use client";
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
   Button,
   Card,
   DatePicker,
-  Input,
   Select,
   Space,
   TimePicker,
@@ -15,9 +14,19 @@ import {
 } from "antd";
 import { useRouter } from "next/navigation";
 import {
-  mockAppointments,
-  type Appointment,
-} from "@/mock/mockAppointment";
+  mockAppointmentList,
+  type Data,
+  Status,
+} from "@/mock/mockAppointmentById";
+
+type Appointment = {
+  id: string;
+  date: string;
+  time: string;
+  dentist: string;
+  service: string;
+  status: Status;
+};
 
 const thaiMonthsShort = [
   "ม.ค.",
@@ -39,6 +48,21 @@ const formatThaiDateValue = (value: Dayjs) =>
   )}`;
 
 const storageKey = "userAppointments";
+
+const toAppointmentId = (item: Data) => {
+  const dateKey = item.appointment_date.replaceAll("-", "");
+  const seq = String(item.appointment_id).padStart(3, "0");
+  return `AP-${dateKey}-${seq}`;
+};
+
+const mapToAppointment = (item: Data): Appointment => ({
+  id: toAppointmentId(item),
+  date: item.appointment_date,
+  time: item.appointment_time,
+  dentist: item.staff?.name ?? "ไม่ระบุ",
+  service: item.type,
+  status: item.status,
+});
 
 const readStoredAppointments = (): Appointment[] => {
   if (typeof window === "undefined") return [];
@@ -75,15 +99,13 @@ export default function NewAppointmentPage() {
   );
   const [newAppointmentService, setNewAppointmentService] = useState("");
   const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
-  const [newAppointmentBranch, setNewAppointmentBranch] = useState("");
-  const [newAppointmentNote, setNewAppointmentNote] = useState("");
 
   const baseAppointments = useMemo(() => {
     const stored = readStoredAppointments();
-    return mergeAppointments(mockAppointments, stored);
+    return mergeAppointments(mockAppointmentList.map(mapToAppointment), stored);
   }, []);
 
-  const uniqueOptions = (key: "service" | "dentist" | "branch") => {
+  const uniqueOptions = (key: "service" | "dentist") => {
     const values = new Set(baseAppointments.map((item) => item[key]));
     return Array.from(values).map((value) => ({ label: value, value }));
   };
@@ -101,11 +123,7 @@ export default function NewAppointmentPage() {
 
   const handleAddAppointment = () => {
     if (!newAppointmentDate || !newAppointmentTime) return;
-    if (
-      !newAppointmentService.trim() ||
-      !newAppointmentDentist.trim() ||
-      !newAppointmentBranch.trim()
-    ) {
+    if (!newAppointmentService.trim() || !newAppointmentDentist.trim()) {
       message.error("กรุณากรอกข้อมูลให้ครบถ้วน");
       return;
     }
@@ -120,11 +138,8 @@ export default function NewAppointmentPage() {
       date: newAppointmentDate.format("YYYY-MM-DD"),
       time: newAppointmentTime.format("HH:mm"),
       dentist: newAppointmentDentist.trim(),
-      branch: newAppointmentBranch.trim(),
       service: newAppointmentService.trim(),
-      status: "scheduled",
-      note: newAppointmentNote.trim() || undefined,
-      createdAt: dayjs().format(),
+      status: Status.Scheduled,
     };
 
     const stored = readStoredAppointments();
@@ -138,9 +153,9 @@ export default function NewAppointmentPage() {
       <Card
         title="เพิ่มการนัดหมาย"
         style={{ maxWidth: 720, margin: "0 auto" }}
-        bodyStyle={{ padding: "1rem" }}
+        styles={{ body: { padding: "1rem" } }}
       >
-        <Space direction="vertical" size={12} style={{ width: "100%" }}>
+        <Space orientation="vertical" size={12} style={{ width: "100%" }}>
           <Typography.Text>เลือกวันที่ต้องการนัดหมาย</Typography.Text>
           <DatePicker
             style={{ width: "100%" }}
@@ -175,23 +190,6 @@ export default function NewAppointmentPage() {
             value={newAppointmentDentist || undefined}
             onChange={(value) => setNewAppointmentDentist(value)}
             onSearch={(value) => setNewAppointmentDentist(value)}
-          />
-          <Typography.Text>สาขา</Typography.Text>
-          <Select
-            showSearch
-            placeholder="เลือกหรือพิมพ์ชื่อสาขา"
-            options={uniqueOptions("branch")}
-            value={newAppointmentBranch || undefined}
-            onChange={(value) => setNewAppointmentBranch(value)}
-            onSearch={(value) => setNewAppointmentBranch(value)}
-          />
-          <Typography.Text>หมายเหตุ (ถ้ามี)</Typography.Text>
-          <Input
-            placeholder="ระบุหมายเหตุเพิ่มเติม"
-            value={newAppointmentNote}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setNewAppointmentNote(event.target.value)
-            }
           />
           <Space size={8} wrap>
             <Button onClick={() => router.back()}>ย้อนกลับ</Button>

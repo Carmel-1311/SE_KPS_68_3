@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import dayjs from "dayjs";
@@ -16,23 +16,19 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { CalendarClock, Search } from "lucide-react";
 import {
-  appointmentStatusLabel,
-  mockAppointments,
-  type Appointment,
-  type AppointmentStatus,
+  mockAppointmentList,
+  type Datum,
+  Status,
 } from "@/mock/mockAppointment";
 
 const statusMeta: Record<
-  AppointmentStatus,
+  Status,
   { label: string; color: "blue" | "green" | "red" | "orange" }
 > = {
-  scheduled: { label: appointmentStatusLabel.scheduled, color: "blue" },
-  completed: { label: appointmentStatusLabel.completed, color: "green" },
-  cancelled: { label: appointmentStatusLabel.cancelled, color: "red" },
-  request_cancel: {
-    label: appointmentStatusLabel.request_cancel,
-    color: "orange",
-  },
+  [Status.Scheduled]: { label: "นัดหมายแล้ว", color: "blue" },
+  [Status.Completed]: { label: "เสร็จสิ้น", color: "green" },
+  [Status.Cancelled]: { label: "ยกเลิก", color: "red" },
+  [Status.RequestCancel]: { label: "ขอยกเลิก", color: "orange" },
 };
 
 const thaiMonthsShort = [
@@ -58,11 +54,9 @@ const formatThaiDate = (dateValue: string) => {
 };
 
 export default function UserAppointmentsPage() {
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState(mockAppointmentList);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | AppointmentStatus>(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
 
   const statusSummary = useMemo(() => {
     return appointments.reduce(
@@ -71,11 +65,11 @@ export default function UserAppointmentsPage() {
         return acc;
       },
       {
-        scheduled: 0,
-        completed: 0,
-        cancelled: 0,
-        request_cancel: 0,
-      } as Record<AppointmentStatus, number>,
+        [Status.Scheduled]: 0,
+        [Status.Completed]: 0,
+        [Status.Cancelled]: 0,
+        [Status.RequestCancel]: 0,
+      } as Record<Status, number>,
     );
   }, [appointments]);
 
@@ -89,12 +83,11 @@ export default function UserAppointmentsPage() {
       if (!normalizedSearch) return matchesStatus;
 
       const matchesSearch = [
-        item.id,
-        item.date,
-        item.time,
-        item.dentist,
-        item.branch,
-        item.service,
+        item.appointment_id,
+        item.appointment_date,
+        item.appointment_time,
+        item.staff?.name,
+        item.type,
       ]
         .join(" ")
         .toLowerCase()
@@ -104,20 +97,20 @@ export default function UserAppointmentsPage() {
     });
   }, [appointments, search, statusFilter]);
 
-  const handleCancelAppointment = (record: Appointment) => {
+  const handleCancelAppointment = (record: Datum) => {
     Modal.confirm({
       title: "ขอยกเลิกนัดหมาย",
       content: `ต้องการขอยกเลิกนัดหมาย ${formatThaiDate(
-        record.date,
-      )} เวลา ${record.time} ใช่หรือไม่?`,
+        record.appointment_date,
+      )} เวลา ${record.appointment_time} ใช่หรือไม่?`,
       okText: "ยืนยัน",
       cancelText: "ปิด",
       okButtonProps: { danger: true },
       onOk: () => {
         setAppointments((prev) =>
           prev.map((item) =>
-            item.id === record.id
-              ? { ...item, status: "request_cancel" }
+            item.appointment_id === record.appointment_id
+              ? { ...item, status: Status.RequestCancel }
               : item,
           ),
         );
@@ -125,42 +118,38 @@ export default function UserAppointmentsPage() {
     });
   };
 
-  const columns: ColumnsType<Appointment> = [
+  const columns: ColumnsType<Datum> = [
     {
       title: "วันที่",
       key: "dateTime",
       width: 180,
       render: (_, record) => (
         <div>
-          <div>{formatThaiDate(record.date)}</div>
-          <Typography.Text type="secondary">{record.time} น.</Typography.Text>
+          <div>{formatThaiDate(record.appointment_date)}</div>
+          <Typography.Text type="secondary">
+            {record.appointment_time} น.
+          </Typography.Text>
         </div>
       ),
     },
     {
       title: "บริการ",
-      dataIndex: "service",
+      dataIndex: "type",
       key: "service",
       width: 180,
     },
     {
       title: "ทันตแพทย์",
-      dataIndex: "dentist",
+      dataIndex: ["staff", "name"],
       key: "dentist",
       width: 180,
-    },
-    {
-      title: "สาขา",
-      dataIndex: "branch",
-      key: "branch",
-      width: 160,
     },
     {
       title: "สถานะ",
       dataIndex: "status",
       key: "status",
       width: 140,
-      render: (value: AppointmentStatus) => (
+      render: (value: Status) => (
         <Tag color={statusMeta[value].color}>{statusMeta[value].label}</Tag>
       ),
     },
@@ -173,7 +162,7 @@ export default function UserAppointmentsPage() {
         <Button
           danger
           size="small"
-          disabled={record.status !== "scheduled"}
+          disabled={record.status !== Status.Scheduled}
           onClick={() => handleCancelAppointment(record)}
         >
           ยกเลิกนัด
@@ -191,9 +180,9 @@ export default function UserAppointmentsPage() {
         </Space>
       }
       style={{ maxWidth: 980, margin: "0 auto" }}
-      bodyStyle={{ padding: "1rem" }}
+      styles={{ body: { padding: "1rem" } }}
     >
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
+      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
         <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
           <Space style={{ flex: 1, minWidth: 260 }}>
             <Search size={18} />
@@ -211,35 +200,47 @@ export default function UserAppointmentsPage() {
             style={{ minWidth: 180 }}
             options={[
               { value: "all", label: "ทุกสถานะ" },
-              { value: "scheduled", label: appointmentStatusLabel.scheduled },
               {
-                value: "request_cancel",
-                label: appointmentStatusLabel.request_cancel,
+                value: Status.Scheduled,
+                label: statusMeta[Status.Scheduled].label,
               },
-              { value: "completed", label: appointmentStatusLabel.completed },
-              { value: "cancelled", label: appointmentStatusLabel.cancelled },
+              {
+                value: Status.RequestCancel,
+                label: statusMeta[Status.RequestCancel].label,
+              },
+              {
+                value: Status.Completed,
+                label: statusMeta[Status.Completed].label,
+              },
+              {
+                value: Status.Cancelled,
+                label: statusMeta[Status.Cancelled].label,
+              },
             ]}
           />
         </Space>
 
         <Space wrap>
           <Tag color="blue">
-            {appointmentStatusLabel.scheduled}: {statusSummary.scheduled}
+            {statusMeta[Status.Scheduled].label}:{" "}
+            {statusSummary[Status.Scheduled]}
           </Tag>
           <Tag color="orange">
-            {appointmentStatusLabel.request_cancel}:{" "}
-            {statusSummary.request_cancel}
+            {statusMeta[Status.RequestCancel].label}:{" "}
+            {statusSummary[Status.RequestCancel]}
           </Tag>
           <Tag color="green">
-            {appointmentStatusLabel.completed}: {statusSummary.completed}
+            {statusMeta[Status.Completed].label}:{" "}
+            {statusSummary[Status.Completed]}
           </Tag>
           <Tag color="red">
-            {appointmentStatusLabel.cancelled}: {statusSummary.cancelled}
+            {statusMeta[Status.Cancelled].label}:{" "}
+            {statusSummary[Status.Cancelled]}
           </Tag>
         </Space>
 
         <Table
-          rowKey="id"
+          rowKey="appointment_id"
           columns={columns}
           dataSource={filteredAppointments}
           pagination={{ pageSize: 8 }}
