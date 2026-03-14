@@ -1,10 +1,11 @@
 ﻿"use client";
 
 import { useMemo, useState } from "react";
-import dayjs from "dayjs";
+import dayjs, { type Dayjs } from "dayjs";
 import {
   Button,
   Card,
+  DatePicker,
   Input,
   Modal,
   Select,
@@ -57,6 +58,7 @@ export default function UserAppointmentsPage() {
   const [appointments, setAppointments] = useState(mockAppointmentList);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
+  const [dateFilter, setDateFilter] = useState<Dayjs | null>(null);
 
   const statusSummary = useMemo(() => {
     return appointments.reduce(
@@ -79,8 +81,11 @@ export default function UserAppointmentsPage() {
     return appointments.filter((item) => {
       const matchesStatus =
         statusFilter === "all" ? true : item.status === statusFilter;
+      const matchesDate = dateFilter
+        ? dayjs(item.appointment_date).isSame(dateFilter, "day")
+        : true;
 
-      if (!normalizedSearch) return matchesStatus;
+      if (!normalizedSearch) return matchesStatus && matchesDate;
 
       const matchesSearch = [
         item.appointment_id,
@@ -93,9 +98,9 @@ export default function UserAppointmentsPage() {
         .toLowerCase()
         .includes(normalizedSearch);
 
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesDate && matchesSearch;
     });
-  }, [appointments, search, statusFilter]);
+  }, [appointments, search, statusFilter, dateFilter]);
 
   const handleCancelAppointment = (record: Datum) => {
     Modal.confirm({
@@ -187,12 +192,20 @@ export default function UserAppointmentsPage() {
           <Space style={{ flex: 1, minWidth: 260 }}>
             <Search size={18} />
             <Input
-              placeholder="ค้นหา (เลขนัด, วันที่, ทันตแพทย์, บริการ)"
+              placeholder="ค้นหา (วันที่, ทันตแพทย์, บริการ)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               allowClear
             />
           </Space>
+
+          <DatePicker
+            value={dateFilter}
+            onChange={(value) => setDateFilter(value)}
+            allowClear
+            style={{ minWidth: 180 }}
+            format="YYYY-MM-DD"
+          />
 
           <Select
             value={statusFilter}

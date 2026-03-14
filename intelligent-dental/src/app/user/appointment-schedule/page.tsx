@@ -8,17 +8,21 @@ import {
   Calendar,
   Card,
   Col,
+  DatePicker,
   Divider,
   Empty,
   Grid,
+  Modal,
+  message,
   Segmented,
+  Select,
   Row,
   Space,
   Statistic,
   Tag,
+  TimePicker,
   Typography,
 } from "antd";
-import Link from "next/link";
 import {
   CalendarDays,
   ChevronLeft,
@@ -118,6 +122,11 @@ const readStoredAppointments = (): Appointment[] => {
   }
 };
 
+const writeStoredAppointments = (items: Appointment[]) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(storageKey, JSON.stringify(items));
+};
+
 const sortAppointmentsByTime = (items: Appointment[]) => {
   return [...items].sort((a, b) => a.time.localeCompare(b.time));
 };
@@ -139,6 +148,15 @@ export default function UserAppointmentSchedulePage() {
   const [appointments, setAppointments] = useState<Appointment[]>(
     mockAppointmentList.map(mapToAppointment),
   );
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newAppointmentDate, setNewAppointmentDate] = useState<Dayjs | null>(
+    dayjs(),
+  );
+  const [newAppointmentTime, setNewAppointmentTime] = useState<Dayjs | null>(
+    null,
+  );
+  const [newAppointmentService, setNewAppointmentService] = useState("");
+  const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
@@ -173,6 +191,60 @@ export default function UserAppointmentSchedulePage() {
   }, [appointments]);
 
   const nextAppointment = upcomingAppointments[0];
+
+  const uniqueOptions = (key: "service" | "dentist") => {
+    const values = new Set(appointments.map((item) => item[key]).filter(Boolean));
+    return Array.from(values).map((value) => ({ label: value, value }));
+  };
+
+  const isPastDate = (value: Dayjs) => value.isBefore(dayjs(), "day");
+
+  const createAppointmentId = (dateValue: Dayjs) => {
+    const dateKey = dateValue.format("YYYYMMDD");
+    const existing = appointments.filter((item) =>
+      item.id.startsWith(`AP-${dateKey}`),
+    );
+    const nextNumber = String(existing.length + 1).padStart(3, "0");
+    return `AP-${dateKey}-${nextNumber}`;
+  };
+
+  const resetNewAppointment = (dateValue: Dayjs) => {
+    setNewAppointmentDate(dateValue);
+    setNewAppointmentTime(null);
+    setNewAppointmentService("");
+    setNewAppointmentDentist("");
+  };
+
+  const handleAddAppointment = () => {
+    if (!newAppointmentDate || !newAppointmentTime) return;
+    if (!newAppointmentService.trim() || !newAppointmentDentist.trim()) {
+      message.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    if (isPastDate(newAppointmentDate)) {
+      message.error("ไม่สามารถเลือกวันที่ผ่านมาแล้วได้");
+      return;
+    }
+
+    const newAppointment: Appointment = {
+      id: createAppointmentId(newAppointmentDate),
+      date: newAppointmentDate.format("YYYY-MM-DD"),
+      time: newAppointmentTime.format("HH:mm"),
+      dentist: newAppointmentDentist.trim(),
+      service: newAppointmentService.trim(),
+      status: Status.Scheduled,
+    };
+
+    const stored = readStoredAppointments();
+    writeStoredAppointments([...stored, newAppointment]);
+    setAppointments((prev) => [...prev, newAppointment]);
+    setSelectedDate(newAppointmentDate);
+    setViewMonth(newAppointmentDate);
+    message.success("เพิ่มการนัดหมายเรียบร้อยแล้ว");
+    setIsCreateOpen(false);
+    resetNewAppointment(newAppointmentDate);
+  };
 
   const summary = useMemo(() => {
     const viewKey = viewMonth.format("YYYY-MM");
@@ -268,12 +340,72 @@ export default function UserAppointmentSchedulePage() {
             </Space>
           }
           extra={
-            <Link href="/user/appointment-schedule/new">
-              <Button type="primary">เพิ่มการนัดหมาย</Button>
-            </Link>
+            <Button
+              type="primary"
+              onClick={() => {
+                const seedDate = selectedDate ?? dayjs();
+                resetNewAppointment(seedDate);
+                setIsCreateOpen(true);
+              }}
+            >
+              เพิ่มการนัดหมาย
+            </Button>
           }
           styles={{ body: { padding: "1rem" } }}
         >
+          <Modal
+            title="เพิ่มการนัดหมาย"
+            open={isCreateOpen}
+            onCancel={() => setIsCreateOpen(false)}
+            onOk={handleAddAppointment}
+            okText="บันทึกการนัดหมาย"
+            cancelText="ยกเลิก"
+            okButtonProps={{
+              disabled:
+                !newAppointmentDate ||
+                !newAppointmentTime ||
+                isPastDate(newAppointmentDate),
+            }}
+            destroyOnClose
+          >
+            <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+              <Typography.Text>เลือกวันที่ต้องการนัดหมาย</Typography.Text>
+              <DatePicker
+                style={{ width: "100%" }}
+                value={newAppointmentDate}
+                onChange={(value) => setNewAppointmentDate(value)}
+                format={(value) => (value ? formatThaiDateValue(value) : "")}
+                disabledDate={(current) =>
+                  current ? current.isBefore(dayjs(), "day") : false
+                }
+              />
+              <Typography.Text>เลือกเวลา</Typography.Text>
+              <TimePicker
+                style={{ width: "100%" }}
+                value={newAppointmentTime}
+                onChange={(value) => setNewAppointmentTime(value)}
+                format="HH:mm"
+              />
+              <Typography.Text>บริการ</Typography.Text>
+              <Select
+                showSearch
+                placeholder="เลือกหรือพิมพ์บริการ"
+                options={uniqueOptions("service")}
+                value={newAppointmentService || undefined}
+                onChange={(value) => setNewAppointmentService(value)}
+                onSearch={(value) => setNewAppointmentService(value)}
+              />
+              <Typography.Text>ทันตแพทย์</Typography.Text>
+              <Select
+                showSearch
+                placeholder="เลือกหรือพิมพ์ชื่อทันตแพทย์"
+                options={uniqueOptions("dentist")}
+                value={newAppointmentDentist || undefined}
+                onChange={(value) => setNewAppointmentDentist(value)}
+                onSearch={(value) => setNewAppointmentDentist(value)}
+              />
+            </Space>
+          </Modal>
           <Row gutter={[12, 12]}>
             <Col xs={24} md={12}>
               <Card size="small" title="สรุปสถานะ" variant="borderless">
