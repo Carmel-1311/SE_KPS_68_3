@@ -72,7 +72,6 @@ export default function PatientsPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const [searchText, setSearchText] = useState("");
-    const [pageSize, setPageSize] = useState(15);
     const filteredPatients = useMemo(() => {
         return patients.filter(p =>
             p.name?.toLowerCase().includes(searchText.toLowerCase()) ?? false
@@ -359,12 +358,8 @@ export default function PatientsPage() {
                     rowKey="patient_id"
                     loading={loading}
                     pagination={{
-                        current: undefined, // Let antd handle current page
-                        pageSize: pageSize,
-                        showSizeChanger: true,
-                        pageSizeOptions: ["10", "15", "20", "50", "100"],
-                        onShowSizeChange: (_, size) => setPageSize(size),
-                        showTotal: (total) => `ทั้งหมด ${total} คน`,
+                        pageSize: 15,
+                        showSizeChanger: false,
                     }}
                     sticky={{ offsetHeader: 1 }}
                 />

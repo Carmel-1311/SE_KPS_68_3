@@ -74,7 +74,6 @@ function RequestsPageContent() {
     const [cancelingId, setCancelingId] = useState<number | null>(null);
     const [searchText, setSearchText] = useState("");
     const [highlightId, setHighlightId] = useState<number | null>(null);
-    const [pageSize, setPageSize] = useState(10);
     const companyId = getCurrentCompanyId() ?? 1;
 
     const fetchRequests = useCallback(async () => {
@@ -398,10 +397,8 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
-                                        pageSize: pageSize,
-                                        showSizeChanger: true,
-                                        pageSizeOptions: ["10", "15", "20", "50", "100"],
-                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                        pageSize: 15,
+                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>
@@ -420,10 +417,8 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
-                                        pageSize: pageSize,
-                                        showSizeChanger: true,
-                                        pageSizeOptions: ["10", "20", "50", "100"],
-                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                        pageSize: 15,
+                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>
@@ -443,10 +438,8 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
-                                        pageSize: pageSize,
-                                        showSizeChanger: true,
-                                        pageSizeOptions: ["10", "20", "50", "100"],
-                                        onShowSizeChange: (_, size) => setPageSize(size),
+                                        pageSize: 15,
+                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>
