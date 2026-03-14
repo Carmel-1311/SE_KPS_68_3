@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import * as patientService from "@/services/patientService";
+import { AppError } from "@/utils/AppError";
 
 type CreatePatientBody = {
   first_name?: string;
@@ -11,8 +12,6 @@ type CreatePatientBody = {
   status?: string;
   citizen_id?: string;
 };
-
-const validStatuses = new Set(["active", "inactive"]);
 
 export async function GET(request: Request) {
   try {
@@ -30,39 +29,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const patients = await prisma.patient.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { patient_id: "asc" },
-      select: {
-        patient_id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        birthday: true,
-        allergy: true,
-        status: true
-      }
-    });
+    const patients = await patientService.listPatients(limit, page);
 
     return NextResponse.json(
       {
-        data: patients.map((patient) => ({
-          id: patient.patient_id,
-          first_name: patient.first_name ?? "",
-          last_name: patient.last_name ?? "",
-          name: `${patient.first_name ?? ""} ${patient.last_name ?? ""}`.trim(),
-          email: patient.email ?? "",
-          phone: patient.phone ?? "",
-          birthday: patient.birthday ? patient.birthday.toISOString().slice(0, 10) : null,
-          allergy: patient.allergy ?? "",
-          status: patient.status ?? "active"
-        }))
+        data: patients
       },
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("GET /api/patients error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
@@ -90,13 +68,6 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!validStatuses.has(status)) {
-      return NextResponse.json(
-        { message: "Invalid status. Allowed values: active, inactive" },
-        { status: 400 }
-      );
-    }
-
     const birthday = new Date(birthdayRaw);
     if (Number.isNaN(birthday.getTime())) {
       return NextResponse.json(
@@ -105,64 +76,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const duplicate = await prisma.patient.findFirst({
-      where: {
-        OR: [{ email }, { phone }]
-      },
-      select: { patient_id: true }
-    });
-
-    if (duplicate) {
-      return NextResponse.json(
-        { message: "Patient with this email or phone already exists" },
-        { status: 409 }
-      );
-    }
-
-    const maxPatient = await prisma.patient.aggregate({
-      _max: { patient_id: true }
-    });
-
-    const created = await prisma.patient.create({
-      data: {
-        patient_id: (maxPatient._max.patient_id ?? 0) + 1,
-        first_name: firstName,
-        last_name: lastName,
-        birthday,
-        allergy,
-        email,
-        phone,
-        status: status as "active" | "inactive"
-      },
-      select: {
-        patient_id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        birthday: true,
-        allergy: true,
-        status: true
-      }
+    const created = await patientService.createPatient({
+      first_name: firstName,
+      last_name: lastName,
+      birthday,
+      allergy,
+      email,
+      phone,
+      status
     });
 
     return NextResponse.json(
       {
-        data: {
-          id: created.patient_id,
-          first_name: created.first_name ?? "",
-          last_name: created.last_name ?? "",
-          name: `${created.first_name ?? ""} ${created.last_name ?? ""}`.trim(),
-          email: created.email ?? "",
-          phone: created.phone ?? "",
-          birthday: created.birthday ? created.birthday.toISOString().slice(0, 10) : null,
-          allergy: created.allergy ?? "",
-          status: created.status ?? "active"
-        }
+        data: created
       },
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("POST /api/patients error:", error);
     return NextResponse.json(
       { message: "Internal server error" },

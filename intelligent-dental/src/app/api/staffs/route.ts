@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import * as staffService from "@/services/staffService";
+import { AppError } from "@/utils/AppError";
 
 type CreateStaffBody = {
   first_name?: string;
@@ -10,8 +11,6 @@ type CreateStaffBody = {
   license_number?: string;
   role?: string;
 };
-
-const validRoles = new Set(["staff", "dentist"]);
 
 export async function getStaffsController(request: Request) {
   try {
@@ -29,31 +28,18 @@ export async function getStaffsController(request: Request) {
       );
     }
 
-    const staffs = await prisma.staff.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { staff_id: "asc" },
-      select: {
-        staff_id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        role: true
-      }
-    });
+    const staffs = await staffService.listStaffs(limit, page);
 
     return NextResponse.json(
       {
-        data: staffs.map((staff) => ({
-          id: staff.staff_id,
-          name: `${staff.first_name ?? ""} ${staff.last_name ?? ""}`.trim(),
-          email: staff.email ?? "",
-          role: staff.role ?? ""
-        }))
+        data: staffs
       },
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("GET /api/staffs error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
@@ -81,13 +67,6 @@ export async function createStaffController(request: Request) {
       );
     }
 
-    if (!validRoles.has(role)) {
-      return NextResponse.json(
-        { message: "Invalid role. Allowed values: staff, dentist" },
-        { status: 400 }
-      );
-    }
-
     const birthday = new Date(birthdayRaw);
     if (Number.isNaN(birthday.getTime())) {
       return NextResponse.json(
@@ -96,49 +75,26 @@ export async function createStaffController(request: Request) {
       );
     }
 
-    const duplicate = await prisma.staff.findFirst({
-      where: {
-        OR: [{ email }, { phone }]
-      },
-      select: { staff_id: true }
-    });
-
-    if (duplicate) {
-      return NextResponse.json(
-        { message: "Staff with this email or phone already exists" },
-        { status: 409 }
-      );
-    }
-
-    const created = await prisma.staff.create({
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        birthday,
-        email,
-        phone,
-        license_number: licenseNumber,
-        role: role as "staff" | "dentist"
-      },
-      select: {
-        staff_id: true,
-        first_name: true,
-        last_name: true,
-        email: true
-      }
+    const created = await staffService.createStaff({
+      first_name: firstName,
+      last_name: lastName,
+      birthday,
+      email,
+      phone,
+      license_number: licenseNumber,
+      role
     });
 
     return NextResponse.json(
       {
-        data: {
-          id: created.staff_id,
-          name: `${created.first_name ?? ""} ${created.last_name ?? ""}`.trim(),
-          email: created.email ?? ""
-        }
+        data: created
       },
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("POST /api/staffs error:", error);
     return NextResponse.json(
       { message: "Internal server error" },

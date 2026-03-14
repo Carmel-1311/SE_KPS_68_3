@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import * as staffService from "@/services/staffService";
+import { AppError } from "@/utils/AppError";
 
 type UpdateStaffBody = {
   first_name?: string;
@@ -23,31 +24,13 @@ export async function getStaffByIdController(_: Request, { params }: RouteContex
       return NextResponse.json({ message: "Invalid staff id" }, { status: 400 });
     }
 
-    const staff = await prisma.staff.findUnique({
-      where: { staff_id: staffId },
-      select: {
-        staff_id: true,
-        first_name: true,
-        last_name: true,
-        email: true
-      }
-    });
+    const staff = await staffService.getStaffById(staffId);
 
-    if (!staff) {
-      return NextResponse.json({ message: "Staff not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(
-      {
-        data: {
-          id: staff.staff_id,
-          name: `${staff.first_name ?? ""} ${staff.last_name ?? ""}`.trim(),
-          email: staff.email ?? ""
-        }
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ data: staff }, { status: 200 });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("GET /api/staffs/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
@@ -88,59 +71,20 @@ export async function updateStaffByIdController(request: Request, { params }: Ro
       );
     }
 
-    const existing = await prisma.staff.findUnique({
-      where: { staff_id: staffId },
-      select: { staff_id: true }
+    const updated = await staffService.updateStaffById(staffId, {
+      first_name: firstName,
+      last_name: lastName,
+      birthday,
+      email,
+      phone,
+      license_number: licenseNumber
     });
 
-    if (!existing) {
-      return NextResponse.json({ message: "Staff not found" }, { status: 404 });
-    }
-
-    const duplicate = await prisma.staff.findFirst({
-      where: {
-        staff_id: { not: staffId },
-        OR: [{ email }, { phone }]
-      },
-      select: { staff_id: true }
-    });
-
-    if (duplicate) {
-      return NextResponse.json(
-        { message: "Staff with this email or phone already exists" },
-        { status: 409 }
-      );
-    }
-
-    const updated = await prisma.staff.update({
-      where: { staff_id: staffId },
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        birthday,
-        email,
-        phone,
-        license_number: licenseNumber
-      },
-      select: {
-        staff_id: true,
-        first_name: true,
-        last_name: true,
-        email: true
-      }
-    });
-
-    return NextResponse.json(
-      {
-        data: {
-          id: updated.staff_id,
-          name: `${updated.first_name ?? ""} ${updated.last_name ?? ""}`.trim(),
-          email: updated.email ?? ""
-        }
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ data: updated }, { status: 200 });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("PUT /api/staffs/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
