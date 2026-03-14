@@ -1,31 +1,178 @@
-﻿
+"use client";
+
+import { ThemeWebColor } from "@/app/utils/constants";
+import {
+  ArrowLeftOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography } from "antd";
+import Image from "next/image";
 import Link from "next/link";
 
+const { Title, Text } = Typography;
+
 export default function LoginPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
+
   return (
     <div
       style={{
-        minHeight: "calc(100vh - 78px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top left, #9bfaf7 0%, #e6fdfd 40%, #d9f8ff 72%, #c8f2ff 100%)",
+        padding: isMobile ? "20px 12px" : "36px 20px",
       }}
     >
-      <div
-        style={{
-          width: 420,
-          textAlign: "center",
-          background: "#fff",
-          borderRadius: 10,
-          padding: 24,
-        }}
-      >
-        <h2 style={{ marginTop: 0 }}>Login</h2>
-        <p style={{ color: "#666" }}>ยังไม่ได้เชื่อมระบบเข้าสู่ระบบ</p>
-        <div style={{ marginTop: 20 }}>
-          <Link href="/home">กลับหน้าหลัก</Link>
-        </div>
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        <Link
+          href="/home"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 14,
+            color: "#155f7b",
+            fontWeight: 600,
+          }}
+        >
+          <ArrowLeftOutlined />
+          กลับหน้าแรก
+        </Link>
+
+        <Card
+          styles={{ body: { padding: 0 } }}
+          style={{
+            borderRadius: 24,
+            border: "1px solid #cdeaf2",
+            overflow: "hidden",
+            boxShadow: "0 18px 40px rgba(7, 74, 92, 0.14)",
+          }}
+        >
+          <Row gutter={0}>
+            <Col xs={24} md={10}>
+              <div
+                style={{
+                  height: "100%",
+                  padding: isMobile ? 18 : 26,
+                  background: "linear-gradient(160deg, #032020 0%, #0c5f6a 60%, #0fa3a3 100%)",
+                }}
+              >
+                <Space size={10} align="center">
+                  <Image
+                    src="/icon/icon.png"
+                    alt="Clinic Icon"
+                    width={46}
+                    height={46}
+                    style={{ borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(255,255,255,0.4)" }}
+                  />
+                  <Text style={{ color: "#d2fcff", fontSize: 13 }}>INTELLIGENT DENTAL</Text>
+                </Space>
+
+                <Title
+                  level={2}
+                  style={{
+                    marginTop: 14,
+                    marginBottom: 10,
+                    color: "#ffffff",
+                    lineHeight: 1.2,
+                    fontSize: isMobile ? 26 : 34,
+                  }}
+                >
+                  ยินดีต้อนรับกลับ
+                </Title>
+                <Text style={{ color: "#d9fbff", fontSize: 14 }}>
+                  เข้าสู่ระบบเพื่อใช้งานการจัดการข้อมูลนัดหมาย ประวัติการรักษา และข้อมูลที่สำคัญของคลินิก
+                </Text>
+
+                <div
+                  style={{
+                    marginTop: 18,
+                    borderRadius: 14,
+                    padding: "10px 12px",
+                    background: "rgba(230, 253, 253, 0.12)",
+                    border: "1px solid rgba(194, 248, 255, 0.24)",
+                  }}
+                >
+                  <Space size={8}>
+                    <SafetyCertificateOutlined style={{ color: "#7dfff3" }} />
+                    <Text style={{ color: "#e4fbff" }}>ระบบเข้ารหัสความปลอดภัยระหว่างการใช้งาน</Text>
+                  </Space>
+                </div>
+              </div>
+            </Col>
+
+            <Col xs={24} md={14}>
+              <div style={{ padding: isMobile ? "20px 16px" : "28px 28px 24px" }}>
+                <Title level={3} style={{ margin: 0, color: "#0d3f56" }}>
+                  Login
+                </Title>
+                <Text style={{ color: "#587284" }}>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ</Text>
+
+                <Form layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }}>
+                  <Form.Item
+                    name="username"
+                    label={<Text strong style={{ color: "#16445f" }}>ชื่อผู้ใช้</Text>}
+                    rules={[{ required: true, message: "กรุณากรอกชื่อผู้ใช้" }]}
+                  >
+                    <Input
+                      prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                      placeholder="กรอกชื่อผู้ใช้งาน"
+                      style={{ height: 44, borderRadius: 10 }}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="password"
+                    label={<Text strong style={{ color: "#16445f" }}>รหัสผ่าน</Text>}
+                    rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined style={{ color: "#88a1b2" }} />}
+                      placeholder="กรอกรหัสผ่าน"
+                      style={{ height: 44, borderRadius: 10 }}
+                    />
+                  </Form.Item>
+
+                  <Form.Item style={{ marginBottom: 10 }}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      block
+                      style={{
+                        height: 46,
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        background: ThemeWebColor.header,
+                        borderColor: ThemeWebColor.header,
+                      }}
+                    >
+                      เข้าสู่ระบบ
+                    </Button>
+                  </Form.Item>
+                </Form>
+
+                <Flex justify="center" gap={6} wrap="wrap">
+                  <Text style={{ color: "#57748a", fontSize: 13 }}>ยังไม่มีบัญชี?</Text>
+                  <Link
+                    href="/register"
+                    style={{
+                      color: ThemeWebColor.header,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    สมัครสมาชิก
+                  </Link>
+                </Flex>
+              </div>
+            </Col>
+          </Row>
+        </Card>
       </div>
     </div>
   );

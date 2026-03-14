@@ -15,7 +15,7 @@ export default function PersonnelFooter() {
         padding: "12px 20px",
       }}
     >
-      © {new Date().getFullYear()} Intelligent Dental
+      {"\u00A9"} {new Date().getFullYear()} Intelligent Dental
     </Footer>
   );
 }
