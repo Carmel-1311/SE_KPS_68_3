@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Typography, Button, Input, Form, Select, message, Spin, Space, Popconfirm, Breadcrumb, Divider, Tag } from 'antd';
+import { Card, Typography, Button, Input, Form, Select, message, Spin, Space, Modal, Breadcrumb, Divider } from 'antd';
 import { SaveOutlined, DeleteOutlined, HomeOutlined, EditOutlined, CalendarOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 
@@ -36,6 +36,10 @@ export default function EditAppointmentPage() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
+  // 🌟 State สำหรับจัดการ Modal ยกเลิกและเหตุผล
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -50,7 +54,6 @@ export default function EditAppointmentPage() {
     try {
       if (typeof window === 'undefined') return;
       
-      // 🌟 ใช้ key 'appointment_schedule' ให้ตรงกับหน้าตาราง
       const storedData = localStorage.getItem('appointment_schedule');
       if (!storedData || !form) {
         setLoading(false);
@@ -68,7 +71,6 @@ export default function EditAppointmentPage() {
         const pId = targetAppointment.patient?.patient_id || '';
         const dId = targetAppointment.dentist?.dentist_id || '';
 
-        // แสดงผลชื่อคนไข้และแพทย์
         setDisplayNames({
           patient: targetAppointment.patient ? `${targetAppointment.patient.first_name} ${targetAppointment.patient.last_name}` : `คนไข้รหัส ${pId}`,
           dentist: targetAppointment.dentist ? `ทพ./ทพญ. ${targetAppointment.dentist.first_name} ${targetAppointment.dentist.last_name}` : `แพทย์รหัส ${dId}`
@@ -76,7 +78,6 @@ export default function EditAppointmentPage() {
 
         setCurrentStatus(targetAppointment.status);
 
-        // 🌟 set ค่าเข้า Form
         form.setFieldsValue({
           patient_id: pId ? String(pId) : '',
           dentist_id: dId ? String(dId) : '', 
@@ -86,11 +87,10 @@ export default function EditAppointmentPage() {
           status: targetAppointment.status
         });
 
-        // โหลดเวลาว่างตอนแรกเริ่ม
         fetchAvailableSlots(targetAppointment.appointment_date, dId);
       } else {
         message.error('ไม่พบข้อมูลการนัดหมายนี้');
-        router.push('/personnel/appointment-schedule'); // 🌟 แก้ URL กลับ
+        router.push('/personnel/appointment-schedule');
       }
       
       setLoading(false);
@@ -98,11 +98,10 @@ export default function EditAppointmentPage() {
       console.error('Error fetching appointment:', error);
       message.error('ดึงข้อมูลล้มเหลว');
       setLoading(false);
-      router.push('/personnel/appointment-schedule'); // 🌟 แก้ URL กลับ
+      router.push('/personnel/appointment-schedule');
     }
   };
 
-  // 🌟 ฟังก์ชันดึง API available-slots ตามวันและหมอ (รับเป็น dentistId)
   const fetchAvailableSlots = (date: string, dentistId: string | number) => {
     if (!date || !dentistId) return;
     setLoadingSlots(true);
@@ -115,11 +114,10 @@ export default function EditAppointmentPage() {
       ];
       const randomAvailable = mockSlots.filter(() => Math.random() > 0.1);
       
-      // ถ้าเวลาเดิมที่เคยเลือกไว้ ไม่มีในคิวว่าง (เพราะโดนจองไปแล้ว) ให้แอดกลับเข้าไปชั่วคราวเพื่อให้แสดงใน Select ได้
       const currentTime = form.getFieldValue('appointment_time');
       if (currentTime && !randomAvailable.includes(currentTime)) {
         randomAvailable.push(currentTime);
-        randomAvailable.sort(); // เรียงเวลาใหม่
+        randomAvailable.sort(); 
       }
 
       setAvailableSlots(randomAvailable);
@@ -144,7 +142,6 @@ export default function EditAppointmentPage() {
           const index = appointments.findIndex((item: any) => item.appointment_id === Number(idParam));
           
           if (index !== -1) {
-            // 🌟 อัปเดตเฉพาะฟิลด์ที่มีการแก้ไข เพื่อรักษาโครงสร้าง Object `patient` และ `dentist` เดิมไว้
              appointments[index] = {
               ...appointments[index], 
               appointment_date: values.appointment_date,
@@ -155,7 +152,7 @@ export default function EditAppointmentPage() {
 
             localStorage.setItem('appointment_schedule', JSON.stringify(appointments));
             message.success('อัปเดตข้อมูลสำเร็จ');
-            router.push('/personnel/appointment-schedule'); // 🌟 แก้ URL
+            router.push('/personnel/appointment-schedule');
           }
         }
       }, 500);
@@ -165,7 +162,13 @@ export default function EditAppointmentPage() {
     }
   };
 
-  const handleDelete = async () => {
+  // 🌟 ฟังก์ชันจัดการเมื่อกดยืนยันใน Modal ยกเลิก
+  const handleConfirmDelete = async () => {
+    if (!cancelReason.trim()) {
+      message.warning('กรุณาระบุเหตุผลการยกเลิก');
+      return;
+    }
+
     try {
       setTimeout(() => {
         const storedData = localStorage.getItem('appointment_schedule');
@@ -177,16 +180,18 @@ export default function EditAppointmentPage() {
             appointments[index] = {
               ...appointments[index],
               is_deleted: true,
-              status: 'cancelled'
+              status: 'cancelled',
+              cancel_reason: cancelReason // 🌟 บันทึกเหตุผลการยกเลิกลงไปด้วย
             };
             localStorage.setItem('appointment_schedule', JSON.stringify(appointments));
           }
         }
-        message.success('ลบการนัดหมายเรียบร้อยแล้ว');
-        router.push('/personnel/appointment-schedule'); // 🌟 แก้ URL
+        message.success('ยกเลิกการนัดหมายเรียบร้อยแล้ว');
+        setIsCancelModalVisible(false);
+        router.push('/personnel/appointment-schedule');
       }, 400);
     } catch (error) {
-      message.error('ลบการนัดหมายไม่สำเร็จ');
+      message.error('ยกเลิกการนัดหมายไม่สำเร็จ');
     }
   };
 
@@ -213,9 +218,15 @@ export default function EditAppointmentPage() {
             <Text type="secondary">ปรับปรุงข้อมูลหรือสถานะของการนัดหมายนี้</Text>
           </div>
           
-          <Popconfirm title="คุณแน่ใจหรือไม่ที่จะลบการนัดหมายนี้ออกจากระบบ?" onConfirm={handleDelete} okText="ยืนยัน" cancelText="ปิด" okButtonProps={{ danger: true }}>
-            <Button danger icon={<DeleteOutlined />} disabled={currentStatus === 'cancelled'}>ลบการนัดหมาย</Button>
-          </Popconfirm>
+          {/* 🌟 เปลี่ยนจาก Popconfirm เป็นปุ่มธรรมดาที่กดแล้วเปิด Modal แทน */}
+          <Button 
+            danger 
+            icon={<DeleteOutlined />} 
+            disabled={currentStatus === 'cancelled'}
+            onClick={() => setIsCancelModalVisible(true)}
+          >
+            ยกเลิกการนัดหมาย
+          </Button>
         </div>
 
         <Form form={form} layout="vertical" onFinish={handleUpdate}>
@@ -251,7 +262,6 @@ export default function EditAppointmentPage() {
 
           <Divider />
 
-          {/* 🌟 สถานะสำหรับ Staff: รองรับ request_cancel ตาม Requirement */}
           <Form.Item name="status" label="สถานะ (Status)">
             <Select size="large">
               <Select.Option value="scheduled">รอดำเนินการ (Scheduled)</Select.Option>
@@ -283,6 +293,32 @@ export default function EditAppointmentPage() {
           </Form.Item>
         </Form>
       </Card>
+
+      {/* 🌟 Modal สำหรับกรอกเหตุผลการยกเลิก */}
+      <Modal
+        title={<span><DeleteOutlined style={{ color: '#ff4d4f', marginRight: '8px' }} />ยืนยันการยกเลิกนัดหมาย</span>}
+        open={isCancelModalVisible}
+        onOk={handleConfirmDelete}
+        onCancel={() => {
+          setIsCancelModalVisible(false);
+          setCancelReason(''); // เคลียร์ข้อความเมื่อปิด
+        }}
+        okText="ยืนยันยกเลิก"
+        cancelText="ปิด"
+        okButtonProps={{ danger: true, disabled: !cancelReason.trim() }} // บังคับว่าต้องพิมพ์เหตุผลถึงจะกดได้
+      >
+        <div style={{ marginTop: '16px' }}>
+          <Text>คุณแน่ใจหรือไม่ที่จะยกเลิกการนัดหมายนี้? กรุณาระบุเหตุผลด้านล่าง:</Text>
+          <Input.TextArea
+            rows={4}
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="ตัวอย่างเช่น: คนไข้ไม่สะดวกมาตามนัด, หมอติดธุระด่วน..."
+            style={{ marginTop: '12px' }}
+          />
+        </div>
+      </Modal>
+
     </div>
   );
 }
