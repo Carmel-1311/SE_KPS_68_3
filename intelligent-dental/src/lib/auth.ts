@@ -8,7 +8,7 @@ export function getCurrentUser(): User {
   // จำลอง user ไปก่อน
   return {
     id: 1,
-    role: "staff"
+    role: "dentist"
   }
 
 }
