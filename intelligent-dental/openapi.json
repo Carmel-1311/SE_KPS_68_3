@@ -2775,6 +2775,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -4397,7 +4398,7 @@
         ]
       }
     },
-    "/api/mobile-dental/{mobile_dental_id}/patients": {
+    "/api/mobile-dental/{id}/patients": {
       "post": {
         "summary": "patient_in_mobile",
         "deprecated": false,
@@ -4407,7 +4408,7 @@
         ],
         "parameters": [
           {
-            "name": "mobile_dental_id",
+            "name": "id",
             "in": "path",
             "description": "",
             "required": true,
@@ -4420,37 +4421,124 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "first_name": {
-                    "type": "string"
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "first_name": {
+                      "type": "string"
+                    },
+                    "last_name": {
+                      "type": "string"
+                    },
+                    "birthday": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "idcard": {
+                      "type": "string"
+                    }
                   },
-                  "last_name": {
-                    "type": "string"
-                  },
-                  "birthday": {
-                    "type": "string"
-                  },
-                  "phone": {
-                    "type": "string"
-                  },
-                  "idcard": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "first_name",
-                  "last_name",
-                  "birthday",
-                  "phone",
-                  "idcard"
-                ]
+                  "required": [
+                    "first_name",
+                    "last_name",
+                    "birthday",
+                    "phone",
+                    "idcard"
+                  ]
+                }
               },
               "examples": {}
             }
           },
           "required": true
         },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "patient_id",
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "patient_in_mobiles",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",

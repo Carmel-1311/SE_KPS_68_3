@@ -3,12 +3,15 @@ import * as repo from "@/repositories/inspection_recordRepository"
 import { AppError } from "@/utils/AppError"
 import { UpdateInspectionRecordInput,CreateInspectionRecordInput } from "@/app/mappers/inspection_record.mapper"
 
-export async function getAllInspectionRecordByUser(user: { id: number, role: string }): Promise<ReturnType<typeof map.inspectionRecordMap.toResponseList>> {
+export async function getAllInspectionRecordByUser(user: { id: number, role: string },patient_id:number|null): Promise<ReturnType<typeof map.inspectionRecordMap.toResponseList>> {
     if (user.role === "patient") {
         return map.inspectionRecordMap.toResponseList(await repo.findMedicalRecordsByPatientId(user.id))
     }
     else {
-        return map.inspectionRecordMap.toResponseList(await repo.findAllMedicalRecords())
+        if(!patient_id){
+            throw new AppError(400, "AUTH-001", "patient not found", "NOT_FOUND")
+        }
+        return map.inspectionRecordMap.toResponseList(await repo.findMedicalRecordsByPatientId(patient_id))
     }
 }
 

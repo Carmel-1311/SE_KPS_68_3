@@ -18,7 +18,7 @@ export async function getMobileDentalsById(id: number)
     const mobile = await repo.findMobileDentalById(id)
 
     if (!mobile) {
-        throw new AppError(404, "SCHED-001", "inspection record not found", "NOT_FOUND")
+        throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
     }
     
     return map.MobileDentalsMap.toRespons(mobile)
@@ -33,7 +33,7 @@ export async function updateMobileDentals(id: number, data: UpdateMobileDentalnp
     
     const existingmobile = await repo.findMobileDentalById(id)
     if (!existingmobile) {
-        throw new AppError(404, "SCHED-001", "inspection record not found", "NOT_FOUND")
+        throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
     }
     const updatedmobile = await repo.updateMobileDental(id, map.MobileDentalsMap.toUpdateInput(data))
     return getMobileDentalsById(id)
@@ -43,7 +43,7 @@ export async function deleteMobileDentals(id: number) {
     // Check if mobile exists before deleting to provide meaningful error message
     const existingmobile = await repo.findMobileDentalById(id)
     if (!existingmobile) {
-        throw new AppError(404, "SCHED-001", "inspection record not found", "NOT_FOUND")
+        throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
     }
     return repo.deleteMobileDental(id)
 }

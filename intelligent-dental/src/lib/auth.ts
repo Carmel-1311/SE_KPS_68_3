@@ -1,6 +1,6 @@
 export type User = {
   id: number
-  role: "doctor" | "patient" | "staff"
+  role: "dentist" | "patient" | "staff" | "company"
 }
 
 export function getCurrentUser(): User {
