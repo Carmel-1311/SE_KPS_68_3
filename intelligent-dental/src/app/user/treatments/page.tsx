@@ -1,15 +1,24 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { Button, Card, Divider, Input, Table, Tag, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Divider,
+  Input,
+  Pagination,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Search } from "lucide-react";
 import {
-  mockTreatments,
-  type TreatmentData,
-  type TreatmentDetail,
-} from "@/mock/mockTreatment";
+  mockTreatmentList,
+  type Data as TreatmentData,
+  type Detail as TreatmentDetail,
+} from "@/mock/mockTreatmentById";
 
 const { Text } = Typography;
 
@@ -27,9 +36,9 @@ const thaiMonthsShort = [
   "พ.ย.",
   "ธ.ค.",
 ];
-const formatThaiDate = (dateValue: string) => {
+const formatThaiDate = (dateValue: string | Date) => {
   const date = dayjs(dateValue);
-  if (!date.isValid()) return dateValue;
+  if (!date.isValid()) return String(dateValue);
   return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
     "YYYY",
   )}`;
@@ -46,17 +55,33 @@ const getStatusColor = (status: string) =>
 
 export default function UserTreatmentsPage() {
   const [search, setSearch] = useState("");
+  const [datePage, setDatePage] = useState(1);
+  const datePageSize = 10;
 
   const treatments = useMemo(() => {
-    return [...mockTreatments.data].sort((a, b) =>
-      a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-    );
+    return [...mockTreatmentList].sort((a, b) => {
+      const aValue = dayjs(a.date).valueOf();
+      const bValue = dayjs(b.date).valueOf();
+      return bValue - aValue;
+    });
   }, []);
 
   const [activeId, setActiveId] = useState<number>(treatments[0]?.id ?? 0);
 
   const activeTreatment =
     treatments.find((item) => item.id === activeId) ?? treatments[0];
+
+  useEffect(() => {
+    const index = treatments.findIndex((item) => item.id === activeId);
+    if (index === -1) return;
+    const nextPage = Math.floor(index / datePageSize) + 1;
+    if (nextPage !== datePage) setDatePage(nextPage);
+  }, [activeId, datePage, datePageSize, treatments]);
+
+  const pagedTreatments = useMemo(() => {
+    const start = (datePage - 1) * datePageSize;
+    return treatments.slice(start, start + datePageSize);
+  }, [datePage, datePageSize, treatments]);
 
   const filteredDetails = useMemo(() => {
     if (!activeTreatment) return [];
@@ -88,7 +113,7 @@ export default function UserTreatmentsPage() {
       <Card
         title="ประวัติการรักษา"
         style={{ maxWidth: 900, margin: "0 auto" }}
-        bodyStyle={{ padding: "1rem" }}
+        styles={{ body: { padding: "1rem" } }}
       >
         <Text>ไม่มีข้อมูลการรักษา</Text>
       </Card>
@@ -99,12 +124,15 @@ export default function UserTreatmentsPage() {
     <Card
       title="ประวัติการรักษา"
       style={{ maxWidth: 900, margin: "0 auto" }}
-      bodyStyle={{ padding: "1rem" }}
+      styles={{ body: { padding: "1rem" } }}
     >
       <div className="date-picker">
         <Text className="section-title">เลือกวันที่เข้ารับบริการ</Text>
+        <Text className="date-counter">
+          ทั้งหมด {treatments.length} รายการ
+        </Text>
         <div className="date-list">
-          {treatments.map((item) => (
+          {pagedTreatments.map((item) => (
             <Button
               key={item.id}
               size="small"
@@ -115,6 +143,17 @@ export default function UserTreatmentsPage() {
             </Button>
           ))}
         </div>
+        {treatments.length > datePageSize && (
+          <Pagination
+            className="date-pagination"
+            size="small"
+            current={datePage}
+            pageSize={datePageSize}
+            total={treatments.length}
+            showSizeChanger={false}
+            onChange={(page) => setDatePage(page)}
+          />
+        )}
       </div>
 
       <div className="summary">
@@ -137,7 +176,7 @@ export default function UserTreatmentsPage() {
           </Text>
         </div>
         <div>
-          <Text className="summary-label">ประวัติ</Text>
+          <Text className="summary-label">รายละเอียด</Text>
           <Text className="summary-value">{activeTreatment.history}</Text>
         </div>
       </div>
@@ -186,6 +225,19 @@ export default function UserTreatmentsPage() {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+
+        .date-counter {
+          display: inline-block;
+          margin-left: 8px;
+          font-size: 12px;
+          color: #6b7b83;
+        }
+
+        .date-pagination {
+          margin-top: 10px;
+          display: flex;
+          justify-content: flex-end;
         }
 
         .summary {
