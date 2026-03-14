@@ -1,8 +1,9 @@
 import * as repo from "@/repositories/staffRepository"
 import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/staff.mapper"
+import { role_staff } from "@prisma/client"
 
-const validRoles = new Set(["staff", "dentist"])
+const validRoles = new Set(Object.values(role_staff))
 
 export async function listStaffs(limit: number, page: number) {
   const staffs = await repo.findStaffs((page - 1) * limit, limit)
@@ -18,7 +19,7 @@ export async function createStaff(data: {
   license_number: string | null
   role: string
 }) {
-  if (!validRoles.has(data.role)) {
+  if (!validRoles.has(data.role as role_staff)) {
     throw new AppError(400, "STAFF-001", "Invalid role. Allowed values: staff, dentist", "VALIDATION")
   }
 

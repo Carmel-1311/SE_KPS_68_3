@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma, status_user } from "@prisma/client"
 
 export type PatientListResponse = {
   id: number
@@ -53,22 +53,18 @@ export const patientDetailQuery =
 export type PatientDetail = Prisma.patientGetPayload<typeof patientDetailQuery>
 
 export const patientMap = {
-  toResponseListItem(data: PatientList): PatientListResponse {
-    return {
-      id: data.patient_id,
-      first_name: data.first_name ?? "",
-      last_name: data.last_name ?? "",
-      name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
-      email: data.email ?? "",
-      phone: data.phone ?? "",
-      birthday: data.birthday ? data.birthday.toISOString().slice(0, 10) : null,
-      allergy: data.allergy ?? "",
-      status: data.status ?? "active"
-    }
-  },
-
   toResponseList(list: PatientList[]): PatientListResponse[] {
-    return list.map(item => this.toResponseListItem(item))
+    return list.map(item => ({
+      id: item.patient_id,
+      first_name: item.first_name ?? "",
+      last_name: item.last_name ?? "",
+      name: `${item.first_name ?? ""} ${item.last_name ?? ""}`.trim(),
+      email: item.email ?? "",
+      phone: item.phone ?? "",
+      birthday: item.birthday ? item.birthday.toISOString().slice(0, 10) : null,
+      allergy: item.allergy ?? "",
+      status: item.status ?? "active"
+    }))
   },
 
   toResponse(data: PatientDetail): PatientResponse {
@@ -93,14 +89,13 @@ export const patientMap = {
     patient_id: number
   }): Prisma.patientCreateInput {
     return {
-      patient_id: data.patient_id,
       first_name: data.first_name,
       last_name: data.last_name,
       birthday: data.birthday,
       allergy: data.allergy,
       email: data.email,
       phone: data.phone,
-      status: data.status as "active" | "inactive"
+      status: data.status as status_user
     }
   },
 
@@ -120,7 +115,7 @@ export const patientMap = {
       allergy: data.allergy,
       email: data.email,
       phone: data.phone,
-      status: data.status as "active" | "inactive"
+      status: data.status as status_user
     }
   }
 }

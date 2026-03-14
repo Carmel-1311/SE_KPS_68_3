@@ -93,7 +93,7 @@ model mobile_dental {
 }
 
 model patient {
-  patient_id        Int                 @id
+  patient_id        Int                 @id @default(autoincrement())
   first_name        String?             @db.VarChar(100)
   last_name         String?             @db.VarChar(100)
   birthday          DateTime?           @db.Date

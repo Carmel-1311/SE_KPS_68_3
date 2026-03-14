@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma } from "@/generated/prisma"
 import { prisma } from "@/utils/prisma"
 import * as map from "@/app/mappers/staff.mapper"
 

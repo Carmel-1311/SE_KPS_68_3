@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client"
+import { Prisma, role_staff } from "@prisma/client"
 
 export type StaffListResponse = {
   id: number
@@ -76,7 +76,7 @@ export const staffMap = {
       email: data.email,
       phone: data.phone,
       license_number: data.license_number,
-      role: data.role as "staff" | "dentist"
+      role: data.role as role_staff
     }
   },
 

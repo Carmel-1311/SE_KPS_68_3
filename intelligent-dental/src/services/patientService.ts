@@ -1,8 +1,9 @@
 import * as repo from "@/repositories/patientRepository"
 import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/patient.mapper"
+import { status_user } from "@prisma/client"
 
-const validStatuses = new Set(["active", "inactive"])
+const validStatuses = new Set(Object.values(status_user))
 
 export async function listPatients(limit: number, page: number) {
   const patients = await repo.findPatients((page - 1) * limit, limit)
@@ -18,7 +19,7 @@ export async function createPatient(data: {
   phone: string
   status: string
 }) {
-  if (!validStatuses.has(data.status)) {
+  if (!validStatuses.has(data.status as status_user)) {
     throw new AppError(400, "PAT-001", "Invalid status. Allowed values: active, inactive", "VALIDATION")
   }
 
@@ -40,8 +41,7 @@ export async function createPatient(data: {
       status: data.status
     })
   )
-
-  return map.patientMap.toResponseListItem(created)
+  return map.patientMap.toResponseList([created])[0]
 }
 
 export async function getPatientById(id: number) {
@@ -62,7 +62,7 @@ export async function updatePatient(id: number, data: {
   phone: string
   status: string
 }) {
-  if (!validStatuses.has(data.status)) {
+  if (!validStatuses.has(data.status as status_user)) {
     throw new AppError(400, "PAT-001", "Invalid status. Allowed values: active, inactive", "VALIDATION")
   }
 
