@@ -1,170 +1,258 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Spin, Tag, Modal, Descriptions, Badge, Skeleton } from "antd";
 import { 
-  ClockCircleOutlined, CalendarOutlined, MedicineBoxOutlined, 
-  InfoCircleOutlined, UserOutlined 
+  Table, 
+  Typography, 
+  Tag, 
+  Input, 
+  Modal, 
+  Descriptions, 
+  Tooltip, 
+  Button, 
+  Space,
+  Divider
+} from "antd";
+import { 
+  SearchOutlined, 
+  ReadOutlined, 
+  IdcardOutlined,
+  ClockCircleOutlined,
+  CalendarOutlined,
+  SolutionOutlined
 } from "@ant-design/icons";
-import dayjs from "dayjs"; // แนะนำให้ใช้ dayjs สำหรับจัดการวันที่
+import dayjs from "dayjs";
 import "dayjs/locale/th";
 
 dayjs.locale("th");
 
 const { Title, Text } = Typography;
 
-// --- Config ---
-const START_HOUR = 8;
-const END_HOUR = 19;
-const HOUR_HEIGHT = 100;
-const DAYS_TH = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
+// --- Interface ตาม API Appointment ที่ให้มา ---
+interface Appointment {
+  appointment_id: number;
+  patient: { id: number; name: string };
+  staff: { id: number; name: string };
+  appointment_date: string;
+  appointment_time: string;
+  type: string;
+  status: "scheduled" | "completed" | "cancelled" | "request_cancel";
+  medical_record_id: number | null;
+  inspection_record_id: number | null;
+}
 
-export default function AppointmentCalendarWithDates() {
+export default function DoctorDatabaseTable() {
   const [loading, setLoading] = useState(true);
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  
-  // ฟังก์ชันคำนวณวันที่ของแต่ละวันในสัปดาห์ปัจจุบัน (เริ่มที่อาทิตย์)
-  const getDaysInWeek = () => {
-    const startOfWeek = dayjs().startOf("week");
-    return Array.from({ length: 7 }).map((_, i) => {
-      const dateObj = startOfWeek.add(i, "day");
-      return {
-        dayName: DAYS_TH[i],
-        dateNum: dateObj.date(),
-        fullDate: dateObj.format("YYYY-MM-DD"),
-        isToday: dateObj.isSame(dayjs(), "day"),
-      };
-    });
-  };
-
-  const weekDays = getDaysInWeek();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // จำลองข้อมูลนัดหมาย (ในงานจริงให้ใช้ format YYYY-MM-DD ตรงกับ fullDate)
-    const mockData = [
-      {
-        appointment_id: 101,
-        patient: { name: "คุณวิภาดา สวยงาม" },
-        appointment_date: dayjs().startOf("week").add(1, "day").format("YYYY-MM-DD"), // วันจันทร์ของสัปดาห์นี้
-        appointment_time: "09:30:00",
-        type: "ขูดหินปูน",
-        status: "scheduled",
-      },
-      {
-        appointment_id: 102,
-        patient: { name: "คุณสมชาย ใจดี" },
-        appointment_date: dayjs().format("YYYY-MM-DD"), // วันนี้
-        appointment_time: "13:00:00",
-        type: "อุดฟัน",
-        status: "completed",
-      }
-    ];
-    setAppointments(mockData);
-    setLoading(false);
+    fetchAppointments();
   }, []);
 
+  const fetchAppointments = async () => {
+    setLoading(true);
+    // Mock ข้อมูลทั้งหมดตาม API
+    const mockApiResponse = {
+      "data": [
+        {
+          "appointment_id": 1,
+          "patient": { "id": 35, "name": "คุณวิภาดา สวยงาม" },
+          "staff": { "id": 1, "name": "ทพ. สมพงษ์" },
+          "appointment_date": "2026-03-16",
+          "appointment_time": "09:30:00",
+          "type": "ผู้ป่วยธรรมดา",
+          "status": "scheduled",
+          "medical_record_id": 501,
+          "inspection_record_id": null
+        },
+        {
+          "appointment_id": 2,
+          "patient": { "id": 42, "name": "คุณสมชาย ใจดี" },
+          "staff": { "id": 1, "name": "ทพ. สมพงษ์" },
+          "appointment_date": "2026-03-16",
+          "appointment_time": "13:00:00",
+          "type": "ผู้ป่วยธรรมดา",
+          "status": "completed",
+          "medical_record_id": 502,
+          "inspection_record_id": 601
+        }
+      ]
+    };
+    setTimeout(() => {
+      setAppointments(mockApiResponse.data as Appointment[]);
+      setLoading(false);
+    }, 500);
+  };
+
+  const columns = [
+    {
+      title: "ID",
+      dataIndex: "appointment_id",
+      key: "id",
+      width: 70,
+    },
+    {
+      title: "ชื่อ-นามสกุล",
+      dataIndex: ["patient", "name"],
+      key: "patientName",
+      render: (text: string) => <Text strong>{text}</Text>,
+    },
+    {
+      title: "วันที่",
+      dataIndex: "appointment_date",
+      key: "date",
+      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+    },
+    {
+      title: "เวลา",
+      dataIndex: "appointment_time",
+      key: "time",
+      render: (time: string) => time.substring(0, 5),
+    },
+    {
+      title: "ประเภท",
+      dataIndex: "type",
+      key: "type",
+    },
+    {
+      title: "สถานะ",
+      dataIndex: "status",
+      key: "status",
+      render: (status: string) => {
+        const statusMap: any = {
+          scheduled: { color: "blue", text: "Scheduled" },
+          completed: { color: "green", text: "Completed" },
+          cancelled: { color: "red", text: "Cancelled" },
+          request_cancel: { color: "orange", text: "Req. Cancel" }
+        };
+        const current = statusMap[status] || { color: "default", text: status };
+        return <Tag color={current.color} bordered={false} style={{ fontSize: '11px' }}>{current.text.toUpperCase()}</Tag>;
+      },
+    },
+    {
+      title: "Detail",
+      key: "action",
+      width: 80,
+      align: 'center' as const,
+      render: (_: any, record: Appointment) => (
+        <Tooltip title="Detail" color="#262626">
+          <Button 
+            type="text" 
+            icon={<ReadOutlined style={{ fontSize: '18px', color: '#595959' }} />} 
+            onClick={() => { setSelectedAppointment(record); setIsModalOpen(true); }}
+          />
+        </Tooltip>
+      ),
+    },
+  ];
+
   return (
-    <Card bodyStyle={{ padding: 0 }} bordered={false} style={{ borderRadius: '12px', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ padding: '20px 24px', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
-        <Title level={3} style={{ margin: 0 }}>
-          <CalendarOutlined style={{ color: '#1890ff', marginRight: 10 }} /> 
-          ตารางนัดหมายประจำสัปดาห์
-        </Title>
-        <Text type="secondary">{dayjs().startOf("week").format("D MMM")} - {dayjs().endOf("week").format("D MMM YYYY")}</Text>
+    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Title level={4} style={{ margin: 0 }}>ตารางการนัดหมาย</Title>
+        <Input 
+          placeholder="ค้นหาชื่อคนไข้..." 
+          prefix={<SearchOutlined />} 
+          style={{ width: 280 }} 
+          onChange={(e) => setSearchText(e.target.value)}
+        />
       </div>
 
-      {loading ? <div style={{ height: 400, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spin /></div> : (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          
-          {/* Day Headers พร้อมวันที่ */}
-          <div style={{ display: 'flex', background: '#fff', borderBottom: '2px solid #1890ff' }}>
-            <div style={{ width: 80, flexShrink: 0, borderRight: '1px solid #f0f0f0' }} />
-            {weekDays.map((day, i) => (
-              <div key={i} style={{ 
-                flex: 1, 
-                textAlign: 'center', 
-                padding: '12px 0', 
-                background: day.isToday ? '#e6f7ff' : 'transparent',
-                borderLeft: i > 0 ? '1px solid #f0f0f0' : 'none',
-                transition: 'all 0.3s'
-              }}>
-                <div style={{ fontSize: '12px', color: day.isToday ? '#1890ff' : '#8c8c8c', fontWeight: 500 }}>{day.dayName}</div>
-                <div style={{ 
-                  fontSize: '20px', 
-                  fontWeight: 'bold', 
-                  color: day.isToday ? '#1890ff' : '#262626',
-                  marginTop: '2px'
-                }}>
-                  {day.dateNum}
-                </div>
-                {day.isToday && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#1890ff', margin: '4px auto 0' }} />}
-              </div>
-            ))}
+      <Table 
+        columns={columns} 
+        dataSource={appointments.filter(a => a.patient.name.includes(searchText))}
+        rowKey="appointment_id"
+        loading={loading}
+        size="small"
+        bordered
+        pagination={{ pageSize: 15 }}
+      />
+
+      {/* --- Modal แสดงข้อมูลทั้งหมดตาม API --- */}
+      <Modal
+        title={
+          <Space>
+            <SolutionOutlined style={{ color: '#1890ff' }} />
+            <span>Full Appointment Details</span>
+          </Space>
+        }
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={[
+          <Button key="close" type="primary" onClick={() => setIsModalOpen(false)}>
+            Close
+          </Button>
+        ]}
+        width={650}
+      >
+        {selectedAppointment && (
+          <div style={{ marginTop: '16px' }}>
+            <Descriptions 
+              bordered 
+              column={2} 
+              size="small"
+              labelStyle={{ background: '#fafafa', fontWeight: 'bold' }}
+            >
+              {/* ข้อมูลพื้นฐานของการนัดหมาย */}
+              <Descriptions.Item label="Appointment ID" span={2}>
+                <Text code>{selectedAppointment.appointment_id}</Text>
+              </Descriptions.Item>
+
+              {/* ข้อมูลผู้ป่วย */}
+              <Descriptions.Item label="ชื่อ-นามสกุล">
+                <Text strong>{selectedAppointment.patient.name}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="Patient ID">
+                <Tag icon={<IdcardOutlined />}>{selectedAppointment.patient.id}</Tag>
+              </Descriptions.Item>
+
+              {/* ข้อมูลแพทย์ */}
+              <Descriptions.Item label="Attending Staff">
+                {selectedAppointment.staff.name}
+              </Descriptions.Item>
+              <Descriptions.Item label="Staff ID">
+                {selectedAppointment.staff.id}
+              </Descriptions.Item>
+
+              {/* วันเวลาและประเภท */}
+              <Descriptions.Item label="วันที่">
+                <CalendarOutlined /> {dayjs(selectedAppointment.appointment_date).format("D MMMM YYYY")}
+              </Descriptions.Item>
+              <Descriptions.Item label="เวลา">
+                <ClockCircleOutlined /> {selectedAppointment.appointment_time.substring(0, 5)} น.
+              </Descriptions.Item>
+              
+              <Descriptions.Item label="ประเภทการรักษา" span={2}>
+                {selectedAppointment.type}
+              </Descriptions.Item>
+
+              {/* สถานะและรหัสอ้างอิง */}
+              <Descriptions.Item label="สถานะ" span={2}>
+                {selectedAppointment.status.toUpperCase()}
+              </Descriptions.Item>
+
+              <Descriptions.Item label="Medical Record ID">
+                {selectedAppointment.medical_record_id ? (
+                   <Text strong style={{ color: '#52c41a' }}>{selectedAppointment.medical_record_id}</Text>
+                ) : <Text type="secondary">N/A</Text>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Inspection ID">
+                {selectedAppointment.inspection_record_id ? (
+                   <Text strong style={{ color: '#1890ff' }}>{selectedAppointment.inspection_record_id}</Text>
+                ) : <Text type="secondary">N/A</Text>}
+              </Descriptions.Item>
+            </Descriptions>
           </div>
-
-          <div style={{ display: 'flex', position: 'relative' }}>
-            {/* Time Column */}
-            <div style={{ width: 80, flexShrink: 0, background: '#fafafa', borderRight: '1px solid #f0f0f0' }}>
-              {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
-                <div key={i} style={{ height: HOUR_HEIGHT, textAlign: 'center', paddingTop: 10 }}>
-                  <Text strong style={{ fontSize: 12, color: '#bfbfbf' }}>{`${(START_HOUR + i).toString().padStart(2, '0')}:00`}</Text>
-                </div>
-              ))}
-            </div>
-
-            {/* Grid Area */}
-            <div style={{ flex: 1, display: 'flex', position: 'relative', background: '#fff' }}>
-              {/* Horizontal Lines */}
-              <div style={{ position: 'absolute', width: '100%', height: '100%', pointerEvents: 'none' }}>
-                {Array.from({ length: (END_HOUR - START_HOUR + 1) }).map((_, i) => (
-                  <div key={i} style={{ height: HOUR_HEIGHT, borderBottom: '1px solid #f5f5f5' }} />
-                ))}
-              </div>
-
-              {/* Appointment Blocks */}
-              {weekDays.map((day, dayIdx) => (
-                <div key={dayIdx} style={{ flex: 1, position: 'relative', borderRight: '1px solid #f0f0f0' }}>
-                  {appointments
-                    .filter(a => a.appointment_date === day.fullDate)
-                    .map(item => {
-                      const [h, m] = item.appointment_time.split(":").map(Number);
-                      const top = ((h - START_HOUR) * HOUR_HEIGHT) + (m * HOUR_HEIGHT / 60);
-
-                      return (
-                        <div 
-                          key={item.appointment_id}
-                          onClick={() => setSelectedId(item.appointment_id)}
-                          style={{
-                            position: 'absolute', top, width: '92%', left: '4%', height: 85,
-                            background: item.status === 'completed' ? '#f6ffed' : '#fff',
-                            borderLeft: `4px solid ${item.status === 'completed' ? '#52c41a' : '#1890ff'}`,
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                            borderRadius: '4px', padding: '10px', zIndex: 5, cursor: 'pointer'
-                          }}
-                          className="apt-card"
-                        >
-                          <Text strong style={{ fontSize: '14px', display: 'block' }}>{item.patient.name}</Text>
-                          <Text type="secondary" style={{ fontSize: '12px' }}><MedicineBoxOutlined /> {item.type}</Text>
-                          <div style={{ marginTop: '5px' }}>
-                            <Tag color={item.status === 'completed' ? 'green' : 'blue'} style={{ fontSize: '10px' }}>
-                              {item.appointment_time.substring(0, 5)} น.
-                            </Tag>
-                          </div>
-                        </div>
-                      );
-                  })}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       <style jsx global>{`
-        .apt-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s; }
+        .ant-table-thead > tr > th { background: #f0f2f5 !important; font-weight: bold !important; }
+        .ant-table-row:hover { cursor: pointer; }
       `}</style>
-    </Card>
+    </div>
   );
 }

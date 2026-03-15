@@ -139,11 +139,9 @@ export default function DentistPersonalSchedule() {
       <Modal
         title={<Title level={4} style={{ margin: 0 }}><SolutionOutlined /> รายละเอียดเคสคนไข้</Title>}
         open={isModalOpen}
+        footer={null}
         onCancel={() => setIsModalOpen(false)}
-        footer={[
-          <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => setIsModalOpen(false)}>ยกเลิกนัด</Button>,
-          <Button key="checkin" type="primary" icon={<CheckCircleOutlined />} onClick={() => setIsModalOpen(false)}>บันทึกการเข้าตรวจ</Button>,
-        ]}
+        onOk={() => setIsModalOpen(false)}
         width={550}
       >
         {selectedCase && (

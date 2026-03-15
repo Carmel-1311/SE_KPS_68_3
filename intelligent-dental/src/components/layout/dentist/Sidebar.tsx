@@ -14,6 +14,7 @@ export default function DentistSidebar() {
 
   const menuItems = [
     { key: "work-schedule", icon: <Icons.CalendarDays size={18} />, label: "ตารางการทำงาน", path: "/dentist/work-schedule" },
+    { key: "appointments", icon: <Icons.CalendarCheck size={18} />, label: "ตารางการนัดหมาย", path: "/dentist/appointment" },
     { key: "patients", icon: <Icons.NotebookText size={18} />, label: "ตารางผู้ป่วย", path: "/dentist/patients" },
   ];
 
