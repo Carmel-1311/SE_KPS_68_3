@@ -31,6 +31,8 @@ model appointment {
   inspection_record_id Int?
   medical_records      medical_records?   @relation(fields: [examination_id], references: [examination_id], onDelete: NoAction, onUpdate: NoAction, map: "examin_fk2")
   inspection_record    inspection_record? @relation(fields: [inspection_record_id], references: [inspection_record_id], onDelete: NoAction, onUpdate: NoAction, map: "ir_fk2")
+  patient              patient            @relation(fields: [patient_id], references: [patient_id], onDelete: NoAction, onUpdate: NoAction, map: "patient_fk2")
+  staff                staff?             @relation(fields: [staff_id], references: [staff_id], onDelete: NoAction, map: "staff_fk")
 }
 
 model company {
@@ -92,7 +94,7 @@ model mobile_dental {
 }
 
 model patient {
-  patient_id        Int                 @id
+  patient_id        Int                 @id @default(autoincrement())
   first_name        String?             @db.VarChar(100)
   last_name         String?             @db.VarChar(100)
   birthday          DateTime?           @db.Date
@@ -101,6 +103,8 @@ model patient {
   email             String?             @db.VarChar(255)
   phone             String?             @db.VarChar(10)
   account_id        Int?                @unique
+  id_card           String?             @unique @db.VarChar(13)
+  appointment       appointment[]
   inspection_record inspection_record[]
   medical_records   medical_records[]
   account           account?            @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "account_idfk")
@@ -128,6 +132,8 @@ model staff {
   phone          String?         @db.VarChar(10)
   license_number String?         @db.VarChar(50)
   account_id     Int?            @unique
+  prefix         String?         @db.VarChar(20)
+  appointment    appointment[]
   account        account?        @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "accountidfk")
   work_schedule  work_schedule[]
 }
