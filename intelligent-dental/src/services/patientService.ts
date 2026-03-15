@@ -28,10 +28,8 @@ export async function createPatient(data: {
     throw new AppError(409, "PAT-002", "Patient with this email or phone already exists", "CONFLICT")
   }
 
-  const maxPatient = await repo.getMaxPatientId()
   const created = await repo.createPatient(
     map.patientMap.toCreateInput({
-      patient_id: (maxPatient._max.patient_id ?? 0) + 1,
       first_name: data.first_name,
       last_name: data.last_name,
       birthday: data.birthday,

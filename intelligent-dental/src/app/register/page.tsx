@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import {
@@ -8,7 +8,7 @@ import {
   PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography, message } from "antd";
+import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography, message, Radio } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,12 +16,16 @@ import { useState } from "react";
 const { Title, Text } = Typography;
 
 type RegisterForm = {
+  role: "patient" | "staff";
+  staff_role?: "staff" | "dentist";
   first_name: string;
   last_name: string;
   birthday: string;
   allergy?: string;
   email: string;
   phone: string;
+  license_number?: string;
+  password: string;
 };
 
 const highlights = [
@@ -42,16 +46,20 @@ export default function RegisterPage() {
     try {
       setSubmitting(true);
 
-      const response = await fetch("/api/patients", {
+      const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          role: values.role,
+          staff_role: values.role === "staff" ? values.staff_role : undefined,
           first_name: values.first_name,
           last_name: values.last_name,
           birthday: values.birthday,
-          allergy: values.allergy || "",
+          allergy: values.role === "patient" ? values.allergy || "" : "",
           email: values.email,
           phone: values.phone,
+          license_number: values.role === "staff" ? values.license_number || "" : "",
+          password: values.password,
         }),
       });
 
@@ -170,8 +178,37 @@ export default function RegisterPage() {
                   layout="vertical"
                   requiredMark={false}
                   onFinish={onFinish}
+                  initialValues={{ role: "patient", staff_role: "staff" }}
                   style={{ marginTop: 16 }}
                 >
+                  <Form.Item
+                    name="role"
+                    label={<Text strong style={{ color: "#16445f" }}>role</Text>}
+                    rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ role" }]}
+                  >
+                    <Radio.Group>
+                      <Radio value="patient">patient</Radio>
+                      <Radio value="staff">staff</Radio>
+                    </Radio.Group>
+                  </Form.Item>
+
+                  <Form.Item shouldUpdate={(prev, next) => prev.role !== next.role} noStyle>
+                    {({ getFieldValue }) =>
+                      getFieldValue("role") === "staff" ? (
+                        <Form.Item
+                          name="staff_role"
+                          label={<Text strong style={{ color: "#16445f" }}>staff_role</Text>}
+                          rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ staff_role" }]}
+                        >
+                          <Radio.Group>
+                            <Radio value="staff">staff</Radio>
+                            <Radio value="dentist">dentist</Radio>
+                          </Radio.Group>
+                        </Form.Item>
+                      ) : null
+                    }
+                  </Form.Item>
+
                   <Row gutter={[12, 8]}>
                     <Col xs={24} md={12}>
                       <Form.Item
@@ -229,6 +266,19 @@ export default function RegisterPage() {
                       </Form.Item>
                     </Col>
 
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        name="password"
+                        label={<Text strong style={{ color: "#16445f" }}>password</Text>}
+                        rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸ password" }]}
+                      >
+                        <Input.Password
+                          placeholder="password"
+                          style={{ height: 44, borderRadius: 10 }}
+                        />
+                      </Form.Item>
+                    </Col>
+
                     <Col xs={24}>
                       <Form.Item
                         name="email"
@@ -247,15 +297,31 @@ export default function RegisterPage() {
                     </Col>
 
                     <Col xs={24}>
-                      <Form.Item
-                        name="allergy"
-                        label={<Text strong style={{ color: "#16445f" }}>allergy</Text>}
-                      >
-                        <Input.TextArea
-                          placeholder="ข้อมูลการแพ้ยา/แพ้อาหาร (ถ้ามี)"
-                          autoSize={{ minRows: 3, maxRows: 4 }}
-                          style={{ borderRadius: 10 }}
-                        />
+                      <Form.Item shouldUpdate={(prev, next) => prev.role !== next.role} noStyle>
+                        {({ getFieldValue }) =>
+                          getFieldValue("role") === "patient" ? (
+                            <Form.Item
+                              name="allergy"
+                              label={<Text strong style={{ color: "#16445f" }}>allergy</Text>}
+                            >
+                              <Input.TextArea
+                                placeholder="à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸à¸²à¸£à¹à¸žà¹‰à¸¢à¸²/à¹à¸žà¹‰à¸­à¸²à¸«à¸²à¸£ (à¸–à¹‰à¸²à¸¡à¸µ)"
+                                autoSize={{ minRows: 3, maxRows: 4 }}
+                                style={{ borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          ) : (
+                            <Form.Item
+                              name="license_number"
+                              label={<Text strong style={{ color: "#16445f" }}>license_number</Text>}
+                            >
+                              <Input
+                                placeholder="DEN-123456"
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          )
+                        }
                       </Form.Item>
                     </Col>
                   </Row>
@@ -296,3 +362,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+

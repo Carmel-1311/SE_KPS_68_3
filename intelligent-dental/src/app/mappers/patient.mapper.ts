@@ -86,7 +86,6 @@ export const patientMap = {
     email: string
     phone: string
     status: string
-    patient_id: number
   }): Prisma.patientCreateInput {
     return {
       first_name: data.first_name,

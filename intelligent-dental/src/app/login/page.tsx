@@ -7,15 +7,54 @@ import {
   SafetyCertificateOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography } from "antd";
+import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography, message } from "antd";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const router = useRouter();
+  const [messageApi, contextHolder] = message.useMessage();
+  const [submitting, setSubmitting] = useState(false);
+
+  const onFinish = async (values: { username: string; password: string }) => {
+    try {
+      setSubmitting(true);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: values.username,
+          password: values.password,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.message || "Login failed");
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("auth_token", result?.data?.token || "");
+        localStorage.setItem("account_role", result?.data?.role || "");
+        localStorage.setItem("account_id", String(result?.data?.account_id || ""));
+      }
+
+      messageApi.success("เข้าสู่ระบบสำเร็จ");
+      router.push("/home");
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "ไม่สามารถเข้าสู่ระบบได้";
+      messageApi.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div
@@ -26,6 +65,8 @@ export default function LoginPage() {
         padding: isMobile ? "20px 12px" : "36px 20px",
       }}
     >
+      {contextHolder}
+
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
         <Link
           href="/home"
@@ -111,7 +152,7 @@ export default function LoginPage() {
                 </Title>
                 <Text style={{ color: "#587284" }}>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ</Text>
 
-                <Form layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }}>
+                <Form layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }} onFinish={onFinish}>
                   <Form.Item
                     name="username"
                     label={<Text strong style={{ color: "#16445f" }}>ชื่อผู้ใช้</Text>}
@@ -141,6 +182,7 @@ export default function LoginPage() {
                       type="primary"
                       htmlType="submit"
                       block
+                      loading={submitting}
                       style={{
                         height: 46,
                         borderRadius: 12,

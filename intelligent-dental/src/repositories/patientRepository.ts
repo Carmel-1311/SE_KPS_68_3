@@ -28,12 +28,6 @@ export async function findPatientDuplicate(email: string, phone: string, exclude
   })
 }
 
-export async function getMaxPatientId() {
-  return prisma.patient.aggregate({
-    _max: { patient_id: true }
-  })
-}
-
 export async function createPatient(data: Prisma.patientCreateInput) {
   return prisma.patient.create({
     data,
