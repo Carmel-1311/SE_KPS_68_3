@@ -131,6 +131,7 @@ model staff {
   phone          String?         @db.VarChar(10)
   license_number String?         @db.VarChar(50)
   account_id     Int?            @unique
+  prefix         String?         @db.VarChar(20)
   appointment    appointment[]
   account        account?        @relation(fields: [account_id], references: [account_id], onDelete: NoAction, onUpdate: NoAction, map: "accountidfk")
   work_schedule  work_schedule[]

@@ -20,7 +20,8 @@ export const appointmentWithRelations =
         select: {
           staff_id: true,
           first_name: true,
-          last_name: true
+          last_name: true,
+          prefix:true
         }
       },
       medical_records: {
@@ -64,7 +65,7 @@ export function toAppointmentResponse(
     staff: a.staff
       ? {
         id: a.staff.staff_id,
-        name: `${a.staff.first_name} ${a.staff.last_name}`
+        name: `${a.staff.prefix} ${a.staff.first_name} ${a.staff.last_name}`
       }
       : undefined,
     appointment_date: a.appointment_date.toISOString(),
@@ -112,7 +113,8 @@ export const appointmentListQuery =
         select: {
           staff_id: true,
           first_name: true,
-          last_name: true
+          last_name: true,
+          prefix:true
         }
       },
 
@@ -145,7 +147,7 @@ export function toAppointmentResponseList(
     staff: a.staff
       ? {
         id: a.staff.staff_id,
-        name: `${a.staff.first_name} ${a.staff.last_name}`
+        name: `${a.staff.prefix} ${a.staff.first_name} ${a.staff.last_name}`
       }
       : undefined,
 
