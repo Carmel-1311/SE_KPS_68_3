@@ -8,41 +8,55 @@ import {
   Calendar,
   Card,
   Col,
+  DatePicker,
   Divider,
   Empty,
   Grid,
+  Modal,
+  message,
   Segmented,
-  List,
+  Select,
   Row,
   Space,
   Statistic,
   Tag,
+  TimePicker,
   Typography,
 } from "antd";
-import Link from "next/link";
 import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  MapPin,
   Stethoscope,
 } from "lucide-react";
 import {
-  appointmentStatusLabel,
-  mockAppointments,
-  type Appointment,
-  type AppointmentStatus,
-} from "@/mock/mockAppointment";
+  mockAppointmentList,
+  type Data,
+  Status,
+} from "@/mock/mockAppointmentById";
 
-const statusColor: Record<
-  AppointmentStatus,
-  "blue" | "green" | "red" | "orange"
-> = {
-  scheduled: "blue",
-  completed: "green",
-  cancelled: "red",
-  request_cancel: "orange",
+type Appointment = {
+  id: string;
+  date: string;
+  time: string;
+  service: string;
+  dentist: string;
+  status: Status;
+};
+
+const appointmentStatusLabel: Record<Status, string> = {
+  [Status.Scheduled]: "นัดหมายแล้ว",
+  [Status.Completed]: "เสร็จสิ้น",
+  [Status.Cancelled]: "ยกเลิก",
+  [Status.RequestCancel]: "ขอยกเลิก",
+};
+
+const statusColor: Record<Status, "blue" | "green" | "red" | "orange"> = {
+  [Status.Scheduled]: "blue",
+  [Status.Completed]: "green",
+  [Status.Cancelled]: "red",
+  [Status.RequestCancel]: "orange",
 };
 
 const appointmentDateFormat = "YYYY-MM-DD";
@@ -73,6 +87,22 @@ const formatThaiMonthYear = (value: Dayjs) =>
   `${thaiMonthsShort[value.month()]} ${value.format("YYYY")}`;
 
 const storageKey = "userAppointments";
+
+const toAppointmentId = (item: Data) => {
+  const dateKey = item.appointment_date.replaceAll("-", "");
+  const seq = String(item.appointment_id).padStart(3, "0");
+  return `AP-${dateKey}-${seq}`;
+};
+
+const mapToAppointment = (item: Data): Appointment => ({
+  id: toAppointmentId(item),
+  date: item.appointment_date,
+  time: item.appointment_time,
+  service: item.type,
+  dentist: item.staff?.name ?? "ไม่ระบุ",
+  status: item.status,
+});
+
 const mergeAppointments = (base: Appointment[], extra: Appointment[]) => {
   const map = new Map<string, Appointment>();
   base.forEach((item) => map.set(item.id, item));
@@ -92,6 +122,11 @@ const readStoredAppointments = (): Appointment[] => {
   }
 };
 
+const writeStoredAppointments = (items: Appointment[]) => {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(storageKey, JSON.stringify(items));
+};
+
 const sortAppointmentsByTime = (items: Appointment[]) => {
   return [...items].sort((a, b) => a.time.localeCompare(b.time));
 };
@@ -101,7 +136,7 @@ const getAppointmentDateTimeValue = (item: Appointment) =>
 
 const filterAppointmentsByStatus = (
   items: Appointment[],
-  statusFilter: AppointmentStatus | "all",
+  statusFilter: Status | "all",
 ) => {
   if (statusFilter === "all") return items;
   return items.filter((item) => item.status === statusFilter);
@@ -110,26 +145,32 @@ const filterAppointmentsByStatus = (
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
-  const [appointments, setAppointments] = useState(mockAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>(
+    mockAppointmentList.map(mapToAppointment),
+  );
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newAppointmentDate, setNewAppointmentDate] = useState<Dayjs | null>(
+    dayjs(),
+  );
+  const [newAppointmentTime, setNewAppointmentTime] = useState<Dayjs | null>(
+    null,
+  );
+  const [newAppointmentService, setNewAppointmentService] = useState("");
+  const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
-  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | "all">(
-    "all",
-  );
+  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
   useEffect(() => {
     const stored = readStoredAppointments();
     setAppointments((prev) => mergeAppointments(prev, stored));
   }, []);
 
   const appointmentsByDate = useMemo(() => {
-    return appointments.reduce<Record<string, Appointment[]>>(
-      (acc, item) => {
-        acc[item.date] ??= [];
-        acc[item.date].push(item);
-        return acc;
-      },
-      {},
-    );
+    return appointments.reduce<Record<string, Appointment[]>>((acc, item) => {
+      acc[item.date] ??= [];
+      acc[item.date].push(item);
+      return acc;
+    }, {});
   }, [appointments]);
 
   const selectedDateKey = selectedDate.format(appointmentDateFormat);
@@ -142,7 +183,7 @@ export default function UserAppointmentSchedulePage() {
   const upcomingAppointments = useMemo(() => {
     const nowValue = dayjs().valueOf();
     return appointments
-      .filter((item) => item.status === "scheduled")
+      .filter((item) => item.status === Status.Scheduled)
       .map((item) => ({ item, timeValue: getAppointmentDateTimeValue(item) }))
       .filter(({ timeValue }) => timeValue >= nowValue)
       .sort((a, b) => a.timeValue - b.timeValue)
@@ -150,6 +191,60 @@ export default function UserAppointmentSchedulePage() {
   }, [appointments]);
 
   const nextAppointment = upcomingAppointments[0];
+
+  const uniqueOptions = (key: "service" | "dentist") => {
+    const values = new Set(appointments.map((item) => item[key]).filter(Boolean));
+    return Array.from(values).map((value) => ({ label: value, value }));
+  };
+
+  const isPastDate = (value: Dayjs) => value.isBefore(dayjs(), "day");
+
+  const createAppointmentId = (dateValue: Dayjs) => {
+    const dateKey = dateValue.format("YYYYMMDD");
+    const existing = appointments.filter((item) =>
+      item.id.startsWith(`AP-${dateKey}`),
+    );
+    const nextNumber = String(existing.length + 1).padStart(3, "0");
+    return `AP-${dateKey}-${nextNumber}`;
+  };
+
+  const resetNewAppointment = (dateValue: Dayjs) => {
+    setNewAppointmentDate(dateValue);
+    setNewAppointmentTime(null);
+    setNewAppointmentService("");
+    setNewAppointmentDentist("");
+  };
+
+  const handleAddAppointment = () => {
+    if (!newAppointmentDate || !newAppointmentTime) return;
+    if (!newAppointmentService.trim() || !newAppointmentDentist.trim()) {
+      message.error("กรุณากรอกข้อมูลให้ครบถ้วน");
+      return;
+    }
+
+    if (isPastDate(newAppointmentDate)) {
+      message.error("ไม่สามารถเลือกวันที่ผ่านมาแล้วได้");
+      return;
+    }
+
+    const newAppointment: Appointment = {
+      id: createAppointmentId(newAppointmentDate),
+      date: newAppointmentDate.format("YYYY-MM-DD"),
+      time: newAppointmentTime.format("HH:mm"),
+      dentist: newAppointmentDentist.trim(),
+      service: newAppointmentService.trim(),
+      status: Status.Scheduled,
+    };
+
+    const stored = readStoredAppointments();
+    writeStoredAppointments([...stored, newAppointment]);
+    setAppointments((prev) => [...prev, newAppointment]);
+    setSelectedDate(newAppointmentDate);
+    setViewMonth(newAppointmentDate);
+    message.success("เพิ่มการนัดหมายเรียบร้อยแล้ว");
+    setIsCreateOpen(false);
+    resetNewAppointment(newAppointmentDate);
+  };
 
   const summary = useMemo(() => {
     const viewKey = viewMonth.format("YYYY-MM");
@@ -162,15 +257,18 @@ export default function UserAppointmentSchedulePage() {
           return acc;
         },
         {
-          scheduled: 0,
-          completed: 0,
-          cancelled: 0,
-          request_cancel: 0,
-        } satisfies Record<AppointmentStatus, number>,
+          [Status.Scheduled]: 0,
+          [Status.Completed]: 0,
+          [Status.Cancelled]: 0,
+          [Status.RequestCancel]: 0,
+        } satisfies Record<Status, number>,
       );
   }, [viewMonth, appointments]);
   const summaryTotal =
-    summary.scheduled + summary.completed + summary.cancelled + summary.request_cancel;
+    summary[Status.Scheduled] +
+    summary[Status.Completed] +
+    summary[Status.Cancelled] +
+    summary[Status.RequestCancel];
 
   const summaryTitle = `ข้อมูลเดือน ${formatThaiMonthYear(viewMonth)}`;
 
@@ -242,16 +340,80 @@ export default function UserAppointmentSchedulePage() {
             </Space>
           }
           extra={
-            <Link href="/user/appointment-schedule/new">
-              <Button type="primary">เพิ่มการนัดหมาย</Button>
-            </Link>
+            <Button
+              type="primary"
+              onClick={() => {
+                const seedDate = selectedDate ?? dayjs();
+                resetNewAppointment(seedDate);
+                setIsCreateOpen(true);
+              }}
+            >
+              เพิ่มการนัดหมาย
+            </Button>
           }
-          bodyStyle={{ padding: "1rem" }}
+          styles={{ body: { padding: "1rem" } }}
         >
+          <Modal
+            title="เพิ่มการนัดหมาย"
+            open={isCreateOpen}
+            onCancel={() => setIsCreateOpen(false)}
+            onOk={handleAddAppointment}
+            okText="บันทึกการนัดหมาย"
+            cancelText="ยกเลิก"
+            okButtonProps={{
+              disabled:
+                !newAppointmentDate ||
+                !newAppointmentTime ||
+                isPastDate(newAppointmentDate),
+            }}
+            destroyOnClose
+          >
+            <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+              <Typography.Text>เลือกวันที่ต้องการนัดหมาย</Typography.Text>
+              <DatePicker
+                style={{ width: "100%" }}
+                value={newAppointmentDate}
+                onChange={(value) => setNewAppointmentDate(value)}
+                format={(value) => (value ? formatThaiDateValue(value) : "")}
+                disabledDate={(current) =>
+                  current ? current.isBefore(dayjs(), "day") : false
+                }
+              />
+              <Typography.Text>เลือกเวลา</Typography.Text>
+              <TimePicker
+                style={{ width: "100%" }}
+                value={newAppointmentTime}
+                onChange={(value) => setNewAppointmentTime(value)}
+                format="HH:mm"
+              />
+              <Typography.Text>บริการ</Typography.Text>
+              <Select
+                showSearch
+                placeholder="เลือกหรือพิมพ์บริการ"
+                options={uniqueOptions("service")}
+                value={newAppointmentService || undefined}
+                onChange={(value) => setNewAppointmentService(value)}
+                onSearch={(value) => setNewAppointmentService(value)}
+              />
+              <Typography.Text>ทันตแพทย์</Typography.Text>
+              <Select
+                showSearch
+                placeholder="เลือกหรือพิมพ์ชื่อทันตแพทย์"
+                options={uniqueOptions("dentist")}
+                value={newAppointmentDentist || undefined}
+                onChange={(value) => setNewAppointmentDentist(value)}
+                onSearch={(value) => setNewAppointmentDentist(value)}
+              />
+            </Space>
+          </Modal>
           <Row gutter={[12, 12]}>
             <Col xs={24} md={12}>
-              <Card size="small" title="สรุปสถานะ" bordered={false}>
-                <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+              <Card size="small" title="สรุปสถานะ" variant="borderless">
+                <Space
+                  orientation="vertical"
+                  size={12}
+                  style={{ width: "100%" }}
+                >
                   <Typography.Text type="secondary" style={{ fontSize: 12 }}>
                     {summaryTitle}
                   </Typography.Text>
@@ -260,50 +422,54 @@ export default function UserAppointmentSchedulePage() {
                       <Statistic
                         title="ทั้งหมด"
                         value={summaryTotal}
-                        valueStyle={{ fontSize: 20 }}
+                        styles={{ content: { fontSize: 20 } }}
                       />
                     </Col>
                     <Col xs={12} sm={6}>
                       <Statistic
-                        title={appointmentStatusLabel.scheduled}
-                        value={summary.scheduled}
-                        valueStyle={{ color: "#1677ff", fontSize: 18 }}
+                        title={appointmentStatusLabel[Status.Scheduled]}
+                        value={summary[Status.Scheduled]}
+                        styles={{ content: { color: "#1677ff", fontSize: 18 } }}
                       />
                     </Col>
                     <Col xs={12} sm={6}>
                       <Statistic
-                        title={appointmentStatusLabel.completed}
-                        value={summary.completed}
-                        valueStyle={{ color: "#52c41a", fontSize: 18 }}
+                        title={appointmentStatusLabel[Status.Completed]}
+                        value={summary[Status.Completed]}
+                        styles={{ content: { color: "#52c41a", fontSize: 18 } }}
                       />
                     </Col>
                     <Col xs={12} sm={6}>
                       <Statistic
-                        title={appointmentStatusLabel.cancelled}
-                        value={summary.cancelled}
-                        valueStyle={{ color: "#ff4d4f", fontSize: 18 }}
+                        title={appointmentStatusLabel[Status.Cancelled]}
+                        value={summary[Status.Cancelled]}
+                        styles={{ content: { color: "#ff4d4f", fontSize: 18 } }}
                       />
                     </Col>
                     <Col xs={12} sm={6}>
                       <Statistic
-                        title={appointmentStatusLabel.request_cancel}
-                        value={summary.request_cancel}
-                        valueStyle={{ color: "#fa8c16", fontSize: 18 }}
+                        title={appointmentStatusLabel[Status.RequestCancel]}
+                        value={summary[Status.RequestCancel]}
+                        styles={{ content: { color: "#fa8c16", fontSize: 18 } }}
                       />
                     </Col>
                   </Row>
                   <Space size={8} wrap>
                     <Tag color="blue">
-                      {appointmentStatusLabel.scheduled}: {summary.scheduled}
+                      {appointmentStatusLabel[Status.Scheduled]}:{" "}
+                      {summary[Status.Scheduled]}
                     </Tag>
                     <Tag color="green">
-                      {appointmentStatusLabel.completed}: {summary.completed}
+                      {appointmentStatusLabel[Status.Completed]}:{" "}
+                      {summary[Status.Completed]}
                     </Tag>
                     <Tag color="red">
-                      {appointmentStatusLabel.cancelled}: {summary.cancelled}
+                      {appointmentStatusLabel[Status.Cancelled]}:{" "}
+                      {summary[Status.Cancelled]}
                     </Tag>
                     <Tag color="orange">
-                      {appointmentStatusLabel.request_cancel}: {summary.request_cancel}
+                      {appointmentStatusLabel[Status.RequestCancel]}:{" "}
+                      {summary[Status.RequestCancel]}
                     </Tag>
                   </Space>
                 </Space>
@@ -313,7 +479,7 @@ export default function UserAppointmentSchedulePage() {
                 size="small"
                 title="นัดหมายถัดไป"
                 style={{ marginTop: 12 }}
-                bordered={false}
+                variant="borderless"
               >
                 {nextAppointment ? (
                   <Space
@@ -323,7 +489,7 @@ export default function UserAppointmentSchedulePage() {
                   >
                     <Space wrap>
                       <Tag color="blue">
-                        {appointmentStatusLabel.scheduled}
+                        {appointmentStatusLabel[Status.Scheduled]}
                       </Tag>
                       <Typography.Text strong>
                         {formatThaiDate(nextAppointment.date)} •{" "}
@@ -332,22 +498,13 @@ export default function UserAppointmentSchedulePage() {
                     </Space>
                     <Space size={6}>
                       <Stethoscope size={14} />
-                      <Typography.Text>{nextAppointment.service}</Typography.Text>
+                      <Typography.Text>
+                        {nextAppointment.service}
+                      </Typography.Text>
                     </Space>
                     <Typography.Text type="secondary">
                       ทันตแพทย์: {nextAppointment.dentist}
                     </Typography.Text>
-                    <Space size={6}>
-                      <MapPin size={14} />
-                      <Typography.Text type="secondary">
-                        {nextAppointment.branch}
-                      </Typography.Text>
-                    </Space>
-                    {nextAppointment.note && (
-                      <Typography.Text type="secondary">
-                        หมายเหตุ: {nextAppointment.note}
-                      </Typography.Text>
-                    )}
                     <Button
                       size="small"
                       onClick={() => {
@@ -371,41 +528,42 @@ export default function UserAppointmentSchedulePage() {
                 size="small"
                 title={appointmentCardTitle}
                 style={{ marginTop: 12 }}
-                bordered={false}
+                variant="borderless"
               >
                 <Segmented
                   block
                   value={statusFilter}
-                  onChange={(value) =>
-                    setStatusFilter(value as AppointmentStatus | "all")
-                  }
+                  onChange={(value) => setStatusFilter(value as Status | "all")}
                   options={[
                     { label: "ทั้งหมด", value: "all" },
                     {
-                      label: appointmentStatusLabel.scheduled,
-                      value: "scheduled",
+                      label: appointmentStatusLabel[Status.Scheduled],
+                      value: Status.Scheduled,
                     },
                     {
-                      label: appointmentStatusLabel.completed,
-                      value: "completed",
+                      label: appointmentStatusLabel[Status.Completed],
+                      value: Status.Completed,
                     },
                     {
-                      label: appointmentStatusLabel.cancelled,
-                      value: "cancelled",
+                      label: appointmentStatusLabel[Status.Cancelled],
+                      value: Status.Cancelled,
                     },
                     {
-                      label: appointmentStatusLabel.request_cancel,
-                      value: "request_cancel",
+                      label: appointmentStatusLabel[Status.RequestCancel],
+                      value: Status.RequestCancel,
                     },
                   ]}
                   style={{ marginBottom: 12 }}
                 />
 
                 {appointmentListData.length ? (
-                  <List
-                    dataSource={appointmentListData}
-                    renderItem={(item) => (
-                      <List.Item key={item.id} style={{ paddingInline: 0 }}>
+                  <Space
+                    orientation="vertical"
+                    size={12}
+                    style={{ width: "100%" }}
+                  >
+                    {appointmentListData.map((item) => (
+                      <div key={item.id} style={{ paddingInline: 0 }}>
                         <Space
                           orientation="vertical"
                           size={4}
@@ -429,21 +587,10 @@ export default function UserAppointmentSchedulePage() {
                               ทันตแพทย์: {item.dentist}
                             </Typography.Text>
                           </Space>
-                          <Space size={6}>
-                            <MapPin size={14} />
-                            <Typography.Text type="secondary">
-                              {item.branch}
-                            </Typography.Text>
-                          </Space>
-                          {item.note && (
-                            <Typography.Text type="secondary">
-                              หมายเหตุ: {item.note}
-                            </Typography.Text>
-                          )}
                         </Space>
-                      </List.Item>
-                    )}
-                  />
+                      </div>
+                    ))}
+                  </Space>
                 ) : (
                   <Empty
                     description="ไม่มีนัดหมายในวันที่เลือก"
@@ -537,25 +684,25 @@ export default function UserAppointmentSchedulePage() {
                   <Space size={4}>
                     <Badge color="blue" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {appointmentStatusLabel.scheduled}
+                      {appointmentStatusLabel[Status.Scheduled]}
                     </Typography.Text>
                   </Space>
                   <Space size={4}>
                     <Badge color="green" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {appointmentStatusLabel.completed}
+                      {appointmentStatusLabel[Status.Completed]}
                     </Typography.Text>
                   </Space>
                   <Space size={4}>
                     <Badge color="red" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {appointmentStatusLabel.cancelled}
+                      {appointmentStatusLabel[Status.Cancelled]}
                     </Typography.Text>
                   </Space>
                   <Space size={4}>
                     <Badge color="orange" />
                     <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {appointmentStatusLabel.request_cancel}
+                      {appointmentStatusLabel[Status.RequestCancel]}
                     </Typography.Text>
                   </Space>
                 </Space>
