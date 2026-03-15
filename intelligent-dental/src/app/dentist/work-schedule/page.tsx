@@ -1,159 +1,181 @@
 ﻿"use client";
 
 import React, { useState, useEffect } from "react";
-import { Card, Typography, Spin, Tag, Space } from "antd";
-import { ClockCircleOutlined, UserOutlined, MedicineBoxOutlined } from "@ant-design/icons";
+import { 
+  Card, Typography, Spin, Tag, Modal, Descriptions, Badge, Button, Space, Divider 
+} from "antd"; // เปลี่ยนจาก @pankod/refine-antd เป็น antd
+import { 
+  ClockCircleOutlined, 
+  UserOutlined, 
+  CalendarOutlined, 
+  PhoneOutlined, 
+  CheckCircleOutlined, 
+  CloseCircleOutlined,
+  MedicineBoxOutlined,
+  SolutionOutlined
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
-// --- 1. Settings & Data Interface ---
+// --- Config ---
 const START_HOUR = 8;
-const END_HOUR = 19; // ขยายถึง 19:00 เพื่อความครอบคลุม
+const END_HOUR = 20; // ขยายถึง 2ทุ่ม สำหรับคลินิก
+const HOUR_HEIGHT = 100; // เพิ่มความสูงอีกนิดให้อ่านง่ายขึ้นไปอีก
+const DAYS_MAP: Record<string, number> = { "Sun": 0, "Mon": 1, "Tue": 2, "Wed": 3, "Thu": 4, "Fri": 5, "Sat": 6 };
 const DAYS_TH = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 
-interface Appointment {
-  id: string;
-  dayIndex: number; 
-  startTime: string; 
-  endTime: string;   
-  patientName: string;
-  service: string;
-  status: "waiting" | "in-progress" | "completed";
-}
-
-export default function WorkScheduleDashboard() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+export default function DentistPersonalSchedule() {
+  const [loading, setLoading] = useState(true);
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [selectedCase, setSelectedCase] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      // ข้อมูลจำลอง
-      const mockData: Appointment[] = [
-        { id: "1", dayIndex: 1, startTime: "08:30", endTime: "10:30", patientName: "คุณสมชาย ใจดี", service: "ตรวจฟัน/อุดฟัน", status: "completed" },
-        { id: "2", dayIndex: 2, startTime: "13:00", endTime: "14:30", patientName: "คุณวิภาดา สวยงาม", service: "ขูดหินปูน", status: "in-progress" },
-        { id: "3", dayIndex: 4, startTime: "10:00", endTime: "12:00", patientName: "คุณมานะ อดทน", service: "ผ่าฟันคุด", status: "waiting" },
-        { id: "4", dayIndex: 5, startTime: "15:00", endTime: "17:30", patientName: "คุณจอนนี่", service: "จัดฟันรายเดือน", status: "waiting" },
-      ];
-      setTimeout(() => { setAppointments(mockData); setLoading(false); }, 600);
-    };
-    fetchAppointments();
+    // จำลองการดึงข้อมูลจาก /api/work_schedules สำหรับ Dentist User นี้
+    const mockData = [
+      { id: "1", date: "Mon", start_time: "09:00", end_time: "9:30", patient: "คุณวิภาดา", service: "ขูดหินปูน + ฟอกสีฟัน", phone: "081-xXx-xxxx", status: "confirmed" },
+      { id: "2", date: "Mon", start_time: "13:00", end_time: "13:30", patient: "คุณสมชาย", service: "อุดฟัน 2 ซี่", phone: "089-xXx-xxxx", status: "confirmed" },
+      { id: "3", date: "Wed", start_time: "10:00", end_time: "10:30", patient: "คุณมานะ", service: "ผ่าฟันคุด (Impacted Tooth)", phone: "062-xXx-xxxx", status: "confirmed" },
+      { id: "4", date: "Fri", start_time: "15:00", end_time: "15:30", patient: "เด็กชายก้อง", service: "เคลือบหลุมร่องฟัน", phone: "085-xXx-xxxx", status: "pending" },
+    ];
+    setTimeout(() => { setSchedules(mockData); setLoading(false); }, 500);
   }, []);
 
-  // --- 2. Helper Functions ---
-  const getStatusConfig = (status: string) => {
-    const config = {
-      completed: { color: "#52c41a", bg: "#f6ffed", label: "เสร็จสิ้น" },
-      "in-progress": { color: "#1890ff", bg: "#e6f7ff", label: "กำลังรักษา" },
-      waiting: { color: "#faad14", bg: "#fff7e6", label: "รอพบแพทย์" },
+  const calculatePos = (start: string, end: string) => {
+    const [sH, sM] = start.split(":").map(Number);
+    const [eH, eM] = end.split(":").map(Number);
+    return {
+      top: ((sH - START_HOUR) * HOUR_HEIGHT) + (sM * HOUR_HEIGHT / 60),
+      height: ((eH * 60 + eM) - (sH * 60 + sM)) * HOUR_HEIGHT / 60
     };
-    return config[status as keyof typeof config];
   };
 
   return (
     <Card 
-      bordered={true} 
-      style={{ borderRadius: 0, height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}
+      bordered={false} 
+      style={{ height: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', background: '#f8f9fa' }}
       bodyStyle={{ flex: 1, padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
     >
-      {/* Header ของ Card */}
-      <div style={{ padding: '16px 24px', borderBottom: '1px solid #f0f0f0' }}>
-        <Title level={4} style={{ margin: 0 }}>
-          <MedicineBoxOutlined /> ตารางนัดหมายทันตแพทย์รายสัปดาห์
-        </Title>
+      {/* Header: เน้นว่าเป็นตารางของฉัน */}
+      <div style={{ padding: '20px 24px', background: '#fff', borderBottom: '1px solid #d9d9d9' }}>
+        <Space size="middle">
+          <div style={{ background: '#1890ff', padding: '10px', borderRadius: '8px' }}>
+            <CalendarOutlined style={{ color: '#fff', fontSize: '20px' }} />
+          </div>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>ตารางการทำงานของฉัน</Title>
+            <Text type="secondary">ทพ. สมชาย ใจดี (Dentist General)</Text>
+          </div>
+        </Space>
       </div>
 
-      {loading ? (
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spin size="large" /></div>
-      ) : (
+      {loading ? <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}><Spin size="large" /></div> : (
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "auto" }}>
           
-          {/* แถวชื่อวัน (Sticky Header) */}
-          <div style={{ display: "flex", position: "sticky", top: 0, zIndex: 10, backgroundColor: "#fafafa", borderBottom: "2px solid #f0f0f0" }}>
+          {/* Day Headers */}
+          <div style={{ display: "flex", position: "sticky", top: 0, zIndex: 20, background: "#fff", borderBottom: "2px solid #1890ff" }}>
             <div style={{ width: 80, flexShrink: 0, borderRight: "1px solid #f0f0f0" }} />
             {DAYS_TH.map((day, i) => (
-              <div key={i} style={{ flex: 1, textAlign: "center", padding: "15px 0", fontWeight: "800", fontSize: "15px", borderRight: i < 6 ? "1px solid #f0f0f0" : "none" }}>
-                {day}
+              <div key={i} style={{ flex: 1, textAlign: "center", padding: "15px 0", fontWeight: "bold", fontSize: '15px', color: i === new Date().getDay() ? '#1890ff' : '#555' }}>
+                {day} {i === new Date().getDay() && <Badge status="processing" />}
               </div>
             ))}
           </div>
 
-          {/* พื้นที่ตารางเวลา */}
-          <div style={{ display: "flex", position: "relative", minHeight: "800px" }}>
-            
-            {/* Column บอกเวลาด้านซ้าย */}
-            <div style={{ width: 80, flexShrink: 0, borderRight: "1px solid #f0f0f0", backgroundColor: "#fff" }}>
+          <div style={{ display: "flex", position: "relative", minWidth: "1200px" }}>
+            {/* Time Slots Labels */}
+            <div style={{ width: 80, flexShrink: 0, background: "#fff", borderRight: "1px solid #f0f0f0" }}>
               {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
-                <div key={i} style={{ height: 80, borderBottom: "1px solid #f0f0f0", textAlign: "center", paddingTop: "5px", fontSize: "13px", color: "#999", fontWeight: "bold" }}>
-                  {`${(START_HOUR + i).toString().padStart(2, '0')}:00`}
+                <div key={i} style={{ height: HOUR_HEIGHT, borderBottom: "1px solid #f0f0f0", display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '10px' }}>
+                  <Text strong style={{ fontSize: '12px', color: '#999' }}>{`${(START_HOUR + i).toString().padStart(2, '0')}:00`}</Text>
                 </div>
               ))}
             </div>
 
-            {/* Grid เส้นพื้นหลัง */}
-            <div style={{ position: "absolute", top: 0, left: 80, right: 0, bottom: 0, pointerEvents: 'none' }}>
-              {Array.from({ length: END_HOUR - START_HOUR + 1 }).map((_, i) => (
-                <div key={i} style={{ height: 80, borderBottom: "1px solid #f5f5f5" }} />
+            {/* Grid Area */}
+            <div style={{ flex: 1, position: "relative", display: "flex" }}>
+              {/* Horizontal Guidelines */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: 'none' }}>
+                {Array.from({ length: (END_HOUR - START_HOUR + 1) * 2 }).map((_, i) => (
+                  <div key={i} style={{ height: HOUR_HEIGHT / 2, borderBottom: i % 2 === 0 ? "1px dashed #f5f5f5" : "1px solid #f0f0f0" }} />
+                ))}
+              </div>
+
+              {/* Data Columns */}
+              {DAYS_TH.map((_, dayIdx) => (
+                <div key={dayIdx} style={{ flex: 1, position: "relative", borderRight: "1px solid #f0f0f0" }}>
+                  {schedules.filter(s => DAYS_MAP[s.date] === dayIdx).map(item => {
+                    const { top, height } = calculatePos(item.start_time, item.end_time);
+                    return (
+                      <div 
+                        key={item.id} 
+                        onClick={() => { setSelectedCase(item); setIsModalOpen(true); }}
+                        className="dentist-block"
+                        style={{
+                          position: "absolute", top: `${top}px`, height: `${height}px`, width: "94%", left: "3%",
+                          background: item.status === 'confirmed' ? 'linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%)' : '#fffbe6',
+                          borderLeft: `5px solid ${item.status === 'confirmed' ? '#1890ff' : '#faad14'}`,
+                          borderRadius: "8px", padding: "10px", zIndex: 5, cursor: "pointer", 
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column'
+                        }}
+                      >
+                        <Text strong style={{ fontSize: '14px', color: '#003a8c' }}>{item.patient}</Text>
+                        <Text style={{ fontSize: '12px', color: '#444' }} ellipsis><MedicineBoxOutlined /> {item.service}</Text>
+                        <div style={{ marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={{ fontSize: '11px', fontWeight: 'bold' }}><ClockCircleOutlined /> {item.start_time}</Text>
+                          <Badge status={item.status === 'confirmed' ? "success" : "warning"} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ))}
             </div>
-
-            {/* Column ข้อมูลของแต่ละวัน */}
-            {DAYS_TH.map((_, dayIdx) => (
-              <div key={dayIdx} style={{ flex: 1, position: "relative", borderRight: dayIdx < 6 ? "1px solid #f0f0f0" : "none" }}>
-                {appointments.filter(app => app.dayIndex === dayIdx).map(app => {
-                  const [sH, sM] = app.startTime.split(":").map(Number);
-                  const [eH, eM] = app.endTime.split(":").map(Number);
-                  const top = ((sH - START_HOUR) * 80) + (sM * 80 / 60);
-                  const height = ((eH * 60 + eM) - (sH * 60 + sM)) * 80 / 60;
-                  const config = getStatusConfig(app.status);
-
-                  return (
-                    <div key={app.id} style={{
-                      position: "absolute",
-                      top: `${top}px`,
-                      height: `${height}px`,
-                      width: "94%",
-                      left: "3%",
-                      backgroundColor: config.bg,
-                      borderLeft: `5px solid ${config.color}`,
-                      border: `1px solid ${config.color}66`,
-                      borderRadius: "4px",
-                      padding: "8px",
-                      zIndex: 2,
-                      boxShadow: "0 4px 6px rgba(0,0,0,0.05)",
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "flex-start",
-                      transition: "all 0.2s"
-                    }}>
-                      <div style={{ fontSize: "12px", color: "#666", display: "flex", alignItems: "center", gap: "4px", marginBottom: "4px" }}>
-                        <ClockCircleOutlined /> <b>{app.startTime} - {app.endTime}</b>
-                      </div>
-                      <div style={{ fontWeight: "800", fontSize: "14px", color: "#222", marginBottom: "4px", lineHeight: "1.2" }}>
-                         {app.patientName}
-                      </div>
-                      <div style={{ fontSize: "13px", color: "#444", flexGrow: 1 }}>
-                        {app.service}
-                      </div>
-                      <Tag color={app.status === 'completed' ? 'green' : app.status === 'in-progress' ? 'blue' : 'orange'} 
-                           style={{ alignSelf: 'flex-start', margin: 0, borderRadius: '2px', fontWeight: 'bold', fontSize: '11px' }}>
-                        {config.label}
-                      </Tag>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
           </div>
         </div>
       )}
-      
+
+      {/* Details Modal */}
+      <Modal
+        title={<Title level={4} style={{ margin: 0 }}><SolutionOutlined /> รายละเอียดเคสคนไข้</Title>}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        footer={[
+          <Button key="cancel" danger icon={<CloseCircleOutlined />} onClick={() => setIsModalOpen(false)}>ยกเลิกนัด</Button>,
+          <Button key="checkin" type="primary" icon={<CheckCircleOutlined />} onClick={() => setIsModalOpen(false)}>บันทึกการเข้าตรวจ</Button>,
+        ]}
+        width={550}
+      >
+        {selectedCase && (
+          <div style={{ paddingTop: '10px' }}>
+            <Descriptions bordered column={1} size="small">
+              <Descriptions.Item label="ชื่อคนไข้"><b>{selectedCase.patient}</b></Descriptions.Item>
+              <Descriptions.Item label="เบอร์ติดต่อ"><Text copyable>{selectedCase.phone}</Text></Descriptions.Item>
+              <Descriptions.Item label="เวลาตรวจ">
+                <Tag color="blue">{selectedCase.start_time} - {selectedCase.end_time} น.</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="การรักษา">
+                <Text strong color="blue">{selectedCase.service}</Text>
+              </Descriptions.Item>
+              <Descriptions.Item label="สถานะ">
+                <Tag color={selectedCase.status === 'confirmed' ? 'green' : 'gold'}>
+                  {selectedCase.status === 'confirmed' ? 'ยืนยันแล้ว' : 'รอการยืนยัน'}
+                </Tag>
+              </Descriptions.Item>
+            </Descriptions>
+
+          </div>
+        )}
+      </Modal>
+
       <style jsx global>{`
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #bbb; }
-        .ant-card-body { overflow: hidden; }
+        .dentist-block:hover { 
+          transform: scale(1.02); 
+          box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+          filter: brightness(0.98);
+        }
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-thumb { background: #d9d9d9; border-radius: 5px; }
       `}</style>
     </Card>
   );

@@ -1,67 +1,130 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { Table, Button, Modal, Input, Space, Popconfirm, Form, Row, Col, DatePicker, Select, message, Tag, Tooltip } from "antd";
-import { ReadOutlined, DeleteOutlined, UserAddOutlined, IdcardOutlined, SearchOutlined } from "@ant-design/icons";
+import { 
+  Table, Button, Modal, Input, Space, Form, Row, Col, 
+  DatePicker, Select, Tag, Tooltip, Tabs, Timeline, Divider, message 
+} from "antd";
+import { 
+  ReadOutlined, IdcardOutlined, SearchOutlined, 
+  MedicineBoxOutlined, HistoryOutlined, UserOutlined, 
+  PlusOutlined, MinusCircleOutlined
+} from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const { Search } = Input;
 
-// --- Mock Data ---
+// --- Options สำหรับ Status (อ้างอิงจาก Enum ใน API) ---
+const STATUS_OPTIONS = [
+  { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
+  { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
+  { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
+  { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
+];
+
+// --- Mock Data สมบูรณ์แบบ 4 คน ---
 const MOCK_PATIENTS = [
-  { id: 1, name: "สมชาย ใจดี", email: "somchai.j@email.com", first_name: "สมชาย", last_name: "ใจดี", phone: "081-234-5678", birthday: "1990-05-15", citizen_id: "1-1001-01234-56-1", status: "active", patient_type: "general", allergy: "แพ้ยาเพนิซิลลิน" },
-  { id: 2, name: "สมหญิง รักเรียน", email: "somying.r@email.com", first_name: "สมหญิง", last_name: "รักเรียน", phone: "082-345-6789", birthday: "1985-11-20", citizen_id: "3-2104-55678-90-2", status: "active", patient_type: "onsite", allergy: null },
-  { id: 3, name: "มานะ อดทน", email: "mana.o@email.com", first_name: "มานะ", last_name: "อดทน", phone: "089-876-5432", birthday: "1995-02-10", citizen_id: "1-5509-99876-11-3", status: "inactive", patient_type: "general", allergy: "แพ้อาหารทะเล" },
-  { id: 4, name: "ชูใจ ใฝ่ดี", email: "choojai.f@email.com", first_name: "ชูใจ", last_name: "ใฝ่ดี", phone: "085-555-4444", birthday: "2000-08-25", citizen_id: "1-1234-56789-00-4", status: "active", patient_type: "onsite", allergy: null },
+  { 
+    id: 1, name: "สมชาย ใจดี", email: "somchai.j@email.com", first_name: "สมชาย", last_name: "ใจดี", phone: "081-234-5678", 
+    birthday: "1990-05-15", citizen_id: "1-1001-01234-56-1", status: "active", patient_type: "general", allergy: "แพ้ยาเพนิซิลลิน",
+    inspection_records: [
+      { id: 101, date: "2024-03-01", history: "ตรวจสุขภาพประจำปี ความดันปกติ", status: "completed" }
+    ],
+    medical_records: [
+      { id: 201, date: "2024-03-01", history: "มีอาการไอเล็กน้อย", status: "completed", patient_id: 1, inspection_record_id: 101, detail: [{ type_id: 1, diagnosis: "Common Cold" }] }
+    ]
+  },
+  { 
+    id: 2, name: "สมหญิง รักเรียน", email: "somying.r@email.com", first_name: "สมหญิง", last_name: "รักเรียน", phone: "082-345-6789", 
+    birthday: "1985-11-20", citizen_id: "3-2104-55678-90-2", status: "active", patient_type: "onsite", allergy: null,
+    inspection_records: [
+      { id: 102, date: "2024-02-15", history: "คัดกรองนอกสถานที่ น้ำตาลในเลือดสูง", status: "cancelled", patient_id: 2 }
+    ],
+    medical_records: []
+  },
+  { id: 3, name: "มานะ อดทน", email: "mana.o@email.com", first_name: "มานะ", last_name: "อดทน", phone: "089-876-5432", birthday: "1995-02-10", citizen_id: "1-5509-99876-11-3", status: "inactive", patient_type: "general", allergy: "แพ้อาหารทะเล", inspection_records: [], medical_records: [] },
+  { id: 4, name: "ชูใจ ใฝ่ดี", email: "choojai.f@email.com", first_name: "ชูใจ", last_name: "ใฝ่ดี", phone: "085-555-4444", birthday: "2000-08-25", citizen_id: "1-1234-56789-00-4", status: "active", patient_type: "onsite", allergy: null, inspection_records: [], medical_records: [] },
 ];
 
 export default function PatientsPage() {
   const [items, setItems] = useState(MOCK_PATIENTS);
   const [searchText, setSearchText] = useState("");
-  const [open, setOpen] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form] = Form.useForm();
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<any>(null);
+  
+  // State สำหรับ Modal เพิ่ม/แก้ไข
+  const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
+  const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
+  
+  const [inspectForm] = Form.useForm();
+  const [medicalForm] = Form.useForm();
 
   const filteredItems = items.filter((item) => {
-    const searchLower = searchText.toLowerCase();
-    return (
-      item.name.toLowerCase().includes(searchLower) ||
-      item.email.toLowerCase().includes(searchLower) ||
-      item.citizen_id.includes(searchLower)
-    );
+    const matchesSearch = item.name.toLowerCase().includes(searchText.toLowerCase()) || item.citizen_id.includes(searchText);
+    const matchesType = typeFilter === "all" || item.patient_type === typeFilter;
+    return matchesSearch && matchesType;
   });
 
-  const showModal = (record?: any) => {
-    if (record) {
-      setEditingId(record.id);
-      const fullData = items.find(i => i.id === record.id);
-      form.setFieldsValue({ ...fullData, birthday: fullData?.birthday ? dayjs(fullData.birthday) : null });
+  const showDetail = (record: any) => {
+    setSelectedPatient(record);
+    setIsDetailOpen(true);
+  };
+
+  // --- Logic สำหรับบันทึก (ทั้งเพิ่มใหม่และแก้ไข) ---
+  const handleSaveInspection = async () => {
+    const values = await inspectForm.validateFields();
+    const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
+    
+    let updatedInspects;
+    if (editingRecordId) {
+      updatedInspects = selectedPatient.inspection_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
+      message.success("แก้ไขประวัติการตรวจสำเร็จ");
     } else {
-      setEditingId(null);
-      form.resetFields();
+      updatedInspects = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.inspection_records || [])];
+      message.success("เพิ่มประวัติการตรวจสำเร็จ");
     }
-    setOpen(true);
+
+    const updatedPatient = { ...selectedPatient, inspection_records: updatedInspects };
+    updateState(updatedPatient);
+    setIsInspectModalOpen(false);
   };
 
-  const handleSave = async () => {
-    try {
-      const values = await form.validateFields();
-      const payload = { ...values, birthday: values.birthday ? dayjs(values.birthday).format("YYYY-MM-DD") : "" };
-      if (editingId) {
-        setItems(items.map(i => i.id === editingId ? { ...i, ...payload, name: `${payload.first_name} ${payload.last_name}` } : i));
-        message.success("แก้ไขข้อมูลสำเร็จ");
-      } else {
-        setItems([...items, { id: Date.now(), ...payload, name: `${payload.first_name} ${payload.last_name}` }]);
-        message.success("เพิ่มข้อมูลสำเร็จ");
-      }
-      setOpen(false);
-    } catch (error) { console.log("Error:", error); }
+  const handleSaveMedical = async () => {
+    const values = await medicalForm.validateFields();
+    const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
+    
+    let updatedMedicals;
+    if (editingRecordId) {
+      updatedMedicals = selectedPatient.medical_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
+      message.success("แก้ไขประวัติการรักษาสำเร็จ");
+    } else {
+      updatedMedicals = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.medical_records || [])];
+      message.success("เพิ่มประวัติการรักษาสำเร็จ");
+    }
+
+    const updatedPatient = { ...selectedPatient, medical_records: updatedMedicals };
+    updateState(updatedPatient);
+    setIsMedicalModalOpen(false);
   };
 
-  // ฟังก์ชันลบพร้อมการแจ้งเตือน
-  const deleteItem = (id: number) => {
-    setItems(items.filter(i => i.id !== id));
-    message.success("ลบข้อมูลสำเร็จ");
+  const updateState = (updatedPatient: any) => {
+    setItems(items.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+    setSelectedPatient(updatedPatient);
+  };
+
+  // --- เปิด Modal แก้ไข (Pre-populate ข้อมูลเดิม) ---
+  const openEditInspect = (record: any) => {
+    setEditingRecordId(record.id);
+    inspectForm.setFieldsValue({ ...record, date: dayjs(record.date) });
+    setIsInspectModalOpen(true);
+  };
+
+  const openEditMedical = (record: any) => {
+    setEditingRecordId(record.id);
+    medicalForm.setFieldsValue({ ...record, date: dayjs(record.date) });
+    setIsMedicalModalOpen(true);
   };
 
   const columns = [
@@ -74,97 +137,124 @@ export default function PatientsPage() {
     },
     { title: "อีเมล", dataIndex: "email", key: "email" },
     {
-      title: "จัดการ",
+      title: "รายละเอียด",
       key: "action",
-      width: 120,
+      width: 110,
+      align: 'center' as const,
       render: (_: any, record: any) => (
-        <Space>
-          {/* Tooltip สำหรับปุ่มแก้ไข/ดูรายละเอียด */}
-          <Tooltip title="Detail" placement="top">
-            <Button 
-              type="link" 
-              icon={<ReadOutlined style={{ fontSize: '20px' }} />} 
-              onClick={() => showModal(record)} 
-            />
-          </Tooltip>
-          
-          {/* Tooltip สำหรับปุ่มลบ */}
-          <Tooltip title="Delete" placement="top">
-            <Popconfirm 
-              title="ลบข้อมูล?" 
-              onConfirm={() => deleteItem(record.id)}
-              okText="ลบ"
-              cancelText="ยกเลิก"
-              okButtonProps={{ danger: true }}
-            >
-              <Button 
-                type="link" 
-                danger 
-                icon={<DeleteOutlined style={{ fontSize: '20px' }} />} 
-              />
-            </Popconfirm>
-          </Tooltip>
-        </Space>
+        <Tooltip title="Detail"><Button type="link" icon={<ReadOutlined style={{ fontSize: '22px' }} />} onClick={() => showDetail(record)} /></Tooltip>
       ),
     },
   ];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-        <h2 style={{ margin: 0, flexShrink: 0 }}>จัดการรายชื่อคนไข้</h2>
-        <div style={{ display: 'flex', gap: '12px', flexGrow: 1, justifyContent: 'flex-end' }}>
-          <Search
-            placeholder="ค้นหาชื่อ, อีเมล หรือเลขบัตรประชาชน..."
-            allowClear
-            enterButton={<SearchOutlined />}
-            size="large"
-            onSearch={(value) => setSearchText(value)}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ maxWidth: 400 }}
-          />
-          <Button type="primary" size="large" icon={<UserAddOutlined />} onClick={() => showModal()}>
-            เพิ่มคนไข้ใหม่
-          </Button>
-        </div>
+    <div style={{ padding: '24px' }}>
+      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between' }}>
+        <h2>📋 ระบบจัดการข้อมูลผู้ป่วย</h2>
+        <Space>
+          <Select defaultValue="all" style={{ width: 160 }} onChange={setTypeFilter} options={[{ value: 'all', label: 'ทั้งหมด' }, { value: 'general', label: 'ผู้ป่วยธรรมดา' }, { value: 'onsite', label: 'นอกสถานที่' }]} />
+          <Search placeholder="ค้นหาชื่อ หรือเลขบัตร..." allowClear onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} />
+        </Space>
       </div>
 
-      <Table columns={columns} dataSource={filteredItems} rowKey="id" />
+      <Table columns={columns} dataSource={filteredItems} rowKey="id" pagination={{ pageSize: 10 }} />
 
-      <Modal
-        open={open}
-        onOk={handleSave}
-        onCancel={() => setOpen(false)}
-        title={editingId ? "แก้ไขข้อมูลคนไข้" : "เพิ่มข้อมูลคนไข้"}
-        width={700}
-        destroyOnClose
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="patient_type" label="ประเภทการเข้ารับบริการ" rules={[{ required: true }]} initialValue="general">
-            <Select size="large">
-              <Select.Option value="general">ผู้ป่วยธรรมดา</Select.Option>
-              <Select.Option value="onsite">มาจากการยื่นขอใช้บริการตรวจนอกสถานที่</Select.Option>
-            </Select>
-          </Form.Item>
+      {/* --- Main Detail Modal --- */}
+      <Modal open={isDetailOpen} title={`แฟ้มประวัติ: ${selectedPatient?.name}`} onCancel={() => setIsDetailOpen(false)} width={850} footer={[<Button key="close" onClick={() => setIsDetailOpen(false)}>ปิดหน้าต่าง</Button>]}>
+        <Tabs items={[
+          {
+            key: '1', label: <span><UserOutlined /> ข้อมูลทั่วไป</span>,
+            children: (
+              <div style={{ padding: '16px 0' }}>
+                <Row gutter={[16, 16]}>
+                  <Col span={12}><strong>ชื่อ-นามสกุล:</strong> {selectedPatient?.name}</Col>
+                  <Col span={12}><strong>เลขบัตรประชาชน:</strong> {selectedPatient?.citizen_id}</Col>
+                  <Col span={12}><strong>เบอร์โทรศัพท์:</strong> {selectedPatient?.phone}</Col>
+                  <Col span={12}><strong>อีเมล:</strong> {selectedPatient?.email}</Col>
+                  <Col span={12}><strong>วันเกิด:</strong> {selectedPatient?.birthday}</Col>
+                  <Col span={12}><strong>ประเภท:</strong> {selectedPatient?.patient_type === 'onsite' ? 'ตรวจนอกสถานที่' : 'ผู้ป่วยธรรมดา'}</Col>
+                  <Col span={24}><strong>ประวัติการแพ้ยา:</strong> <Tag color="red">{selectedPatient?.allergy || "ไม่มีข้อมูล"}</Tag></Col>
+                </Row>
+              </div>
+            )
+          },
+          {
+            key: '2', label: <span><HistoryOutlined /> ประวัติการตรวจ</span>,
+            children: (
+              <div style={{ padding: '16px 0' }}>
+                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => { setEditingRecordId(null); inspectForm.resetFields(); setIsInspectModalOpen(true); }} style={{ marginBottom: 20 }}>เพิ่มบันทึกการตรวจ</Button>
+                <Timeline items={selectedPatient?.inspection_records?.map((r: any) => ({
+                  children: (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <span><Tag color="blue">{r.date}</Tag> <Tag>{r.status}</Tag> {r.history}</span>
+                      {/* --- ส่วนที่แก้ไข: ไอคอน Edit เหมือน Detail --- */}
+                      <Tooltip title="Detail" placement="top">
+                        <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditInspect(r)} />
+                      </Tooltip>
+                    </div>
+                  )
+                }))} />
+              </div>
+            )
+          },
+          {
+            key: '3', label: <span><MedicineBoxOutlined /> ประวัติการรักษา</span>,
+            children: (
+              <div style={{ padding: '16px 0' }}>
+                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => { setEditingRecordId(null); medicalForm.resetFields(); setIsMedicalModalOpen(true); }} style={{ marginBottom: 20 }}>เพิ่มบันทึกการรักษา</Button>
+                <Timeline items={selectedPatient?.medical_records?.map((r: any) => ({
+                  children: (
+                    <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <Tag color="green">{r.date}</Tag> <Tag color="orange">{r.status}</Tag>
+                        <p style={{ margin: '8px 0' }}>{r.history}</p>
+                        {r.detail?.map((d: any, i: number) => <Tag key={i} color="orange">{d.diagnosis}</Tag>)}
+                      </div>
+                      {/* --- ส่วนที่แก้ไข: ไอคอน Edit เหมือน Detail --- */}
+                      <Tooltip title="Detail" placement="top">
+                        <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditMedical(r)} />
+                      </Tooltip>
+                    </div>
+                  )
+                }))} />
+              </div>
+            )
+          }
+        ]} />
+      </Modal>
+
+      {/* --- Sub-Modal: Add/Edit Inspection --- */}
+      <Modal title={editingRecordId ? "แก้ไขบันทึกการตรวจ" : "เพิ่มบันทึกการตรวจ"} open={isInspectModalOpen} onOk={handleSaveInspection} onCancel={() => setIsInspectModalOpen(false)} okText="บันทึก" cancelText="ยกเลิก">
+        <Form form={inspectForm} layout="vertical">
+          <Form.Item name="date" label="วันที่ตรวจ" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item>
+          <Form.Item name="history" label="ประวัติ/อาการ" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item>
+          <Form.Item name="status" label="สถานะ" rules={[{ required: true }]}><Select options={STATUS_OPTIONS} /></Form.Item>
+        </Form>
+      </Modal>
+
+      {/* --- Sub-Modal: Add/Edit Medical --- */}
+      <Modal title={editingRecordId ? "แก้ไขบันทึกการรักษา" : "เพิ่มบันทึกการรักษา"} open={isMedicalModalOpen} onOk={handleSaveMedical} onCancel={() => setIsMedicalModalOpen(false)} width={600} okText="บันทึก" cancelText="ยกเลิก">
+        <Form form={medicalForm} layout="vertical">
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="first_name" label="ชื่อ" rules={[{ required: true }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="last_name" label="นามสกุล" rules={[{ required: true }]}><Input /></Form.Item></Col>
+            <Col span={12}><Form.Item name="date" label="วันที่รักษา" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item></Col>
+            <Col span={12}><Form.Item name="status" label="สถานะ" rules={[{ required: true }]}><Select options={STATUS_OPTIONS} /></Form.Item></Col>
           </Row>
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="email" label="อีเมล" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item></Col>
-            <Col span={12}><Form.Item name="phone" label="เบอร์โทรศัพท์" rules={[{ required: true }]}><Input /></Form.Item></Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="birthday" label="วันเกิด" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item></Col>
-            <Col span={12}><Form.Item name="citizen_id" label="เลขบัตรประชาชน" rules={[{ required: true }]}><Input prefix={<IdcardOutlined />} /></Form.Item></Col>
-          </Row>
-          <Form.Item name="allergy" label="ข้อมูลการแพ้ยา"><Input.TextArea rows={2} /></Form.Item>
-          <Form.Item name="status" label="สถานะ" initialValue="active">
-            <Select>
-              <Select.Option value="active">ปกติ (Active)</Select.Option>
-              <Select.Option value="inactive">ระงับ (Inactive)</Select.Option>
-            </Select>
-          </Form.Item>
+          <Form.Item name="history" label="ประวัติการรักษา" rules={[{ required: true }]}><Input.TextArea rows={2} /></Form.Item>
+          <Divider style={{ textAlign: "left" }}>รายละเอียดวินิจฉัย</Divider>
+          <Form.List name="detail">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                    <Form.Item {...restField} name={[name, 'type_id']} rules={[{ required: true }]}><Input placeholder="ID" type="number" style={{ width: 80 }} /></Form.Item>
+                    <Form.Item {...restField} name={[name, 'diagnosis']} rules={[{ required: true }]}><Input placeholder="วินิจฉัย" style={{ width: 350 }} /></Form.Item>
+                    {fields.length > 1 && <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red' }} />}
+                  </Space>
+                ))}
+                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>เพิ่มรายการวินิจฉัย</Button>
+              </>
+            )}
+          </Form.List>
         </Form>
       </Modal>
     </div>
