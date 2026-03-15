@@ -26,9 +26,6 @@ export async function GET(req: Request) {
     return handleError(err)
   }
 }
-
-
-
 export async function POST(request: Request) {
     try {
 

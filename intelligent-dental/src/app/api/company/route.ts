@@ -1,40 +1,24 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import * as companyService from "@/services/companyService";
+import { AppError } from "@/utils/AppError";
 
-type RouteContext = {
-  params: Promise<{ id: string }>;
-};
-
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET() {
   try {
-    const { id } = await params;
-    const companyId = Number(id);
+    const result = await companyService.listCompanies();
 
-    if (!Number.isInteger(companyId) || companyId <= 0) {
-      return NextResponse.json(
-        { message: "Invalid company id" },
-        { status: 400 }
-      );
-    }
+    return NextResponse.json(
+      {
+        data: result
+      },
+      { status: 200 }
+    );
 
-    const company = await prisma.company.findUnique({
-      where: { company_id: companyId },
-      select: {
-        contect_name: true,
-        office_name: true,
-        phone: true,
-        address: true,
-        email: true
-      }
-    });
-
-    if (!company) {
-      return NextResponse.json({ message: "Company not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({ data: company }, { status: 200 });
   } catch (error) {
-    console.error("GET /api/company/[id] error:", error);
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
+    console.error("GET /api/company error:", error);
+
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

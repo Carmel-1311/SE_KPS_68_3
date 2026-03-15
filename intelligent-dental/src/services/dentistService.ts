@@ -33,7 +33,7 @@ export async function getAvailableTimeSlots(dateStr: string) {
       const isWorking = currentMinutes >= startWork && (currentMinutes + 30) <= endWork;
 
       // เช็กว่าเวลานี้หมอติดนัดอื่นอยู่หรือไม่ (Exact Match)
-      const isBooked = dentist.appointment.some((a: any) =>
+      const isBooked = dentist.appointment.some((a:any) =>
         a.appointment_time.toISOString().slice(11, 16) === timeStr
       );
 
