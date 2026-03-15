@@ -4,12 +4,25 @@ import * as workScheduleService from "@/services/work_scheduleService"
 import { handleError } from "@/utils/errorHandler"
 import * as res from "@/utils/responseFormatter"
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const user = getCurrentUser()
         requireRole(user.role, ["staff", "dentist"])
-        const data = await workScheduleService.getAllWorkSchedulesByUser(user)
-        return res.ok(data)
+
+        const { searchParams } = new URL(request.url)
+        const page = Number(searchParams.get("page")) || 1
+        const limit = Number(searchParams.get("limit")) || 10
+        const result = await workScheduleService.getAllWorkSchedulesByUser(
+            user,
+            page,
+            limit
+        )
+
+        return res.okList(result.data, {
+            page,
+            limit,
+            total: result.total
+        })
     } catch (err: any) {
         return handleError(err)
     }

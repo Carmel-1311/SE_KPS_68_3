@@ -2,8 +2,21 @@ import { Prisma } from "@prisma/client"
 import * as map from "@/app/mappers/appointment.mapper"
 import { prisma } from "@/utils/prisma"
 
-export async function findAllAppointments(): Promise<map.AppointmentList[]> {
-  return prisma.appointment.findMany(map.appointmentListQuery)
+export async function findAllAppointments(
+  skip: number,
+  limit: number
+): Promise<{ data: map.AppointmentList[]; total: number }> {
+
+  const [data, total] = await Promise.all([
+    prisma.appointment.findMany({
+      ...map.appointmentListQuery,
+      skip,
+      take: limit
+    }),
+    prisma.appointment.count()
+  ])
+
+  return { data, total }
 }
 
 export async function findAppointmentById(
@@ -32,11 +45,19 @@ export async function deleteAppointment(id: number) {
   })
 } 
 
-export async function findAppointmentsByPatientId(patientId: number): Promise<map.AppointmentList[]> {
-  return prisma.appointment.findMany({
-    where: { patient_id: patientId },
-    ...map.appointmentWithRelations
-  })
+export async function findAppointmentsByPatientId(patientId: number,  skip: number,
+  limit: number): Promise<{ data: map.AppointmentList[]; total: number }> {
+
+    const [data, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { patient_id: patientId },
+      ...map.appointmentListQuery,
+      skip,
+      take: limit
+    }),
+    prisma.appointment.count()
+  ])
+  return { data, total }
 }
   
 

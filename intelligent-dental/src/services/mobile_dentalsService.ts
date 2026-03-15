@@ -1,26 +1,35 @@
 import * as map from "@/app/mappers/mobile_dentals.mapper"
 import * as repo from "@/repositories/mobile_dentalsRepository"
 import { AppError } from "@/utils/AppError"
-import { UpdateMobileDentalnput,CreateMobileDentalsInput } from "@/app/mappers/mobile_dentals.mapper"
+import { UpdateMobileDentalnput, CreateMobileDentalsInput } from "@/app/mappers/mobile_dentals.mapper"
 
-export async function getAllMobileDentalsByUser(user: { id: number, role: string }): Promise<map.MobileDentalsResponse[]> {
-    if (user.role === "company") {
-        return map.MobileDentalsMap.toResponseList(await repo.findAllByUser(user.id))
-    }
-    else {
-        return map.MobileDentalsMap.toResponseList(await repo.findAllMobileDental())
+export async function getAllMobileDentalsByUser(user: { id: number, role: string },
+    page: number,
+    limit: number
+): Promise<{data:map.MobileDentalsResponse[],total:number}> {
+
+    const skip = (page - 1) * limit
+
+    const result =
+        user.role === "company"
+            ? await repo.findAllByUser(user.id, skip, limit)
+            : await repo.findAllMobileDental(skip, limit)
+
+    return {
+        data: map.MobileDentalsMap.toResponseList(result.data),
+        total: result.total
     }
 }
 
-export async function getMobileDentalsById(id: number) 
-: Promise<ReturnType<typeof map.MobileDentalsMap.toRespons>> {
+export async function getMobileDentalsById(id: number)
+    : Promise<ReturnType<typeof map.MobileDentalsMap.toRespons>> {
 
     const mobile = await repo.findMobileDentalById(id)
 
     if (!mobile) {
         throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
     }
-    
+
     return map.MobileDentalsMap.toRespons(mobile)
 }
 
@@ -30,7 +39,7 @@ export async function createMobileDentals(data: CreateMobileDentalsInput) {
 }
 
 export async function updateMobileDentals(id: number, data: UpdateMobileDentalnput) {
-    
+
     const existingmobile = await repo.findMobileDentalById(id)
     if (!existingmobile) {
         throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
