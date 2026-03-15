@@ -2353,3 +2353,62 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
+
+// Custom additions (kept here per project convention).
+export type AppErrorDefinition = {
+    status: number;
+    code: string;
+    message: string;
+    category: string;
+};
+
+export const staffErrors = {
+    invalidRole: {
+        status: 400,
+        code: "STAFF-001",
+        message: "Invalid role. Allowed values: staff, dentist",
+        category: "VALIDATION",
+    },
+    duplicate: {
+        status: 409,
+        code: "STAFF-002",
+        message: "Staff with this email or phone already exists",
+        category: "CONFLICT",
+    },
+    notFound: {
+        status: 404,
+        code: "STAFF-003",
+        message: "Staff not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;
+
+export const patientErrors = {
+    invalidStatus: {
+        status: 400,
+        code: "PAT-001",
+        message: "Invalid status. Allowed values: active, inactive",
+        category: "VALIDATION",
+    },
+    duplicate: {
+        status: 409,
+        code: "PAT-002",
+        message: "Patient with this email or phone already exists",
+        category: "CONFLICT",
+    },
+    notFound: {
+        status: 404,
+        code: "PAT-003",
+        message: "Patient not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;
+
+export const companyErrors = {
+    notFound: {
+        status: 404,
+        code: "COMP-001",
+        message: "Company not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;
