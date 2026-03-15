@@ -20,14 +20,14 @@ export function okList<T>(
   data: T[],
   meta: PaginationMeta
 ) {
-  const totalPages = Math.ceil(meta.total / meta.limit)
+  const total_pages = Math.ceil(meta.total / meta.limit)
 
   return Response.json(
     {
       data,
       meta: {
         ...meta,
-        totalPages
+        total_pages
       }
     },
     { status: 200 }

@@ -8,19 +8,29 @@ export async function getAppointmentsForUser(
   user: { id: number, role: string },
   page: number,
   limit: number
-) {
+): Promise<{
+  data: ReturnType<typeof map.toAppointmentResponseList>
+  total: number
+}> {
 
   const skip = (page - 1) * limit
 
+  let result
+
   if (user.role === "patient") {
-    return await repo.findAppointmentsByPatientId(user.id, skip, limit)
+    result = await repo.findAppointmentsByPatientId(user.id, skip, limit)
+  }
+  else if (user.role === "staff" || user.role === "dentist") {
+    result = await repo.findAllAppointments(skip, limit)
+  }
+  else {
+    throw new AppError(403, "AUTH-003", "Access denied for this role", "AUTH")
   }
 
-  if (user.role === "staff" || user.role === "dentist") {
-    return await repo.findAllAppointments(skip, limit)
+  return {
+    data: map.toAppointmentResponseList(result.data),
+    total: result.total
   }
-
-  throw new AppError(403, "AUTH-003", "Access denied for this role", "AUTH")
 }
 
 
