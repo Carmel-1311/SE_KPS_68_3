@@ -1,6 +1,8 @@
 import * as repo from "@/repositories/staffRepository"
 import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/staff.mapper"
+import type { CreateStaffInput } from "@/app/mappers/staff.mapper"
+import type { UpdateStaffInput } from "@/app/mappers/staff.mapper"
 import { role_staff } from "@prisma/client"
 
 const validRoles = new Set(Object.values(role_staff))
@@ -10,15 +12,7 @@ export async function listStaffs(limit: number, page: number) {
   return map.staffMap.toResponseList(staffs)
 }
 
-export async function createStaff(data: {
-  first_name: string
-  last_name: string
-  birthday: Date
-  email: string
-  phone: string
-  license_number: string | null
-  role: string
-}) {
+export async function createStaff(data: CreateStaffInput) {
   if (!validRoles.has(data.role as role_staff)) {
     throw new AppError(400, "STAFF-001", "Invalid role. Allowed values: staff, dentist", "VALIDATION")
   }
@@ -29,15 +23,7 @@ export async function createStaff(data: {
   }
 
   const created = await repo.createStaff(
-    map.staffMap.toCreateInput({
-      first_name: data.first_name,
-      last_name: data.last_name,
-      birthday: data.birthday,
-      email: data.email,
-      phone: data.phone,
-      license_number: data.license_number,
-      role: data.role
-    })
+    map.staffMap.toCreateInput(data)
   )
 
   return map.staffMap.toResponse(created)
@@ -52,14 +38,7 @@ export async function getStaffById(id: number) {
   return map.staffMap.toResponse(staff)
 }
 
-export async function updateStaffById(id: number, data: {
-  first_name: string
-  last_name: string
-  birthday: Date
-  email: string
-  phone: string
-  license_number: string | null
-}) {
+export async function updateStaffById(id: number, data: UpdateStaffInput) {
   const existing = await repo.findStaffById(id)
   if (!existing) {
     throw new AppError(404, "STAFF-003", "Staff not found", "NOT_FOUND")
@@ -72,14 +51,7 @@ export async function updateStaffById(id: number, data: {
 
   const updated = await repo.updateStaff(
     id,
-    map.staffMap.toUpdateInput({
-      first_name: data.first_name,
-      last_name: data.last_name,
-      birthday: data.birthday,
-      email: data.email,
-      phone: data.phone,
-      license_number: data.license_number
-    })
+    map.staffMap.toUpdateInput(data)
   )
 
   return map.staffMap.toResponse(updated)

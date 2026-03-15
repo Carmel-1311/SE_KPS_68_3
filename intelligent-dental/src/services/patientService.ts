@@ -1,6 +1,8 @@
 import * as repo from "@/repositories/patientRepository"
 import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/patient.mapper"
+import type { CreatePatientInput } from "@/app/mappers/patient.mapper"
+import type { UpdatePatientInput } from "@/app/mappers/patient.mapper"
 import { status_user } from "@prisma/client"
 
 const validStatuses = new Set(Object.values(status_user))
@@ -10,15 +12,7 @@ export async function listPatients(limit: number, page: number) {
   return map.patientMap.toResponseList(patients)
 }
 
-export async function createPatient(data: {
-  first_name: string
-  last_name: string
-  birthday: Date
-  allergy: string
-  email: string
-  phone: string
-  status: string
-}) {
+export async function createPatient(data: CreatePatientInput) {
   if (!validStatuses.has(data.status as status_user)) {
     throw new AppError(400, "PAT-001", "Invalid status. Allowed values: active, inactive", "VALIDATION")
   }
@@ -30,16 +24,10 @@ export async function createPatient(data: {
 
   const maxPatient = await repo.getMaxPatientId()
   const created = await repo.createPatient(
-    map.patientMap.toCreateInput({
+    {
       patient_id: (maxPatient._max.patient_id ?? 0) + 1,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      birthday: data.birthday,
-      allergy: data.allergy,
-      email: data.email,
-      phone: data.phone,
-      status: data.status
-    })
+      ...map.patientMap.toCreateInput(data)
+    }
   )
   return map.patientMap.toResponseList([created])[0]
 }
@@ -53,15 +41,7 @@ export async function getPatientById(id: number) {
   return map.patientMap.toResponse(patient)
 }
 
-export async function updatePatient(id: number, data: {
-  first_name: string
-  last_name: string
-  birthday: Date
-  allergy: string
-  email: string
-  phone: string
-  status: string
-}) {
+export async function updatePatient(id: number, data: UpdatePatientInput) {
   if (!validStatuses.has(data.status as status_user)) {
     throw new AppError(400, "PAT-001", "Invalid status. Allowed values: active, inactive", "VALIDATION")
   }
@@ -78,15 +58,7 @@ export async function updatePatient(id: number, data: {
 
   const updated = await repo.updatePatient(
     id,
-    map.patientMap.toUpdateInput({
-      first_name: data.first_name,
-      last_name: data.last_name,
-      birthday: data.birthday,
-      allergy: data.allergy,
-      email: data.email,
-      phone: data.phone,
-      status: data.status
-    })
+    map.patientMap.toUpdateInput(data)
   )
 
   return map.patientMap.toResponse(updated)

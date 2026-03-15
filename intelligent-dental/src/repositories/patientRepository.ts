@@ -34,7 +34,7 @@ export async function getMaxPatientId() {
   })
 }
 
-export async function createPatient(data: Prisma.patientCreateInput) {
+export async function createPatient(data: Prisma.patientUncheckedCreateInput) {
   return prisma.patient.create({
     data,
     ...map.patientListQuery
