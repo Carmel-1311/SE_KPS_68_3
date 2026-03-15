@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as staffService from "@/services/staffService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 type CreateStaffBody = {
   first_name?: string;
@@ -14,6 +16,9 @@ type CreateStaffBody = {
 
 export async function GET(request: Request) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
     const pageParam = searchParams.get("page");
@@ -50,6 +55,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const body = (await request.json()) as CreateStaffBody;
 
     const firstName = body.first_name?.trim();

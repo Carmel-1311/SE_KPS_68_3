@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as staffService from "@/services/staffService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 type UpdateStaffBody = {
   first_name?: string;
@@ -17,6 +19,9 @@ type RouteContext = {
 
 export async function getStaffByIdController(_: Request, { params }: RouteContext) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const { id } = await params;
     const staffId = Number(id);
 
@@ -41,6 +46,9 @@ export async function getStaffByIdController(_: Request, { params }: RouteContex
 
 export async function updateStaffByIdController(request: Request, { params }: RouteContext) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const { id } = await params;
     const staffId = Number(id);
 

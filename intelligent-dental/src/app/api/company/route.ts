@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import * as companyService from "@/services/companyService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 export async function GET() {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const result = await companyService.listCompanies();
 
     return NextResponse.json(

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as patientService from "@/services/patientService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -18,6 +20,9 @@ type UpdatePatientBody = {
 
 export async function GET(_: Request, { params }: RouteContext) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "dentist"]);
+
     const { id } = await params;
     const patientId = Number(id);
 
@@ -42,6 +47,9 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "dentist"]);
+
     const { id } = await params;
     const patientId = Number(id);
 
@@ -76,7 +84,7 @@ export async function PUT(request: Request, { params }: RouteContext) {
     const updated = await patientService.updatePatient(patientId, {
       first_name: firstName,
       last_name: lastName,
-      birthday,
+      birthday: birthdayRaw,
       allergy,
       email,
       phone,

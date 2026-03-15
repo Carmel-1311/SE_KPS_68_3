@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as patientService from "@/services/patientService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 type CreatePatientBody = {
   first_name?: string;
@@ -15,6 +17,9 @@ type CreatePatientBody = {
 
 export async function GET(request: Request) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "dentist"]);
+
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
     const pageParam = searchParams.get("page");
@@ -50,6 +55,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "dentist"]);
+
     const body = (await request.json()) as CreatePatientBody;
 
     const firstName = body.first_name?.trim();

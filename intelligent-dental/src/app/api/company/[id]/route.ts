@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import * as companyService from "@/services/companyService";
 import { AppError } from "@/utils/AppError";
+import { getCurrentUser } from "@/lib/auth";
+import { requireRole } from "@/lib/permissions";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -8,6 +10,9 @@ type RouteContext = {
 
 export async function GET(_: Request, { params }: RouteContext) {
   try {
+    const user = getCurrentUser();
+    requireRole(user.role, ["staff", "company"]);
+
     const { id } = await params;
     const companyId = Number(id);
 
