@@ -1,60 +1,54 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
 
-type CreateStaffBody = {
+type UpdateStaffBody = {
   first_name?: string;
   last_name?: string;
   birthday?: string;
   email?: string;
   phone?: string;
   license_number?: string;
-  role?: string;
 };
 
-const validRoles = new Set(["staff", "dentist"]);
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
 
-export async function getStaffsController(request: Request) {
+export async function getStaffByIdController(_: Request, { params }: RouteContext) {
   try {
-    const { searchParams } = new URL(request.url);
-    const limitParam = searchParams.get("limit");
-    const pageParam = searchParams.get("page");
+    const { id } = await params;
+    const staffId = Number(id);
 
-    const limit = limitParam ? Number(limitParam) : 10;
-    const page = pageParam ? Number(pageParam) : 1;
-
-    if (!Number.isInteger(limit) || !Number.isInteger(page) || limit <= 0 || page <= 0) {
-      return NextResponse.json(
-        { message: "limit and page must be positive integers" },
-        { status: 400 }
-      );
+    if (!Number.isInteger(staffId) || staffId <= 0) {
+      return NextResponse.json({ message: "Invalid staff id" }, { status: 400 });
     }
 
-    const staffs = await prisma.staff.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { staff_id: "asc" },
+    const staff = await prisma.staff.findUnique({
+      where: { staff_id: staffId },
       select: {
         staff_id: true,
         first_name: true,
         last_name: true,
-        email: true,
-        role: true
+        email: true
       }
     });
 
+    if (!staff) {
+      return NextResponse.json({ message: "Staff not found" }, { status: 404 });
+    }
+
     return NextResponse.json(
       {
-        data: staffs.map((staff) => ({
+        data: {
           id: staff.staff_id,
           name: `${staff.first_name ?? ""} ${staff.last_name ?? ""}`.trim(),
-          email: staff.email ?? "",
-          role: staff.role ?? ""
-        }))
+          email: staff.email ?? ""
+        }
       },
       { status: 200 }
     );
   } catch (error) {
-    console.error("GET /api/staffs error:", error);
+    console.error("GET /api/staffs/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
@@ -62,28 +56,26 @@ export async function getStaffsController(request: Request) {
   }
 }
 
-export async function createStaffController(request: Request) {
+export async function updateStaffByIdController(request: Request, { params }: RouteContext) {
   try {
-    const body = (await request.json()) as CreateStaffBody;
+    const { id } = await params;
+    const staffId = Number(id);
 
+    if (!Number.isInteger(staffId) || staffId <= 0) {
+      return NextResponse.json({ message: "Invalid staff id" }, { status: 400 });
+    }
+
+    const body = (await request.json()) as UpdateStaffBody;
     const firstName = body.first_name?.trim();
     const lastName = body.last_name?.trim();
     const birthdayRaw = body.birthday?.trim();
     const email = body.email?.trim();
     const phone = body.phone?.trim();
     const licenseNumber = body.license_number?.trim() || null;
-    const role = body.role?.trim();
 
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !role) {
+    if (!firstName || !lastName || !birthdayRaw || !email || !phone) {
       return NextResponse.json(
         { message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    if (!validRoles.has(role)) {
-      return NextResponse.json(
-        { message: "Invalid role. Allowed values: staff, dentist" },
         { status: 400 }
       );
     }
@@ -96,8 +88,18 @@ export async function createStaffController(request: Request) {
       );
     }
 
+    const existing = await prisma.staff.findUnique({
+      where: { staff_id: staffId },
+      select: { staff_id: true }
+    });
+
+    if (!existing) {
+      return NextResponse.json({ message: "Staff not found" }, { status: 404 });
+    }
+
     const duplicate = await prisma.staff.findFirst({
       where: {
+        staff_id: { not: staffId },
         OR: [{ email }, { phone }]
       },
       select: { staff_id: true }
@@ -110,15 +112,15 @@ export async function createStaffController(request: Request) {
       );
     }
 
-    const created = await prisma.staff.create({
+    const updated = await prisma.staff.update({
+      where: { staff_id: staffId },
       data: {
         first_name: firstName,
         last_name: lastName,
         birthday,
         email,
         phone,
-        license_number: licenseNumber,
-        role: role as "staff" | "dentist"
+        license_number: licenseNumber
       },
       select: {
         staff_id: true,
@@ -131,15 +133,15 @@ export async function createStaffController(request: Request) {
     return NextResponse.json(
       {
         data: {
-          id: created.staff_id,
-          name: `${created.first_name ?? ""} ${created.last_name ?? ""}`.trim(),
-          email: created.email ?? ""
+          id: updated.staff_id,
+          name: `${updated.first_name ?? ""} ${updated.last_name ?? ""}`.trim(),
+          email: updated.email ?? ""
         }
       },
-      { status: 201 }
+      { status: 200 }
     );
   } catch (error) {
-    console.error("POST /api/staffs error:", error);
+    console.error("PUT /api/staffs/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }

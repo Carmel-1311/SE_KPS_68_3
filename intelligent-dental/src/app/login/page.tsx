@@ -1,131 +1,178 @@
 "use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
-import { Button, Flex, Form, Input, Typography } from "antd";
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import {
+  ArrowLeftOutlined,
+  LockOutlined,
+  SafetyCertificateOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography } from "antd";
 import Image from "next/image";
 import Link from "next/link";
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: ThemeWebColor.Background,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 24,
+        background:
+          "radial-gradient(circle at top left, #9bfaf7 0%, #e6fdfd 40%, #d9f8ff 72%, #c8f2ff 100%)",
+        padding: isMobile ? "20px 12px" : "36px 20px",
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 440,
-          background: "#fff",
-          borderRadius: 16,
-          padding: "40px 36px 32px",
-          boxShadow: "0 8px 32px rgba(3,32,32,0.12)",
-        }}
-      >
-        {/* Logo & Title */}
-        <Flex align="center" justify="center" gap={12} style={{ marginBottom: 8 }}>
-          <Image
-            src="/icon/icon.png"
-            alt="Clinic Icon"
-            width={44}
-            height={44}
-            style={{ borderRadius: "50%", objectFit: "cover" }}
-          />
-          <Title
-            level={4}
-            style={{
-              margin: 0,
-              color: ThemeWebColor.header,
-              fontSize: 20,
-              fontWeight: 700,
-              lineHeight: 1.2,
-            }}
-          >
-            ระบบบริหารจัดการ
-            <br />
-            คลินิกทันตกรรม
-          </Title>
-        </Flex>
-
-        <Text
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        <Link
+          href="/home"
           style={{
-            display: "block",
-            textAlign: "center",
-            color: "#666",
-            marginBottom: 28,
-            fontSize: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 14,
+            color: "#155f7b",
+            fontWeight: 600,
           }}
         >
-          เข้าสู่ระบบเพื่อใช้งาน
-        </Text>
+          <ArrowLeftOutlined />
+          กลับหน้าแรก
+        </Link>
 
-        <Form layout="vertical" requiredMark={false} size="large">
-          <Form.Item
-            name="username"
-            label={<span style={{ fontWeight: 600, color: ThemeWebColor.header }}>ชื่อผู้ใช้งาน</span>}
-            rules={[{ required: true, message: "กรุณากรอกชื่อผู้ใช้งาน" }]}
-          >
-            <Input
-              prefix={<UserOutlined style={{ color: "#aaa" }} />}
-              placeholder="กรอกชื่อผู้ใช้งาน"
-              style={{ borderRadius: 8 }}
-            />
-          </Form.Item>
+        <Card
+          styles={{ body: { padding: 0 } }}
+          style={{
+            borderRadius: 24,
+            border: "1px solid #cdeaf2",
+            overflow: "hidden",
+            boxShadow: "0 18px 40px rgba(7, 74, 92, 0.14)",
+          }}
+        >
+          <Row gutter={0}>
+            <Col xs={24} md={10}>
+              <div
+                style={{
+                  height: "100%",
+                  padding: isMobile ? 18 : 26,
+                  background: "linear-gradient(160deg, #032020 0%, #0c5f6a 60%, #0fa3a3 100%)",
+                }}
+              >
+                <Space size={10} align="center">
+                  <Image
+                    src="/icon/icon.png"
+                    alt="Clinic Icon"
+                    width={46}
+                    height={46}
+                    style={{ borderRadius: "50%", objectFit: "cover", border: "1px solid rgba(255,255,255,0.4)" }}
+                  />
+                  <Text style={{ color: "#d2fcff", fontSize: 13 }}>INTELLIGENT DENTAL</Text>
+                </Space>
 
-          <Form.Item
-            name="password"
-            label={<span style={{ fontWeight: 600, color: ThemeWebColor.header }}>รหัสผ่าน</span>}
-            rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
-          >
-            <Input.Password
-              prefix={<LockOutlined style={{ color: "#aaa" }} />}
-              placeholder="กรอกรหัสผ่าน"
-              style={{ borderRadius: 8 }}
-            />
-          </Form.Item>
+                <Title
+                  level={2}
+                  style={{
+                    marginTop: 14,
+                    marginBottom: 10,
+                    color: "#ffffff",
+                    lineHeight: 1.2,
+                    fontSize: isMobile ? 26 : 34,
+                  }}
+                >
+                  ยินดีต้อนรับกลับ
+                </Title>
+                <Text style={{ color: "#d9fbff", fontSize: 14 }}>
+                  เข้าสู่ระบบเพื่อใช้งานการจัดการข้อมูลนัดหมาย ประวัติการรักษา และข้อมูลที่สำคัญของคลินิก
+                </Text>
 
-          <Form.Item style={{ marginBottom: 12 }}>
-            <Button
-              type="primary"
-              htmlType="submit"
-              block
-              style={{
-                height: 44,
-                borderRadius: 8,
-                fontWeight: 700,
-                fontSize: 16,
-                background: ThemeWebColor.header,
-                borderColor: ThemeWebColor.header,
-                color: "#20d8dc",
-              }}
-            >
-              เข้าสู่ระบบ
-            </Button>
-          </Form.Item>
-        </Form>
+                <div
+                  style={{
+                    marginTop: 18,
+                    borderRadius: 14,
+                    padding: "10px 12px",
+                    background: "rgba(230, 253, 253, 0.12)",
+                    border: "1px solid rgba(194, 248, 255, 0.24)",
+                  }}
+                >
+                  <Space size={8}>
+                    <SafetyCertificateOutlined style={{ color: "#7dfff3" }} />
+                    <Text style={{ color: "#e4fbff" }}>ระบบเข้ารหัสความปลอดภัยระหว่างการใช้งาน</Text>
+                  </Space>
+                </div>
+              </div>
+            </Col>
 
-        <Flex justify="center">
-          <Link
-            href="/home"
-            style={{
-              color: "#666",
-              fontSize: 13,
-              textDecoration: "underline",
-            }}
-          >
-            กลับหน้าหลัก
-          </Link>
-        </Flex>
+            <Col xs={24} md={14}>
+              <div style={{ padding: isMobile ? "20px 16px" : "28px 28px 24px" }}>
+                <Title level={3} style={{ margin: 0, color: "#0d3f56" }}>
+                  Login
+                </Title>
+                <Text style={{ color: "#587284" }}>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ</Text>
+
+                <Form layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }}>
+                  <Form.Item
+                    name="username"
+                    label={<Text strong style={{ color: "#16445f" }}>ชื่อผู้ใช้</Text>}
+                    rules={[{ required: true, message: "กรุณากรอกชื่อผู้ใช้" }]}
+                  >
+                    <Input
+                      prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                      placeholder="กรอกชื่อผู้ใช้งาน"
+                      style={{ height: 44, borderRadius: 10 }}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="password"
+                    label={<Text strong style={{ color: "#16445f" }}>รหัสผ่าน</Text>}
+                    rules={[{ required: true, message: "กรุณากรอกรหัสผ่าน" }]}
+                  >
+                    <Input.Password
+                      prefix={<LockOutlined style={{ color: "#88a1b2" }} />}
+                      placeholder="กรอกรหัสผ่าน"
+                      style={{ height: 44, borderRadius: 10 }}
+                    />
+                  </Form.Item>
+
+                  <Form.Item style={{ marginBottom: 10 }}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      block
+                      style={{
+                        height: 46,
+                        borderRadius: 12,
+                        fontWeight: 700,
+                        fontSize: 16,
+                        background: ThemeWebColor.header,
+                        borderColor: ThemeWebColor.header,
+                      }}
+                    >
+                      เข้าสู่ระบบ
+                    </Button>
+                  </Form.Item>
+                </Form>
+
+                <Flex justify="center" gap={6} wrap="wrap">
+                  <Text style={{ color: "#57748a", fontSize: 13 }}>ยังไม่มีบัญชี?</Text>
+                  <Link
+                    href="/register"
+                    style={{
+                      color: ThemeWebColor.header,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textDecoration: "underline",
+                    }}
+                  >
+                    สมัครสมาชิก
+                  </Link>
+                </Flex>
+              </div>
+            </Col>
+          </Row>
+        </Card>
       </div>
     </div>
   );
