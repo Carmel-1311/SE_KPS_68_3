@@ -1,10 +1,17 @@
 ﻿"use client";
 
-import { Carousel, Flex, Grid, Modal, Typography } from "antd";
+import { Card, Carousel, Col, Grid, Modal, Row, Space, Typography } from "antd";
 import Image from "next/image";
 import { useState } from "react";
 
 const { Text } = Typography;
+
+type MenuDetail = {
+  title: string;
+  description: string;
+  points: string[];
+  note: string;
+};
 
 const banners = [
   "https://images.unsplash.com/photo-1609840114035-3c981b782dfe?auto=format&fit=crop&w=1600&q=80",
@@ -15,54 +22,66 @@ const banners = [
 const quickMenus = [
   {
     key: "remove-unit",
-    label:
-      "\u0e01\u0e0e\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e16\u0e2d\u0e19\u0e2b\u0e19\u0e48\u0e27\u0e22",
+    label: "กฎการจองหน่วยบริการเคลื่อนที่",
     iconSrc: "/icon/icon01.png",
+    helperText: "รายละเอียดเกี่ยวกับกฎการจองหน่วยบริการเคลื่อนที่",
   },
   {
     key: "booking",
-    label:
-      "\u0e01\u0e0e\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e17\u0e33\u0e1f\u0e31\u0e19",
+    label: "กฎการจองบริการ",
     iconSrc: "/icon/icon02.png",
+    helperText: "รายละเอียดเกี่ยวกับกฎการจองบริการ",
   },
   {
     key: "clinic",
-    label:
-      "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01",
+    label: "กฎการจองคลินิก",
     iconSrc: "/icon/icon03.png",
+    helperText: "รายละเอียดเกี่ยวกับกฎการจองคลินิก",
   },
 ];
 
-const menuModalContent: Record<string, { title: string; description: string }> =
-  {
-    "remove-unit": {
-      title:
-        "\u0e01\u0e0e\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e16\u0e2d\u0e19\u0e2b\u0e19\u0e48\u0e27\u0e22",
-      description:
-        "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e04\u0e34\u0e27\u0e41\u0e25\u0e30\u0e02\u0e31\u0e49\u0e19\u0e15\u0e2d\u0e19\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e16\u0e2d\u0e19\u0e2b\u0e19\u0e48\u0e27\u0e22",
-    },
-    booking: {
-      title:
-        "\u0e01\u0e0e\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e17\u0e33\u0e1f\u0e31\u0e19",
-      description:
-        "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e04\u0e34\u0e27\u0e17\u0e33\u0e1f\u0e31\u0e19",
-    },
-    clinic: {
-      title:
-        "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e04\u0e25\u0e34\u0e19\u0e34\u0e01",
-      description:
-        "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e40\u0e01\u0e35\u0e48\u0e22\u0e27\u0e01\u0e31\u0e1a\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e01\u0e32\u0e23\u0e08\u0e2d\u0e07\u0e04\u0e34\u0e27",
-    },
-  };
+const menuModalContent: Record<string, MenuDetail> = {
+  "remove-unit": {
+    title: "กฎการจองหน่วยบริการเคลื่อนที่",
+    description:
+      "รายละเอียดเกี่ยวกับกฎการจองหน่วยบริการเคลื่อนที่",
+    points: [
+      "ข้อกำหนดและเงื่อนไขการจองหน่วยบริการเคลื่อนที่",
+      "ขั้นตอนการจองหน่วยบริการเคลื่อนที่",
+      "รายละเอียดเพิ่มเติมเกี่ยวกับการจองหน่วยบริการเคลื่อนที่",
+    ],
+    note: "หมายเหตุเกี่ยวกับการจองหน่วยบริการเคลื่อนที่",
+  },
+  booking: {
+    title: "กฎการจองบริการ",
+    description:
+      "รายละเอียดเกี่ยวกับกฎการจองบริการ",
+    points: [
+      "ข้อกำหนดและเงื่อนไขการจองบริการ",
+      "ขั้นตอนการจองบริการ",
+      "รายละเอียดเพิ่มเติมเกี่ยวกับการจองบริการ",
+    ],
+    note: "หมายเหตุเกี่ยวกับการจองบริการ",
+  },
+  clinic: {
+    title: "ตำแหน่งการจองคลินิก",
+    description:
+      "รายละเอียดเกี่ยวกับกฎการจองคลินิก",
+    points: [
+      "ข้อกำหนดและเงื่อนไขการจองคลินิก",
+      "ขั้นตอนการจองคลินิก",
+      "รายละเอียดเพิ่มเติมเกี่ยวกับการจองคลินิก",
+    ],
+    note: "หมายเหตุเกี่ยวกับการจองคลินิก",
+  },
+};
 
 export default function HomePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const [activeMenuKey, setActiveMenuKey] = useState<string | null>(null);
 
-  const activeMenuContent = activeMenuKey
-    ? menuModalContent[activeMenuKey]
-    : null;
+  const activeMenuContent = activeMenuKey ? menuModalContent[activeMenuKey] : null;
 
   return (
     <div
@@ -106,92 +125,90 @@ export default function HomePage() {
 
       <div
         style={{
-          margin: isMobile ? "20px 0 0" : "34px auto 0",
-          maxWidth: "100%",
-          background: "#FFFFFF ",
-          borderRadius: 30,
-          padding: isMobile ? "12px 10px" : "24px 20px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          width: "100%",
+          maxWidth: 1460,
+          margin: "0 auto",
+          padding: "12px 0 0",
         }}
       >
-        <Flex wrap={isMobile} align="stretch" justify="center">
-          {quickMenus.map((menu) => (
-            <Flex
-              key={menu.key}
-              align="center"
-              justify="center"
-              gap={16}
-              role="button"
-              tabIndex={0}
-              onClick={() => setActiveMenuKey(menu.key)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault();
-                  setActiveMenuKey(menu.key);
-                }
-              }}
-              style={{
-                flex: isMobile ? "1 1 100%" : "1 1 33.33%",
-                minHeight: isMobile ? 96 : 138,
-                padding: isMobile ? "14px 10px" : "8px 26px",
-                borderRight:
-                  !isMobile && menu.key !== "clinic"
-                    ? "1px solid #d5d5d5"
-                    : "none",
-                borderBottom:
-                  isMobile && menu.key !== "clinic"
-                    ? "1px solid #d5d5d5"
-                    : "none",
-                cursor: "pointer",
-              }}
-            >
-              <div
-                style={{
-                  minWidth: isMobile ? 56 : 84,
-                  height: isMobile ? 56 : 84,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Image
-                  src={menu.iconSrc}
-                  alt={menu.label}
-                  width={isMobile ? 62 : 150}
-                  height={isMobile ? 62 : 150}
-                  style={{ objectFit: "contain" }}
-                />
-              </div>
-              <Text
-                style={{
-                  display: "block",
-                  fontSize: isMobile ? 15 : 28,
-                  fontWeight: 700,
-                  color: "#123f6a",
-                  lineHeight: isMobile ? 1.25 : 1.1,
-                  whiteSpace: isMobile ? "normal" : "nowrap",
-                  textAlign: isMobile ? "left" : "center",
-                  overflowWrap: "anywhere",
-                }}
-              >
-                {menu.label}
-              </Text>
-            </Flex>
-          ))}
-        </Flex>
+        <Card
+          bordered={false}
+          style={{
+            background: "#f3f5f7",
+            borderRadius: 18,
+            boxShadow: "0 8px 24px rgba(10, 58, 74, 0.08)",
+          }}
+        >
+          <Text strong style={{ color: "#113f60", display: "block", marginBottom: 14 }}>
+            กฎการจองหน่วยบริการเคลื่อนที่
+          </Text>
+          <Text style={{ color: "#4d6d82", display: "block", marginBottom: 14 }}>
+            รายละเอียดเกี่ยวกับกฎการจองหน่วยบริการเคลื่อนที่
+          </Text>
+
+          <Row gutter={[12, 12]}>
+            {quickMenus.map((menu) => (
+              <Col xs={24} md={12} xl={8} key={menu.key}>
+                <Card
+                  hoverable
+                  onClick={() => setActiveMenuKey(menu.key)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setActiveMenuKey(menu.key);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  style={{
+                    borderRadius: 14,
+                    border: "1px solid #c8dceb",
+                    height: "100%",
+                    cursor: "pointer",
+                    background: "#f6f8fa",
+                  }}
+                  styles={{ body: { padding: "14px 12px" } }}
+                >
+                  <Space direction="vertical" size={10} style={{ width: "100%" }}>
+                    <Image
+                      src={menu.iconSrc}
+                      alt={menu.label}
+                      width={56}
+                      height={56}
+                      style={{ objectFit: "contain" }}
+                    />
+                    <Text strong style={{ color: "#123f6a", lineHeight: 1.35 }}>
+                      {menu.label}
+                    </Text>
+                    <Text style={{ color: "#63859a", fontSize: 12 }}>{menu.helperText}</Text>
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
       </div>
+
       <Modal
-        open={Boolean(activeMenuKey)}
+        open={Boolean(activeMenuContent)}
         title={activeMenuContent?.title}
         onCancel={() => setActiveMenuKey(null)}
-        onOk={() => setActiveMenuKey(null)}
-        okText="ตกลง"
-        cancelText="ปิด"
+        footer={null}
       >
-        <Text style={{ fontSize: 16, color: "#2c4661" }}>
-          {activeMenuContent?.description}
-        </Text>
+        <Space direction="vertical" size={10} style={{ width: "100%" }}>
+          <Text style={{ color: "#3f5f72", lineHeight: 1.7 }}>{activeMenuContent?.description}</Text>
+          <div>
+            <Text strong style={{ color: "#113f60" }}>
+              รายละเอียดเพิ่มเติม:
+            </Text>
+            <ul style={{ margin: "8px 0 0 18px", padding: 0, color: "#3f5f72", lineHeight: 1.7 }}>
+              {activeMenuContent?.points.map((point) => <li key={point}>{point}</li>)}
+            </ul>
+          </div>
+          <Text style={{ color: "#5b7a8f", fontSize: 13 }}>{activeMenuContent?.note}</Text>
+        </Space>
       </Modal>
+
       <style jsx global>{`
         .home-carousel-dots {
           text-align: right !important;

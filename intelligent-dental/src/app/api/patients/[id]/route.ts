@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
+import * as patientService from "@/services/patientService";
+import { AppError } from "@/utils/AppError";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -24,37 +25,13 @@ export async function GET(_: Request, { params }: RouteContext) {
       return NextResponse.json({ message: "Invalid patient id" }, { status: 400 });
     }
 
-    const patient = await prisma.patient.findUnique({
-      where: { patient_id: patientId },
-      select: {
-        patient_id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        birthday: true,
-        allergy: true
-      }
-    });
+    const patient = await patientService.getPatientById(patientId);
 
-    if (!patient) {
-      return NextResponse.json({ message: "Patient not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(
-      {
-        data: {
-          id: patient.patient_id,
-          name: `${patient.first_name ?? ""} ${patient.last_name ?? ""}`.trim(),
-          email: patient.email ?? "",
-          phone: patient.phone ?? "",
-          birthday: patient.birthday ? patient.birthday.toISOString().slice(0, 10) : null,
-          allergy: patient.allergy ?? ""
-        }
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ data: patient }, { status: 200 });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("GET /api/patients/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
@@ -88,13 +65,6 @@ export async function PUT(request: Request, { params }: RouteContext) {
       );
     }
 
-    if (!["active", "inactive"].includes(status)) {
-      return NextResponse.json(
-        { message: "Invalid status. Allowed values: active, inactive" },
-        { status: 400 }
-      );
-    }
-
     const birthday = new Date(birthdayRaw);
     if (Number.isNaN(birthday.getTime())) {
       return NextResponse.json(
@@ -103,66 +73,21 @@ export async function PUT(request: Request, { params }: RouteContext) {
       );
     }
 
-    const existing = await prisma.patient.findUnique({
-      where: { patient_id: patientId },
-      select: { patient_id: true }
+    const updated = await patientService.updatePatient(patientId, {
+      first_name: firstName,
+      last_name: lastName,
+      birthday,
+      allergy,
+      email,
+      phone,
+      status
     });
 
-    if (!existing) {
-      return NextResponse.json({ message: "Patient not found" }, { status: 404 });
-    }
-
-    const duplicate = await prisma.patient.findFirst({
-      where: {
-        patient_id: { not: patientId },
-        OR: [{ email }, { phone }]
-      },
-      select: { patient_id: true }
-    });
-
-    if (duplicate) {
-      return NextResponse.json(
-        { message: "Patient with this email or phone already exists" },
-        { status: 409 }
-      );
-    }
-
-    const updated = await prisma.patient.update({
-      where: { patient_id: patientId },
-      data: {
-        first_name: firstName,
-        last_name: lastName,
-        birthday,
-        allergy,
-        email,
-        phone,
-        status: status as "active" | "inactive"
-      },
-      select: {
-        patient_id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        birthday: true,
-        phone: true,
-        allergy: true
-      }
-    });
-
-    return NextResponse.json(
-      {
-        data: {
-          id: updated.patient_id,
-          name: `${updated.first_name ?? ""} ${updated.last_name ?? ""}`.trim(),
-          email: updated.email ?? "",
-          birthday: updated.birthday ? updated.birthday.toISOString().slice(0, 10) : null,
-          phone: updated.phone ?? "",
-          allergy: updated.allergy ?? ""
-        }
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ data: updated }, { status: 200 });
   } catch (error) {
+    if (error instanceof AppError) {
+      return NextResponse.json({ message: error.message }, { status: error.status });
+    }
     console.error("PUT /api/patients/[id] error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
