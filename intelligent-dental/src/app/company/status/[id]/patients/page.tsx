@@ -28,6 +28,7 @@ import { useParams } from "next/navigation";
 import type { UploadProps } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 const { Title, Text } = Typography;
 
@@ -81,7 +82,8 @@ export default function PatientsPage() {
         setLoading(true);
         try {
             const res = await fetch(`/api/mobile-dental/${mobileDentalId}/patients`, {
-                cache: "no-store"
+                cache: "no-store",
+                headers: withAuthHeaders()
             });
 
             if (!res.ok) throw new Error();
@@ -98,7 +100,9 @@ export default function PatientsPage() {
 
     const fetchMission = useCallback(async () => {
         try {
-            const res = await fetch(`/api/mobile_dentals/${mobileDentalId}`);
+            const res = await fetch(`/api/mobile_dentals/${mobileDentalId}`, {
+                headers: withAuthHeaders()
+            });
 
             if (!res.ok) throw new Error();
 
@@ -177,7 +181,7 @@ export default function PatientsPage() {
                     `/api/mobile-dental/${mobileDentalId}/patients`,
                     {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: withAuthHeaders({ "Content-Type": "application/json" }),
                         body: JSON.stringify(payload)
                     }
                 );

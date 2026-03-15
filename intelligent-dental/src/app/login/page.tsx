@@ -43,10 +43,30 @@ export default function LoginPage() {
         localStorage.setItem("auth_token", result?.data?.token || "");
         localStorage.setItem("account_role", result?.data?.role || "");
         localStorage.setItem("account_id", String(result?.data?.account_id || ""));
+        const firstName = result?.data?.first_name || "";
+        const lastName = result?.data?.last_name || "";
+        const fullName = `${firstName} ${lastName}`.trim();
+        const username = result?.data?.username || values.username || "";
+        localStorage.setItem(
+          "account_name",
+          result?.data?.display_name || fullName || username
+        );
+        localStorage.setItem("account_username", username);
       }
 
       messageApi.success("เข้าสู่ระบบสำเร็จ");
-      router.push("/home");
+      const role = result?.data?.role;
+      if (role === "patient") {
+        router.push("/user");
+      } else if (role === "staff") {
+        router.push("/personnel");
+      } else if (role === "dentist") {
+        router.push("/dentist");
+      } else if (role === "company") {
+        router.push("/company");
+      } else {
+        router.push("/home");
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "ไม่สามารถเข้าสู่ระบบได้";

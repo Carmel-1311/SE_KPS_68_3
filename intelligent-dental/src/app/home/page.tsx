@@ -132,7 +132,7 @@ export default function HomePage() {
         }}
       >
         <Card
-          bordered={false}
+          variant="borderless"
           style={{
             background: "#f3f5f7",
             borderRadius: 18,
@@ -169,7 +169,7 @@ export default function HomePage() {
                   }}
                   styles={{ body: { padding: "14px 12px" } }}
                 >
-                  <Space direction="vertical" size={10} style={{ width: "100%" }}>
+                  <Space orientation="vertical" size={10} style={{ width: "100%" }}>
                     <Image
                       src={menu.iconSrc}
                       alt={menu.label}
@@ -195,7 +195,7 @@ export default function HomePage() {
         onCancel={() => setActiveMenuKey(null)}
         footer={null}
       >
-        <Space direction="vertical" size={10} style={{ width: "100%" }}>
+        <Space orientation="vertical" size={10} style={{ width: "100%" }}>
           <Text style={{ color: "#3f5f72", lineHeight: 1.7 }}>{activeMenuContent?.description}</Text>
           <div>
             <Text strong style={{ color: "#113f60" }}>

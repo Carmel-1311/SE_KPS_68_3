@@ -6,6 +6,9 @@ import PersonnelSidebar from "@/components/layout/personnel/Sidebar";
 import { ThemeWebColor } from "@/app/utils/constants";
 
 import { Layout } from "antd";
+import { getAccountRole, getAuthToken } from "@/app/utils/auth.client";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 const { Content } = Layout;
 
@@ -14,6 +17,22 @@ export default function PersonnelLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = getAuthToken();
+    const role = getAccountRole();
+
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    if (role !== "staff") {
+      router.replace("/home");
+    }
+  }, [router]);
+
   return (
     <Layout hasSider style={{ minHeight: "100vh" }}>
       <PersonnelSidebar />

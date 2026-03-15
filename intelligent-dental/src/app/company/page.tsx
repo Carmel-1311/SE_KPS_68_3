@@ -24,6 +24,7 @@ import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 
 import { getCurrentCompanyId } from "@/mock/mockUser";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 const { Title, Text } = Typography;
 
@@ -64,7 +65,7 @@ export default function CompanyDashboard() {
 
         const res = await fetch(
           `/api/mobile_dentals?company_id=${companyId}`,
-          { cache: "no-store" }
+          { cache: "no-store", headers: withAuthHeaders() }
         );
 
         if (!res.ok) throw new Error("fetch failed");

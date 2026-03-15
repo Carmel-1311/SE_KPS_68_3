@@ -39,6 +39,37 @@ export async function POST(request: Request) {
     }
 
     const role = account.account_role === "doctor" ? "dentist" : account.account_role ?? "patient"
+    let firstName = ""
+    let lastName = ""
+    let displayName = ""
+
+    if (account.account_role === "patient") {
+      const patient = await prisma.patient.findFirst({
+        where: { account_id: account.account_id },
+        select: { first_name: true, last_name: true }
+      })
+      firstName = patient?.first_name ?? ""
+      lastName = patient?.last_name ?? ""
+    } else if (account.account_role === "staff" || account.account_role === "doctor") {
+      const staff = await prisma.staff.findFirst({
+        where: { account_id: account.account_id },
+        select: { first_name: true, last_name: true }
+      })
+      firstName = staff?.first_name ?? ""
+      lastName = staff?.last_name ?? ""
+    } else if (account.account_role === "company") {
+      const company = await prisma.company.findFirst({
+        where: { account_id: account.account_id },
+        select: { contect_name: true, office_name: true }
+      })
+      firstName = company?.contect_name ?? ""
+      lastName = ""
+      displayName = company?.office_name ?? ""
+    }
+
+    if (!displayName) {
+      displayName = `${firstName} ${lastName}`.trim()
+    }
 
     return NextResponse.json(
       {
@@ -46,7 +77,10 @@ export async function POST(request: Request) {
           account_id: account.account_id,
           username: account.username ?? account.email ?? "",
           role,
-          token: randomUUID()
+          token: randomUUID(),
+          first_name: firstName,
+          last_name: lastName,
+          display_name: displayName
         }
       },
       { status: 200 }

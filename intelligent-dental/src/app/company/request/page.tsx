@@ -5,6 +5,7 @@ import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, C
 import { HomeOutlined, FileAddOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -27,7 +28,7 @@ export default function RequestServicePage() {
 
             const res = await fetch("/api/mobile_dentals", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify(payload)
             });
 

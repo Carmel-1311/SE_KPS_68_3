@@ -22,6 +22,7 @@ import {
 } from "@ant-design/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 const { Title } = Typography;
 
@@ -66,7 +67,7 @@ export default function RequestsPage() {
 
             const res = await fetch(
                 `/api/mobile_dentals?company_id=${companyId}`,
-                { cache: "no-store" }
+                { cache: "no-store", headers: withAuthHeaders() }
             );
 
             if (!res.ok) throw new Error("Fetch failed");
@@ -90,7 +91,7 @@ export default function RequestsPage() {
 
             const res = await fetch(`/api/mobile_dentals/${id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ status: "request_cancel" }),
             });
 
@@ -113,7 +114,7 @@ export default function RequestsPage() {
 
             const res = await fetch(`/api/mobile_dentals/${id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ status: "request" }),
             });
 
