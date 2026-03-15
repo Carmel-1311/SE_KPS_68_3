@@ -82,7 +82,7 @@ export async function updateStaffByIdController(request: Request, { params }: Ro
     const updated = await staffService.updateStaffById(staffId, {
       first_name: firstName,
       last_name: lastName,
-      birthday,
+      birthday: birthdayRaw,
       email,
       phone,
       license_number: licenseNumber

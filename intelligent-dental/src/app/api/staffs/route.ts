@@ -11,7 +11,7 @@ type CreateStaffBody = {
   email?: string;
   phone?: string;
   license_number?: string;
-  role?: string;
+  role?: "staff" | "dentist";
 };
 
 export async function GET(request: Request) {
@@ -66,14 +66,23 @@ export async function POST(request: Request) {
     const email = body.email?.trim();
     const phone = body.phone?.trim();
     const licenseNumber = body.license_number?.trim() || null;
-    const role = body.role?.trim();
+    const roleRaw = body.role?.trim();
 
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !role) {
+    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !roleRaw) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
       );
     }
+
+    if (roleRaw !== "staff" && roleRaw !== "dentist") {
+      return NextResponse.json(
+        { message: "Invalid role. Allowed values: staff, dentist" },
+        { status: 400 }
+      );
+    }
+
+    const role: "staff" | "dentist" = roleRaw;
 
     const birthday = new Date(birthdayRaw);
     if (Number.isNaN(birthday.getTime())) {
@@ -86,7 +95,7 @@ export async function POST(request: Request) {
     const created = await staffService.createStaff({
       first_name: firstName,
       last_name: lastName,
-      birthday,
+      birthday: birthdayRaw,
       email,
       phone,
       license_number: licenseNumber,

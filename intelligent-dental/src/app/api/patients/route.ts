@@ -67,8 +67,9 @@ export async function POST(request: Request) {
     const email = body.email?.trim();
     const phone = body.phone?.trim();
     const status = body.status?.trim() || "active";
+    const citizenId = body.citizen_id?.trim();
 
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone) {
+    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !citizenId) {
       return NextResponse.json(
         { message: "Missing required fields" },
         { status: 400 }
@@ -86,11 +87,12 @@ export async function POST(request: Request) {
     const created = await patientService.createPatient({
       first_name: firstName,
       last_name: lastName,
-      birthday,
+      birthday: birthdayRaw,
       allergy,
       email,
       phone,
-      status
+      status,
+      citizen_id: citizenId
     });
 
     return NextResponse.json(
