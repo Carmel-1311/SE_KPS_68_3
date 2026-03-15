@@ -1,0 +1,5781 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Default module",
+    "description": "",
+    "version": "1.0.0"
+  },
+  "tags": [
+    {
+      "name": "Root"
+    },
+    {
+      "name": "Root/API"
+    },
+    {
+      "name": "Root/API/Auth"
+    },
+    {
+      "name": "Root/API/Patients"
+    },
+    {
+      "name": "Root/API/Staff"
+    },
+    {
+      "name": "Root/API/Medical"
+    },
+    {
+      "name": "Root/API/Company"
+    }
+  ],
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "register",
+        "deprecated": false,
+        "description": "สมัครสมาชิก",
+        "tags": [
+          "Root/API/Auth"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string",
+              "default": "application/json"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "allergy": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "default": "active",
+                    "nullable": true,
+                    "example": "active"
+                  },
+                  "citizen_id": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "birthday",
+                  "email",
+                  "phone",
+                  "citizen_id",
+                  "password"
+                ]
+              },
+              "example": ""
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "email",
+                        "name",
+                        "id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "login",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Auth"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "account_id": {
+                          "type": "integer"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        },
+                        "token": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "account_id",
+                        "username",
+                        "role",
+                        "token"
+                      ]
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/patients": {
+      "get": {
+        "summary": "patients",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "List of patients",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "name",
+                          "email"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "Unique identifier of patient"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Full name of patient"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Email address of patient"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "patient",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string",
+              "default": "application/json"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "allergy": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "default": "active",
+                    "nullable": true,
+                    "example": "active"
+                  },
+                  "citizen_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "birthday",
+                  "email",
+                  "phone",
+                  "citizen_id"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "id": {
+                          "type": "integer"
+                        },
+                        "birthday": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "allergy": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "email",
+                        "id",
+                        "phone",
+                        "birthday"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/patients/{id}": {
+      "get": {
+        "summary": "patient",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/patient"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "patient",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "allergy": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "default": "active",
+                    "nullable": true,
+                    "example": "active"
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "birthday",
+                  "email",
+                  "phone"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "birthday": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "allergy": {
+                          "type": "string",
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "email",
+                        "id",
+                        "phone",
+                        "birthday"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/appointments": {
+      "get": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appointment_id": {
+                            "type": "integer"
+                          },
+                          "patient": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "description": "ID"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "staff": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "appointment_date": {
+                            "type": "string"
+                          },
+                          "appointment_time": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "scheduled",
+                              "completed",
+                              "cancelled",
+                              "request_cancel"
+                            ]
+                          },
+                          "medical_record_id": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "inspection_record_id": {
+                            "type": "integer",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "medical_record_id",
+                          "inspection_record_id",
+                          "appointment_id",
+                          "patient",
+                          "staff",
+                          "appointment_date",
+                          "appointment_time",
+                          "type",
+                          "status"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/meta"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patient_id": {
+                    "type": "integer"
+                  },
+                  "appointment_date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "appointment_time": {
+                    "type": "string",
+                    "format": "time"
+                  },
+                  "type": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "patient_id",
+                  "appointment_date",
+                  "appointment_time",
+                  "type"
+                ]
+              },
+              "example": {
+                "patient_id": 35,
+                "appointment_date": "2026-03-09T07:16:56.392Z",
+                "appointment_time": "2026-03-09T07:16:56.392Z",
+                "type": "culpa do aliquip est"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appointment_id": {
+                          "type": "integer"
+                        },
+                        "patient": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "staff": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "appointment_date": {
+                          "type": "string"
+                        },
+                        "appointment_time": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "completed",
+                            "cancelled",
+                            "request_cancel"
+                          ]
+                        },
+                        "medical_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "detail": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "type_id": {
+                                    "type": "integer"
+                                  },
+                                  "diagnosis": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type_id",
+                                  "diagnosis",
+                                  "id"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status",
+                            "detail"
+                          ],
+                          "nullable": true
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "appointment_id",
+                        "patient",
+                        "staff",
+                        "appointment_date",
+                        "appointment_time",
+                        "type",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/appointments/{id}": {
+      "get": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 2,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appointment_id": {
+                          "type": "integer"
+                        },
+                        "patient": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "staff": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "appointment_date": {
+                          "type": "string"
+                        },
+                        "appointment_time": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "completed",
+                            "cancelled",
+                            "request_cancel"
+                          ]
+                        },
+                        "medical_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "detail": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "type_id": {
+                                    "type": "integer"
+                                  },
+                                  "diagnosis": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type_id",
+                                  "diagnosis",
+                                  "id"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status",
+                            "detail"
+                          ],
+                          "nullable": true
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "appointment_id",
+                        "patient",
+                        "staff",
+                        "appointment_date",
+                        "appointment_time",
+                        "type",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "appointment_date": {
+                    "type": "string"
+                  },
+                  "appointment_time": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "scheduled",
+                      "completed",
+                      "cancelled",
+                      "request_cancel"
+                    ]
+                  },
+                  "staff_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "staff_id",
+                  "appointment_date",
+                  "appointment_time",
+                  "type",
+                  "status"
+                ]
+              },
+              "example": {
+                "appointment_date": "2026-11-05",
+                "appointment_time": "2026-03-09T07:40:02.877Z",
+                "type": "anim consectetur",
+                "status": "cancelled",
+                "medical_record": null,
+                "inspection_record": null,
+                "staff_id": 87
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "appointment_id": {
+                          "type": "integer"
+                        },
+                        "patient": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "staff": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name"
+                          ]
+                        },
+                        "appointment_date": {
+                          "type": "string"
+                        },
+                        "appointment_time": {
+                          "type": "string"
+                        },
+                        "type": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "scheduled",
+                            "completed",
+                            "cancelled",
+                            "request_cancel"
+                          ]
+                        },
+                        "medical_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            },
+                            "detail": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "type_id": {
+                                    "type": "integer"
+                                  },
+                                  "diagnosis": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "type_id",
+                                  "diagnosis",
+                                  "id"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status",
+                            "detail"
+                          ],
+                          "nullable": true
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "date",
+                            "history",
+                            "status"
+                          ],
+                          "nullable": true
+                        }
+                      },
+                      "required": [
+                        "appointment_id",
+                        "patient",
+                        "staff",
+                        "appointment_date",
+                        "appointment_time",
+                        "type",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      },
+      "delete": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "",
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/appointments/available-slots": {
+      "get": {
+        "summary": "available-slots",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": "{{$date.now}}",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "available_slots": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "time": {
+                                "type": "string",
+                                "format": "time"
+                              },
+                              "available_dentist_ids": {
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "nullable": true
+                                }
+                              }
+                            },
+                            "required": [
+                              "time",
+                              "available_dentist_ids"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "available_slots"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                },
+                "example": {
+                  "data": {
+                    "available-slots": [
+                      {
+                        "time": "09:00",
+                        "available_dentist_ids": [
+                          1,
+                          2
+                        ]
+                      },
+                      {
+                        "time": "09:30",
+                        "available_dentist_ids": [
+                          1
+                        ]
+                      },
+                      {
+                        "time": "10:30",
+                        "available_dentist_ids": []
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/staff": {
+      "get": {
+        "summary": "staffs",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "List of staff members",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "email",
+                          "role",
+                          "id"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "Unique identifier of staff"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Full name of staff"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Email address"
+                          },
+                          "role": {
+                            "type": "string",
+                            "enum": [
+                              "dentist",
+                              "staff"
+                            ],
+                            "description": "Role of staff"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "staff",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string",
+              "default": "application/json"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "license_number": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": [
+                      "dentist",
+                      "staff"
+                    ]
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "birthday",
+                  "email",
+                  "phone",
+                  "role"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "name"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        }
+                      },
+                      "description": "ข้อมูลที่ส่งคืน",
+                      "required": [
+                        "name",
+                        "id",
+                        "email"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/staff/{id}": {
+      "get": {
+        "summary": "staff",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/staff"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "staff",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string",
+              "default": "application/json"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "license_number": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "first_name",
+                  "last_name",
+                  "birthday",
+                  "email",
+                  "phone",
+                  "license_number"
+                ],
+                "additionalProperties": false
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "name"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        }
+                      },
+                      "description": "ข้อมูลที่ส่งคืน",
+                      "required": [
+                        "name",
+                        "id",
+                        "email"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/staff/dentists": {
+      "get": {
+        "summary": "dentists",
+        "deprecated": false,
+        "description": "ใช้ดึงเพื่อเช็คคุณหมอที่ว่างอยู่",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "appointmentTime",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "appointmentTime ",
+            "in": "query",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "List of staff members",
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "id",
+                          "name",
+                          "email"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "Unique identifier of staff"
+                          },
+                          "name": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": "Full name of staff"
+                          },
+                          "email": {
+                            "type": "string",
+                            "format": "email",
+                            "description": "Email address"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/work_schedules": {
+      "get": {
+        "summary": "work_schedules",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "ID"
+                          },
+                          "date": {
+                            "type": "string",
+                            "enum": [
+                              "Mon",
+                              "Tue",
+                              "Wed",
+                              "Thu",
+                              "Fri",
+                              "Sat",
+                              "Sun"
+                            ]
+                          },
+                          "start_time": {
+                            "type": "string",
+                            "format": "time"
+                          },
+                          "end_time": {
+                            "type": "string",
+                            "format": "time"
+                          }
+                        },
+                        "description": "ข้อมูลที่ส่งคืน",
+                        "required": [
+                          "id",
+                          "date",
+                          "start_time",
+                          "end_time"
+                        ]
+                      },
+                      "description": "ข้อมูลที่ส่งคืน"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "work_schedule",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "staff_id": {
+                    "type": "integer"
+                  },
+                  "date": {
+                    "type": "string",
+                    "enum": [
+                      "Mon",
+                      "Tue",
+                      "Wed",
+                      "Thu",
+                      "Fri",
+                      "Sat",
+                      "Sun"
+                    ]
+                  },
+                  "start_time": {
+                    "type": "string"
+                  },
+                  "end_time": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "staff_id",
+                  "date",
+                  "start_time",
+                  "end_time"
+                ]
+              },
+              "example": {
+                "staff_id": 1,
+                "date": "Sat",
+                "start_time": "05:45",
+                "end_time": "16:26"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "ID"
+                        },
+                        "staff": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "ID"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            },
+                            "role": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "role",
+                            "id"
+                          ]
+                        },
+                        "date": {
+                          "type": "string",
+                          "enum": [
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat",
+                            "Sun"
+                          ]
+                        },
+                        "start_time": {
+                          "type": "string",
+                          "format": "time"
+                        },
+                        "end_time": {
+                          "type": "string",
+                          "format": "time"
+                        },
+                        "is_active": {
+                          "type": "boolean"
+                        }
+                      },
+                      "description": "ข้อมูลที่ส่งคืน",
+                      "required": [
+                        "id",
+                        "staff",
+                        "date",
+                        "start_time",
+                        "end_time",
+                        "is_active"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/work_schedules/{id}": {
+      "get": {
+        "summary": "work_schedule",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/work_schedules"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "work_schedule",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 21,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "enum": [
+                      "Mon",
+                      "Tue",
+                      "Wed",
+                      "Thu",
+                      "Fri",
+                      "Sat",
+                      "Sun"
+                    ]
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "format": "time"
+                  },
+                  "end_time": {
+                    "type": "string",
+                    "format": "time"
+                  },
+                  "is_active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "date",
+                  "start_time",
+                  "end_time",
+                  "is_active"
+                ]
+              },
+              "example": {
+                "date": "Sat",
+                "start_time": "18:30",
+                "end_time": "21:41",
+                "is_active": false
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "ID"
+                        },
+                        "staff": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "ID"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "name"
+                            },
+                            "role": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "role",
+                            "id"
+                          ]
+                        },
+                        "date": {
+                          "type": "string",
+                          "enum": [
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat",
+                            "Sun"
+                          ]
+                        },
+                        "start_time": {
+                          "type": "string",
+                          "format": "time"
+                        },
+                        "end_time": {
+                          "type": "string",
+                          "format": "time"
+                        },
+                        "is_active": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "staff",
+                        "date",
+                        "start_time",
+                        "end_time",
+                        "is_active"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "work_schedule",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "",
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/patients/{patient_id}/medical_records": {
+      "get": {
+        "summary": "medical_records",
+        "deprecated": false,
+        "description": "ประวัติการรักษาโดยรวมทั้งหมด ของคนไข้ 1 คน",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "ID"
+                          },
+                          "date": {
+                            "type": "string"
+                          },
+                          "history": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "inspection_record_id": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "date",
+                          "history",
+                          "status",
+                          "patient_id",
+                          "inspection_record_id"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/medical_records/{id}": {
+      "get": {
+        "summary": "medical_record",
+        "deprecated": false,
+        "description": "ดึงข้อมูล บันทึกการตรวจ โดยหมอดูได้ทั้งหมด คนไข้ต้องเช็คดูว่าประวัติของตนไหม",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "patients_id": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "status"
+                        },
+                        "detail": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "examination_type": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "diagnosis": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "examination_type",
+                              "diagnosis",
+                              "id"
+                            ]
+                          }
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "date",
+                            "id",
+                            "history",
+                            "status"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "history",
+                        "status",
+                        "id",
+                        "inspection_record",
+                        "detail",
+                        "patients_id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "medical_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "description": "ID"
+                  },
+                  "date": {
+                    "type": "string"
+                  },
+                  "history": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "detail": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "type_id": {
+                          "type": "integer"
+                        },
+                        "diagnosis": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type_id",
+                        "diagnosis",
+                        "id"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "date",
+                  "history",
+                  "status",
+                  "detail"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "patients_id": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "status"
+                        },
+                        "detail": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "examination_type": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "description": "ID"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "diagnosis": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "examination_type",
+                              "diagnosis",
+                              "id"
+                            ]
+                          }
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "date",
+                            "id",
+                            "history",
+                            "status"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "history",
+                        "status",
+                        "id",
+                        "inspection_record",
+                        "detail",
+                        "patients_id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/medical_records": {
+      "post": {
+        "summary": "medical_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "history": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "patient_id": {
+                    "type": "integer"
+                  },
+                  "detail": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type_id": {
+                          "type": "integer"
+                        },
+                        "diagnosis": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "type_id",
+                        "diagnosis"
+                      ]
+                    }
+                  },
+                  "inspection_record_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "date",
+                  "history",
+                  "status",
+                  "patient_id",
+                  "inspection_record_id",
+                  "detail"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "patients_id": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "status"
+                        },
+                        "detail": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "examination_type": {
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer"
+                                  },
+                                  "name": {
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "name"
+                                ]
+                              },
+                              "diagnosis": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "examination_type",
+                              "diagnosis",
+                              "id"
+                            ]
+                          }
+                        },
+                        "inspection_record": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer"
+                            },
+                            "date": {
+                              "type": "string",
+                              "format": "date"
+                            },
+                            "history": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "date",
+                            "id",
+                            "history",
+                            "status"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "date",
+                        "history",
+                        "status",
+                        "id",
+                        "inspection_record",
+                        "detail",
+                        "patients_id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/types": {
+      "get": {
+        "summary": "types",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "ID"
+                          },
+                          "name": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "name"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/patients/{patient_id}/inspection_records": {
+      "get": {
+        "summary": "inspection_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "patient_id": {
+                            "type": "string"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "history": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "status"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "patient_id",
+                          "date",
+                          "history",
+                          "status"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/inspection_records/{id}": {
+      "get": {
+        "summary": "inspection_record",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/inspection_record"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "inspection_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "status",
+                    "nullable": true
+                  },
+                  "history": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "status",
+                  "history"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "patient_id": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "date",
+                        "history",
+                        "status",
+                        "patient_id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/inspection_records": {
+      "post": {
+        "summary": "inspection_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "history": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "patient_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "date",
+                  "history",
+                  "status",
+                  "patient_id"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "date",
+                        "history",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/company": {
+      "get": {
+        "summary": "company",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "contect_name": {
+                            "type": "string"
+                          },
+                          "office_name": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "contect_name",
+                          "office_name",
+                          "email"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/company/{id}": {
+      "get": {
+        "summary": "company",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/company"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/mobile_dentals": {
+      "get": {
+        "summary": "mobile_dentals",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "mobile_dental_id": {
+                            "type": "integer"
+                          },
+                          "company_id": {
+                            "type": "integer"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "count": {
+                            "type": "integer"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "request",
+                              "scheduled",
+                              "completed",
+                              "request_cancel",
+                              "cancel"
+                            ]
+                          },
+                          "address": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "mobile_dental_id",
+                          "company_id",
+                          "date",
+                          "count",
+                          "status",
+                          "address"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "mobile_dentals",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "description": "จำนวนคน"
+                  },
+                  "address": {
+                    "type": "string",
+                    "description": "สถานที่"
+                  }
+                },
+                "required": [
+                  "date",
+                  "count",
+                  "address"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "mobile_dental_id": {
+                          "type": "integer"
+                        },
+                        "company_id": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "count": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "request",
+                            "scheduled",
+                            "completed",
+                            "request_cancel",
+                            "cancel"
+                          ]
+                        },
+                        "address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "mobile_dental_id",
+                        "company_id",
+                        "date",
+                        "count",
+                        "status",
+                        "address"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mobile_dentals/{id}": {
+      "get": {
+        "summary": "mobile_dental",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/mobile_dental"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "mobile_dentals",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "request",
+                      "scheduled",
+                      "completed",
+                      "request_cancel",
+                      "cancel"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "mobile_dental_id": {
+                          "type": "integer"
+                        },
+                        "company_id": {
+                          "type": "integer"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "count": {
+                          "type": "integer"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "address": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "mobile_dental_id",
+                        "company_id",
+                        "date",
+                        "count",
+                        "status",
+                        "address"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mobile_dentals/{id}/patients": {
+      "post": {
+        "summary": "patient_in_mobile",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "first_name": {
+                      "type": "string"
+                    },
+                    "last_name": {
+                      "type": "string"
+                    },
+                    "birthday": {
+                      "type": "string"
+                    },
+                    "phone": {
+                      "type": "string"
+                    },
+                    "idcard": {
+                      "type": "string"
+                    },
+                    "mobile_id": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "first_name",
+                    "last_name",
+                    "birthday",
+                    "phone",
+                    "idcard",
+                    "mobile_id"
+                  ]
+                }
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "id": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "patient_id",
+                          "name",
+                          "status",
+                          "id"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 50
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "patient_in_mobiles",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "idcard": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "patient_id",
+                          "name",
+                          "status",
+                          "phone",
+                          "idcard",
+                          "id"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "patient": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "birthday": {
+            "type": "string",
+            "format": "date"
+          },
+          "allergy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "birthday"
+        ]
+      },
+      "appointment": {
+        "type": "object",
+        "properties": {
+          "appointment_id": {
+            "type": "integer"
+          },
+          "patient": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "name"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "staff": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "name": {
+                "type": "string",
+                "description": "name"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "appointment_date": {
+            "type": "string"
+          },
+          "appointment_time": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "completed",
+              "cancelled",
+              "request_cancel"
+            ]
+          },
+          "medical_record": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID"
+              },
+              "date": {
+                "type": "string"
+              },
+              "history": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              },
+              "detail": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "type_id": {
+                      "type": "integer"
+                    },
+                    "diagnosis": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type_id",
+                    "diagnosis",
+                    "id"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "date",
+              "history",
+              "status",
+              "detail"
+            ],
+            "nullable": true
+          },
+          "inspection_record": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID"
+              },
+              "date": {
+                "type": "string",
+                "format": "date"
+              },
+              "history": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "date",
+              "history",
+              "status"
+            ],
+            "nullable": true
+          }
+        },
+        "required": [
+          "patient",
+          "appointment_date",
+          "status",
+          "type",
+          "appointment_time",
+          "appointment_id",
+          "staff"
+        ]
+      },
+      "staff": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "email",
+          "birthday",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier of staff"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Full name of staff",
+            "example": "Dr. John Doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Email address",
+            "example": "john.doe@example.com"
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^[0-9+\\-() ]{8,20}$",
+            "description": "Phone number"
+          },
+          "birthday": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of birth (YYYY-MM-DD)",
+            "example": "1990-05-20"
+          },
+          "license_number": {
+            "type": "string",
+            "description": "Professional license number (nullable for non-dentist staff)",
+            "nullable": true,
+            "example": "DEN-123456"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "dentist",
+              "staff"
+            ],
+            "description": "Role of staff in system"
+          }
+        }
+      },
+      "work_schedules": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID"
+          },
+          "staff": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "ID"
+              },
+              "name": {
+                "type": "string",
+                "description": "name"
+              },
+              "role": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "role",
+              "id"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "enum": [
+              "Mon",
+              "Tue",
+              "Wed",
+              "Thu",
+              "Fri",
+              "Sat",
+              "Sun"
+            ]
+          },
+          "start_time": {
+            "type": "string",
+            "format": "time"
+          },
+          "end_time": {
+            "type": "string",
+            "format": "time"
+          },
+          "is_active": {
+            "type": "boolean"
+          }
+        },
+        "description": "ข้อมูลที่ส่งคืน",
+        "required": [
+          "staff",
+          "date",
+          "start_time",
+          "is_active",
+          "end_time",
+          "id"
+        ]
+      },
+      "medical_record": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID"
+          },
+          "date": {
+            "type": "string"
+          },
+          "history": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "patient_id": {
+            "type": "integer"
+          },
+          "detail": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "type_id": {
+                  "type": "integer"
+                },
+                "diagnosis": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type_id",
+                "diagnosis",
+                "id"
+              ]
+            }
+          },
+          "inspection_record_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "date",
+          "history",
+          "status",
+          "patient_id",
+          "inspection_record_id",
+          "detail",
+          "id"
+        ]
+      },
+      "inspection_record": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "ID"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "history": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "patient_id": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "date",
+          "history",
+          "status",
+          "patient_id"
+        ]
+      },
+      "mobile_dental": {
+        "type": "object",
+        "properties": {
+          "mobile_dental_id": {
+            "type": "integer"
+          },
+          "company_id": {
+            "type": "integer"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "request",
+              "scheduled",
+              "completed",
+              "request_cancel",
+              "cancel"
+            ]
+          },
+          "address": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mobile_dental_id",
+          "company_id",
+          "date",
+          "count",
+          "status",
+          "address"
+        ]
+      },
+      "company": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contect_name": {
+            "type": "string"
+          },
+          "office_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contect_name",
+          "office_name",
+          "phone",
+          "address",
+          "email",
+          "id"
+        ]
+      },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20
+          },
+          "total": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "total_pages"
+        ]
+      }
+    },
+    "responses": {
+      "400 Bad Request": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "AUTH-001"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "Authentication required"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "AUTHENTICATION",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "404 Not Found": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "USER-001"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "User not found"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "RESOURCE",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "401 Unauthorized": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "VAL-001"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "validation fail"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "code",
+                          "message"
+                        ],
+                        "nullable": true
+                      },
+                      "nullable": true
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "VALIDATION",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "403 Forbidden": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "AUTH-003"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "Access denied"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "AUTHORIZATION",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "409 Conflict": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "USER-002"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "Email already exists"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "BUSINESS",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "422 Unprocessable Entity": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "ORDER-004"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "Insufficient balance"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "BUSINESS",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "500 Internal Server Error": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "title": "",
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "default": "SYS-001"
+                    },
+                    "message": {
+                      "type": "string",
+                      "default": "Internal server error"
+                    },
+                    "category": {
+                      "type": "string",
+                      "default": "SYSTEM",
+                      "nullable": true
+                    },
+                    "traceId": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "message",
+                    "traceId"
+                  ]
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "servers": [],
+  "security": []
+}

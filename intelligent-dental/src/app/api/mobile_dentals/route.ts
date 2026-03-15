@@ -1,65 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getCurrentCompanyId } from "@/mock/mockUser"
-import { mobileDentalStore, MobileDental } from "@/mock/mockMobileDental";
+import { getCurrentUser } from "@/lib/auth"
+import { requireRole } from "@/lib/permissions"
+import * as mobileService from "@/services/mobile_dentalsService"
+import { handleError } from "@/utils/errorHandler"
+import * as res from "@/utils/responseFormatter"
 
-const store = mobileDentalStore;
-export async function GET(request: NextRequest) {
-    const { searchParams } = new URL(request.url);
-    const companyId = searchParams.get("company_id");
+export async function GET(request: Request) {
+    try {
+        const user = getCurrentUser()
+        requireRole(user.role, ["staff", "company"])
 
-    const result = companyId
-        ? store.filter(item => item.company_id === Number(companyId))
-        : store;
+        const { searchParams } = new URL(request.url)
+        const page = Number(searchParams.get("page")) || 1
+        const limit = Number(searchParams.get("limit")) || 10
 
-    return NextResponse.json({ data: result });
+        const data = await mobileService.getAllMobileDentalsByUser(user,
+            page,
+            limit
+        )
+        return res.okList(data.data,{
+            page,
+            limit,
+            total:data.total
+        })
+    } catch (err: any) {
+        return handleError(err)
+    }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
     try {
-        const body = await request.json();
-        const count = Number(body.count);
-
-        if (!body.date || !count || !body.address) {
-            return NextResponse.json(
-                {
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: "Missing required fields: date, count, address",
-                        traceId: crypto.randomUUID(),
-                    },
-                },
-                { status: 400 }
-            );
-        }
-
-        const newRecord: MobileDental = {
-            mobile_dental_id:
-                store.length > 0
-                    ? Math.max(...store.map(m => m.mobile_dental_id)) + 1
-                    : 1,
-            company_id: getCurrentCompanyId() ?? 1,
-            date: body.date,
-            count,
-            status: "request",
-            address: body.address,
-        };
-
-        store.push(newRecord);
-
-        return NextResponse.json(
-            { data: newRecord },
-            { status: 200 }
-        );
-    } catch {
-        return NextResponse.json(
-            {
-                error: {
-                    code: "VAL-001",
-                    message: "Invalid request body",
-                    traceId: crypto.randomUUID(),
-                },
-            },
-            { status: 400 }
-        );
+        const user = getCurrentUser()
+        requireRole(user.role, ["staff", "company"])
+        const body = await request.json()
+        const newSchedule = await mobileService.createMobileDentals(body)
+        return res.created(newSchedule)
+    } catch (err: any) {
+        return handleError(err)
     }
 }

@@ -1,96 +1,45 @@
-import { NextResponse } from "next/server";
-import { mobileDentalStore } from "@/mock/mockMobileDental";
+import { getCurrentUser } from "@/lib/auth"
+import { requireRole } from "@/lib/permissions"
+import * as mobileService from "@/services/mobile_dentalsService"
+import { handleError } from "@/utils/errorHandler"
+import * as res from "@/utils/responseFormatter"
 
-const store = mobileDentalStore;
-
-// GET /api/mobile_dentals/:id
-export async function GET(
-    _request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    const { id } = await params;
-
-    const record = store.find(
-        (item) => item.mobile_dental_id === Number(id)
-    );
-
-    if (!record) {
-        return NextResponse.json(
-            {
-                error: {
-                    code: "NOT_FOUND",
-                    message: "Mobile Dental request not found",
-                    traceId: crypto.randomUUID(),
-                },
-            },
-            { status: 404 }
-        );
+export async function GET(request: Request,{ params }: { params: Promise<{ id: string }> }) {
+    try {
+        const { id } = await params;
+        const mobile_id = parseInt(id);
+        const user = getCurrentUser()
+        requireRole(user.role, ["staff", "company"])
+        const data = await mobileService.getMobileDentalsById(mobile_id)
+        return res.ok(data)
+    } catch (err: any) {
+        return handleError(err)
     }
-
-    return NextResponse.json({ data: record }, { status: 200 });
 }
 
-// PUT /api/mobile_dentals/:id
-export async function PUT(
-    request: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: Request,{ params }: { params: Promise<{ id: string }> }) {
     try {
-        const resolvedParams = await params;
-        const { id } = resolvedParams;
-        const body = await request.json();
+        const { id } = await params;
+        const mobile_id = parseInt(id);
+        const user = getCurrentUser()
+        requireRole(user.role, ["staff", "company"])
+        const body = await request.json()
+        const updatedSchedule = await mobileService.updateMobileDentals(mobile_id, body)
+        return res.ok(updatedSchedule)
+    } catch (err: any) {
+        return handleError(err)
+    }
+}
 
-        if (!body.status) {
-            return NextResponse.json(
-                {
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: "Missing required field: status",
-                        traceId: crypto.randomUUID(),
-                    },
-                },
-                { status: 400 }
-            );
-        }
-
-        const index = store.findIndex(
-            (item) => item.mobile_dental_id === Number(id)
-        );
-
-        if (index === -1) {
-            return NextResponse.json(
-                {
-                    error: {
-                        code: "NOT_FOUND",
-                        message: "Mobile Dental request not found",
-                        traceId: crypto.randomUUID(),
-                    },
-                },
-                { status: 404 }
-            );
-        }
-
-
-        store[index] = {
-            ...store[index],
-            status: body.status,
-        };
-
-        return NextResponse.json(
-            { data: store[index] },
-            { status: 200 }
-        );
-
-    } catch {
-        return NextResponse.json(
-            {
-                error: {
-                    code: "VAL-001",
-                    message: "Invalid request body",
-                    traceId: crypto.randomUUID(),
-                },
-            },
-            { status: 400 }
-        );
+export async function DELETE(request: Request,{ params }: { params: Promise<{ id: string }> }) {    
+    try {
+        const { id } = await params;
+        const mobile_id = parseInt(id);
+        const user = getCurrentUser()
+        requireRole(user.role, ["staff"])
+        await mobileService.deleteMobileDentals(mobile_id)
+        return res.noContent()
+    } catch (err: any) {
+        return handleError(err)
     }
 }

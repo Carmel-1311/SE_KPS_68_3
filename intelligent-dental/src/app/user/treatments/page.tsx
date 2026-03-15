@@ -1,15 +1,23 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
-import { Button, Card, Divider, Input, Table, Tag, Typography } from "antd";
+import {
+  Button,
+  Card,
+  Divider,
+  Input,
+  Table,
+  Tag,
+  Typography,
+} from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Search } from "lucide-react";
 import {
-  mockTreatments,
-  type TreatmentData,
-  type TreatmentDetail,
-} from "@/mock/mockTreatment";
+  mockTreatmentList,
+  type Data as TreatmentData,
+  type Detail as TreatmentDetail,
+} from "@/mock/mockTreatmentById";
 
 const { Text } = Typography;
 
@@ -27,9 +35,9 @@ const thaiMonthsShort = [
   "พ.ย.",
   "ธ.ค.",
 ];
-const formatThaiDate = (dateValue: string) => {
+const formatThaiDate = (dateValue: string | Date) => {
   const date = dayjs(dateValue);
-  if (!date.isValid()) return dateValue;
+  if (!date.isValid()) return String(dateValue);
   return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
     "YYYY",
   )}`;
@@ -48,30 +56,42 @@ export default function UserTreatmentsPage() {
   const [search, setSearch] = useState("");
 
   const treatments = useMemo(() => {
-    return [...mockTreatments.data].sort((a, b) =>
-      a.date < b.date ? 1 : a.date > b.date ? -1 : 0,
-    );
+    return [...mockTreatmentList].sort((a, b) => {
+      const aValue = dayjs(a.date).valueOf();
+      const bValue = dayjs(b.date).valueOf();
+      return bValue - aValue;
+    });
   }, []);
+
+  const filteredTreatments = useMemo(() => {
+    if (!search.trim()) return treatments;
+    const normalized = search.trim().toLowerCase();
+    return treatments.filter((item) => {
+      const thaiDate = formatThaiDate(item.date).toLowerCase();
+      const isoDate = dayjs(item.date).format("YYYY-MM-DD");
+      return thaiDate.includes(normalized) || isoDate.includes(normalized);
+    });
+  }, [search, treatments]);
 
   const [activeId, setActiveId] = useState<number>(treatments[0]?.id ?? 0);
 
-  const activeTreatment =
-    treatments.find((item) => item.id === activeId) ?? treatments[0];
+  useEffect(() => {
+    if (filteredTreatments.length === 0) return;
+    const hasActive = filteredTreatments.some((item) => item.id === activeId);
+    if (!hasActive) setActiveId(filteredTreatments[0].id);
+  }, [activeId, filteredTreatments]);
 
-  const filteredDetails = useMemo(() => {
-    if (!activeTreatment) return [];
-    if (!search.trim()) return activeTreatment.detail;
-    const normalized = search.trim().toLowerCase();
-    return activeTreatment.detail.filter((item) =>
-      [item.examination_type.name, item.diagnosis]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [search, activeTreatment]);
+  const activeTreatment =
+    filteredTreatments.find((item) => item.id === activeId) ??
+    filteredTreatments[0] ??
+    treatments[0];
+
+  const filteredDetails = activeTreatment?.detail ?? [];
+  const hasActiveTreatment = Boolean(activeTreatment);
 
   const columns: ColumnsType<TreatmentDetail> = [
     {
-      title: "ประเภทการตรวจ",
+      title: "ประเภทการรักษา",
       dataIndex: ["examination_type", "name"],
       key: "examination_type",
       width: 220,
@@ -83,12 +103,12 @@ export default function UserTreatmentsPage() {
     },
   ];
 
-  if (!activeTreatment) {
+  if (!hasActiveTreatment && treatments.length === 0) {
     return (
       <Card
         title="ประวัติการรักษา"
         style={{ maxWidth: 900, margin: "0 auto" }}
-        bodyStyle={{ padding: "1rem" }}
+        styles={{ body: { padding: "1rem" } }}
       >
         <Text>ไม่มีข้อมูลการรักษา</Text>
       </Card>
@@ -99,12 +119,25 @@ export default function UserTreatmentsPage() {
     <Card
       title="ประวัติการรักษา"
       style={{ maxWidth: 900, margin: "0 auto" }}
-      bodyStyle={{ padding: "1rem" }}
+      styles={{ body: { padding: "1rem" } }}
     >
       <div className="date-picker">
         <Text className="section-title">เลือกวันที่เข้ารับบริการ</Text>
+        <Text className="date-counter">
+          ทั้งหมด {filteredTreatments.length} รายการ
+        </Text>
+        <div className="search-row">
+          <Search size={18} />
+          <Input
+            placeholder="ค้นหาวันที่นัดหมาย (เช่น 2024-03-14 หรือ 14 มี.ค. 2024)"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            allowClear
+            style={{ flex: 1 }}
+          />
+        </div>
         <div className="date-list">
-          {treatments.map((item) => (
+          {filteredTreatments.map((item) => (
             <Button
               key={item.id}
               size="small"
@@ -117,62 +150,57 @@ export default function UserTreatmentsPage() {
         </div>
       </div>
 
-      <div className="summary">
-        <div>
-          <Text className="summary-label">วันที่นัดหมาย</Text>
-          <Text className="summary-value">
-            {formatThaiDate(activeTreatment.date)}
-          </Text>
-        </div>
-        <div>
-          <Text className="summary-label">สถานะ</Text>
-          <Tag color={getStatusColor(activeTreatment.status)} className="summary-tag">
-            {activeTreatment.status}
-          </Tag>
-        </div>
-        <div>
-          <Text className="summary-label">จำนวนรายการตรวจ</Text>
-          <Text className="summary-value">
-            {activeTreatment.detail.length} รายการ
-          </Text>
-        </div>
-        <div>
-          <Text className="summary-label">ประวัติ</Text>
-          <Text className="summary-value">{activeTreatment.history}</Text>
-        </div>
-      </div>
+      {hasActiveTreatment ? (
+        <>
+          <div className="summary">
+            <div>
+              <Text className="summary-label">วันที่นัดหมาย</Text>
+              <Text className="summary-value">
+                {formatThaiDate(activeTreatment.date)}
+              </Text>
+            </div>
+            <div>
+              <Text className="summary-label">สถานะ</Text>
+              <Tag color={getStatusColor(activeTreatment.status)} className="summary-tag">
+                {activeTreatment.status}
+              </Tag>
+            </div>
+            <div>
+              <Text className="summary-label">จำนวนรายการตรวจ</Text>
+              <Text className="summary-value">
+                {activeTreatment.detail.length} รายการ
+              </Text>
+            </div>
+            <div>
+              <Text className="summary-label">รายละเอียด</Text>
+              <Text className="summary-value">{activeTreatment.history}</Text>
+            </div>
+          </div>
 
-      <Divider className="divider" />
+          <Divider className="divider" />
 
-      <div className="record">
-        <Text className="section-title">บันทึกการตรวจ</Text>
-        <Text className="record-line">
-          วันที่ตรวจ: {formatThaiDate(activeTreatment.inspection_record.date)}
-        </Text>
-        <Text className="record-line">
-          ประวัติ: {activeTreatment.inspection_record.history}
-        </Text>
-        <Text className="record-line">
-          สถานะ: {activeTreatment.inspection_record.status}
-        </Text>
-      </div>
-
-      <div className="search-row">
-        <Search size={18} />
-        <Input
-          placeholder="ค้นหา (ประเภทการตรวจ, ผลวินิจฉัย)"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          allowClear
-          style={{ flex: 1 }}
-        />
-      </div>
+          <div className="record">
+            <Text className="section-title">บันทึกการตรวจ</Text>
+            <Text className="record-line">
+              วันที่ตรวจ: {formatThaiDate(activeTreatment.inspection_record.date)}
+            </Text>
+            <Text className="record-line">
+              ประวัติ: {activeTreatment.inspection_record.history}
+            </Text>
+            <Text className="record-line">
+              สถานะ: {activeTreatment.inspection_record.status}
+            </Text>
+          </div>
+        </>
+      ) : (
+        <Text className="record-line">ไม่พบวันที่นัดหมาย</Text>
+      )}
 
       <Table
         columns={columns}
         dataSource={filteredDetails}
         rowKey="id"
-        pagination={{ pageSize: 8 }}
+        pagination={false}
         locale={{ emptyText: "ไม่มีข้อมูลการตรวจ" }}
       />
 
@@ -186,6 +214,13 @@ export default function UserTreatmentsPage() {
           display: flex;
           gap: 8px;
           flex-wrap: wrap;
+        }
+
+        .date-counter {
+          display: inline-block;
+          margin-left: 8px;
+          font-size: 12px;
+          color: #6b7b83;
         }
 
         .summary {

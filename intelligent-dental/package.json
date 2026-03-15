@@ -11,20 +11,26 @@
   "dependencies": {
     "@ant-design/cssinjs": "^2.1.0",
     "@ant-design/icons": "^6.1.0",
-    "@prisma/client": "^6.19.2",
+    "@neondatabase/serverless": "^1.0.2",
+    "@prisma/adapter-neon": "^7.4.2",
+    "@prisma/client": "^6.4.1",
     "antd": "^6.3.0",
+    "dotenv": "^17.3.1",
     "lucide-react": "^0.575.0",
     "next": "^16.1.6",
-    "prisma": "^6.19.2",
+    "prisma": "^6.4.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/ws": "^8.18.1",
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
+    "openapi-typescript": "^7.13.0",
     "typescript": "^5"
   }
 }
