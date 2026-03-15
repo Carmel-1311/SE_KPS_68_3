@@ -96,7 +96,10 @@ export async function GET(
 
     const formatted = patients.map(p => ({
         patient_id: p.patient_id,
-        name: p.name
+        name: p.name,
+        birthday: p.birthday,
+        phone: p.phone,
+        idcard: p.idcard
     }));
 
     return NextResponse.json({ data: formatted }, { status: 200 });
