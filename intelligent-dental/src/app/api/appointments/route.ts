@@ -5,7 +5,6 @@ import { handleError } from "@/utils/errorHandler"
 import * as res from "@/utils/responseFormatter"
 
 export async function GET() {
-
     try {
 
         const user = getCurrentUser()
@@ -13,7 +12,6 @@ export async function GET() {
         const data = await appointmentService.getAppointmentsForUser(user)
         return res.ok(data)
     } catch (err: any) {
-
         return handleError(err)
     }
 }

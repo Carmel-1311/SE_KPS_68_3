@@ -1,23 +1,14 @@
-import { NextResponse } from "next/server";
 import * as staffService from "@/services/staffService";
-import { AppError } from "@/utils/AppError";
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/permissions";
-
-type UpdateStaffBody = {
-  first_name?: string;
-  last_name?: string;
-  birthday?: string;
-  email?: string;
-  phone?: string;
-  license_number?: string;
-};
+import { handleError } from "@/utils/errorHandler";
+import * as res from "@/utils/responseFormatter";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function getStaffByIdController(_: Request, { params }: RouteContext) {
+export async function GET(_: Request, { params }: RouteContext) {
   try {
     const user = getCurrentUser();
     requireRole(user.role, ["staff", "company"]);
@@ -26,25 +17,18 @@ export async function getStaffByIdController(_: Request, { params }: RouteContex
     const staffId = Number(id);
 
     if (!Number.isInteger(staffId) || staffId <= 0) {
-      return NextResponse.json({ message: "Invalid staff id" }, { status: 400 });
+      throw new Error("Invalid staff id");
     }
 
     const staff = await staffService.getStaffById(staffId);
 
-    return NextResponse.json({ data: staff }, { status: 200 });
-  } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ message: error.message }, { status: error.status });
-    }
-    console.error("GET /api/staffs/[id] error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    return res.ok(staff);
+  } catch (err: unknown) {
+    return handleError(err);
   }
 }
 
-export async function updateStaffByIdController(request: Request, { params }: RouteContext) {
+export async function PUT(request: Request, { params }: RouteContext) {
   try {
     const user = getCurrentUser();
     requireRole(user.role, ["staff", "company"]);
@@ -53,50 +37,17 @@ export async function updateStaffByIdController(request: Request, { params }: Ro
     const staffId = Number(id);
 
     if (!Number.isInteger(staffId) || staffId <= 0) {
-      return NextResponse.json({ message: "Invalid staff id" }, { status: 400 });
+      throw new Error("Invalid staff id");
     }
 
-    const body = (await request.json()) as UpdateStaffBody;
-    const firstName = body.first_name?.trim();
-    const lastName = body.last_name?.trim();
-    const birthdayRaw = body.birthday?.trim();
-    const email = body.email?.trim();
-    const phone = body.phone?.trim();
-    const licenseNumber = body.license_number?.trim() || null;
-
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone) {
-      return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const birthday = new Date(birthdayRaw);
-    if (Number.isNaN(birthday.getTime())) {
-      return NextResponse.json(
-        { message: "Invalid birthday format. Use YYYY-MM-DD" },
-        { status: 400 }
-      );
-    }
-
+    const body = await request.json();
     const updated = await staffService.updateStaffById(staffId, {
-      first_name: firstName,
-      last_name: lastName,
-      birthday: birthdayRaw,
-      email,
-      phone,
-      license_number: licenseNumber
+      ...body,
+      birthday: body.birthday
     });
 
-    return NextResponse.json({ data: updated }, { status: 200 });
-  } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ message: error.message }, { status: error.status });
-    }
-    console.error("PUT /api/staffs/[id] error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    return res.ok(updated);
+  } catch (err: unknown) {
+    return handleError(err);
   }
 }

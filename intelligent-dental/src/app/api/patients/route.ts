@@ -3,6 +3,8 @@ import * as patientService from "@/services/patientService";
 import { AppError } from "@/utils/AppError";
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/permissions";
+import { handleError } from "@/utils/errorHandler";
+import * as res from "@/utils/responseFormatter";
 
 type CreatePatientBody = {
   first_name?: string;
@@ -19,37 +21,10 @@ export async function GET(request: Request) {
   try {
     const user = getCurrentUser();
     requireRole(user.role, ["staff", "dentist"]);
-
-    const { searchParams } = new URL(request.url);
-    const limitParam = searchParams.get("limit");
-    const pageParam = searchParams.get("page");
-    const limit = limitParam ? Number(limitParam) : 10;
-    const page = pageParam ? Number(pageParam) : 1;
-
-    if (!Number.isInteger(limit) || !Number.isInteger(page) || limit <= 0 || page <= 0) {
-      return NextResponse.json(
-        { message: "limit and page must be positive integers" },
-        { status: 400 }
-      );
-    }
-
-    const patients = await patientService.listPatients(limit, page);
-
-    return NextResponse.json(
-      {
-        data: patients
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ message: error.message }, { status: error.status });
-    }
-    console.error("GET /api/patients error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    const data = await patientService.listPatients(10, 1);
+    return res.ok(data);
+  } catch (err: unknown) {
+    return handleError(err);
   }
 }
 
@@ -58,57 +33,14 @@ export async function POST(request: Request) {
     const user = getCurrentUser();
     requireRole(user.role, ["staff", "dentist"]);
 
-    const body = (await request.json()) as CreatePatientBody;
-
-    const firstName = body.first_name?.trim();
-    const lastName = body.last_name?.trim();
-    const birthdayRaw = body.birthday?.trim();
-    const allergy = body.allergy?.trim() || "";
-    const email = body.email?.trim();
-    const phone = body.phone?.trim();
-    const status = body.status?.trim() || "active";
-    const citizenId = body.citizen_id?.trim();
-
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !citizenId) {
-      return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    const birthday = new Date(birthdayRaw);
-    if (Number.isNaN(birthday.getTime())) {
-      return NextResponse.json(
-        { message: "Invalid birthday format. Use YYYY-MM-DD" },
-        { status: 400 }
-      );
-    }
-
+    const body = await request.json();
     const created = await patientService.createPatient({
-      first_name: firstName,
-      last_name: lastName,
-      birthday: birthdayRaw,
-      allergy,
-      email,
-      phone,
-      status,
-      citizen_id: citizenId
+      ...body,
+      birthday: body.birthday,
+      status: body.status || "active"
     });
-
-    return NextResponse.json(
-      {
-        data: created
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    if (error instanceof AppError) {
-      return NextResponse.json({ message: error.message }, { status: error.status });
-    }
-    console.error("POST /api/patients error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    return res.created(created);
+  } catch (err: unknown) {
+    return handleError(err);
   }
 }
