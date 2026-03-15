@@ -1,29 +1,45 @@
 import * as map from "@/app/mappers/inspection_record.mapper"
 import * as repo from "@/repositories/inspection_recordRepository"
 import { AppError } from "@/utils/AppError"
-import { UpdateInspectionRecordInput,CreateInspectionRecordInput } from "@/app/mappers/inspection_record.mapper"
+import { UpdateInspectionRecordInput, CreateInspectionRecordInput } from "@/app/mappers/inspection_record.mapper"
 
-export async function getAllInspectionRecordByUser(user: { id: number, role: string },patient_id:number|null): Promise<ReturnType<typeof map.inspectionRecordMap.toResponseList>> {
-    if (user.role === "patient") {
-        return map.inspectionRecordMap.toResponseList(await repo.findMedicalRecordsByPatientId(user.id))
+export async function getAllInspectionRecordByUser(
+    user: { id: number, role: string },
+    patient_id: number | null,
+    page: number,
+    limit: number
+) {
+
+    const skip = (page - 1) * limit
+
+    const targetPatientId =
+        user.role === "patient" ? user.id : patient_id
+
+    if (!targetPatientId) {
+        throw new AppError(400, "AUTH-001", "patient not found", "NOT_FOUND")
     }
-    else {
-        if(!patient_id){
-            throw new AppError(400, "AUTH-001", "patient not found", "NOT_FOUND")
-        }
-        return map.inspectionRecordMap.toResponseList(await repo.findMedicalRecordsByPatientId(patient_id))
+
+    const result = await repo.findMedicalRecordsByPatientId(
+        targetPatientId,
+        skip,
+        limit
+    )
+
+    return {
+        data: map.inspectionRecordMap.toResponseList(result.data),
+        total: result.total
     }
 }
 
-export async function getInspectionRecordById(id: number) 
-: Promise<ReturnType<typeof map.inspectionRecordMap.toResponse>> {
+export async function getInspectionRecordById(id: number)
+    : Promise<ReturnType<typeof map.inspectionRecordMap.toResponse>> {
 
     const Medical = await repo.findMedicalRecordById(id)
 
     if (!Medical) {
         throw new AppError(404, "SCHED-001", "inspection record not found", "NOT_FOUND")
     }
-    
+
     return map.inspectionRecordMap.toResponse(Medical)
 }
 
@@ -33,7 +49,7 @@ export async function createInspectionRecord(data: CreateInspectionRecordInput) 
 }
 
 export async function updateInspectionRecord(id: number, data: UpdateInspectionRecordInput) {
-    
+
     const existingMedical = await repo.findMedicalRecordById(id)
     if (!existingMedical) {
         throw new AppError(404, "SCHED-001", "inspection record not found", "NOT_FOUND")

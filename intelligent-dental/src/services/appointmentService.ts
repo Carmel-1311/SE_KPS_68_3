@@ -4,18 +4,23 @@ import { AppError } from "@/utils/AppError"
 import { AppointmentResponseDTO, CreateAppointmentDTO, UpdateAppointmentDTO } from "@/dtos/appointment.dto"
 import { getFreeDentist } from "./dentistService"
 
-export async function getAppointmentsForUser(user: { id: number, role: string }) {
-    // แยก Logic ตามบทบาท
-    if (user.role === "patient") {
-        // เช็คว่า user มีสิทธิ์เข้าถึงข้อมูลของตัวเองหรือไม่ (ในกรณีนี้คือ patient_id ต้องตรงกับ user.id)
-        return  await repo.findAppointmentsByPatientId(user.id)
-    }
+export async function getAppointmentsForUser(
+  user: { id: number, role: string },
+  page: number,
+  limit: number
+) {
 
-    if (user.role === "staff" || user.role === "dentist") {
-        return  await repo.findAllAppointments();
-    }
+  const skip = (page - 1) * limit
 
-    throw new AppError(403, "AUTH-003", "Access denied for this role", "AUTH");
+  if (user.role === "patient") {
+    return await repo.findAppointmentsByPatientId(user.id, skip, limit)
+  }
+
+  if (user.role === "staff" || user.role === "dentist") {
+    return await repo.findAllAppointments(skip, limit)
+  }
+
+  throw new AppError(403, "AUTH-003", "Access denied for this role", "AUTH")
 }
 
 

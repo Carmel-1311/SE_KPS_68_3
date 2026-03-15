@@ -4,12 +4,24 @@ import * as mobileService from "@/services/mobile_dentalsService"
 import { handleError } from "@/utils/errorHandler"
 import * as res from "@/utils/responseFormatter"
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const user = getCurrentUser()
         requireRole(user.role, ["staff", "company"])
-        const data = await mobileService.getAllMobileDentalsByUser(user)
-        return res.ok(data)
+
+        const { searchParams } = new URL(request.url)
+        const page = Number(searchParams.get("page")) || 1
+        const limit = Number(searchParams.get("limit")) || 10
+
+        const data = await mobileService.getAllMobileDentalsByUser(user,
+            page,
+            limit
+        )
+        return res.okList(data.data,{
+            page,
+            limit,
+            total:data.total
+        })
     } catch (err: any) {
         return handleError(err)
     }

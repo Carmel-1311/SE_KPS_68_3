@@ -1,15 +1,38 @@
 import * as map from "@/app/mappers/patientsMobile.mapper"
 import * as repo from "@/repositories/patientsMobileRepository"
+import * as repMo from "@/repositories/mobile_dentalsRepository"
 import { AppError } from "@/utils/AppError"
 
 
-export async function getAllByMobile(user: { id: number, role: string },mobile_id:number){
-    const pa_mobile = await repo.findPaMoByMobileId(mobile_id);
-    if (!pa_mobile) {
-        throw new AppError(404, "SCHED-001", "mobile dental record not found", "NOT_FOUND")
-    }
+export async function getAllByMobile(
+  user: { id: number, role: string },
+  mobile_id: number,
+  page: number,
+  limit: number
+): Promise<{
+  data: ReturnType<typeof map.PaMoMap.toResponseList>
+  total: number
+}> {
 
-    return map.PaMoMap.toResponseList(pa_mobile);
+  const skip = (page - 1) * limit
+
+  const mobile = await repMo.findMobileDentalById(mobile_id)
+
+  if (!mobile) {
+    throw new AppError(
+      404,
+      "SCHED-001",
+      "mobile dental record not found",
+      "NOT_FOUND"
+    )
+  }
+
+  const result = await repo.findPaMoByMobileId(mobile_id, skip, limit)
+
+  return {
+    data: map.PaMoMap.toResponseList(result.data),
+    total: result.total
+  }
 }
 
 export async function createPatients(user: { id: number, role: string },list: map.CreatePaMobileInput) {
@@ -43,5 +66,5 @@ export async function createPatients(user: { id: number, role: string },list: ma
     }
 
     // ⭐ map response
-    return  getAllByMobile(user,list[0].mobile_id);
+    return  getAllByMobile(user,list[0].mobile_id,1,10);
   }
