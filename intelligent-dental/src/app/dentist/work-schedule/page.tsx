@@ -1,12 +1,19 @@
 ﻿'use client';
 
-import { Button, Card, Space, Table, Typography, Breadcrumb, Tag, Select } from "antd";
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
+import { 
+  Button, Card, Table, Typography, Breadcrumb, Tag, 
+  Modal, Form, Select, TimePicker, message, Descriptions 
+} from "antd";
 import { useRouter } from "next/navigation";
-import { HomeOutlined, CalendarOutlined, PlusOutlined, ClockCircleOutlined, UserOutlined, IdcardOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
+import { 
+  HomeOutlined, CalendarOutlined, PlusOutlined, 
+  ClockCircleOutlined, UserOutlined, InfoCircleOutlined 
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
+// --- Interfaces ---
 interface WorkScheduleType {
   id: number;
   staff_id: number;
@@ -17,43 +24,9 @@ interface WorkScheduleType {
   staff?: {
     first_name: string;
     last_name: string;
-    roles?: {
-      role_name: string;
-    };
+    roles?: { role_name: string; };
   };
 }
-
-const mockApi = {
-  data: [
-    { 
-      id: 1, staff_id: 5, date: "Monday", start_time: "09:00:00", end_time: "10:00:00", is_active: true,
-      staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์" } }
-    },
-    { 
-      id: 2, staff_id: 5, date: "Tuesday", start_time: "10:00:00", end_time: "12:00:00", is_active: true,
-      staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์" } }
-    },
-    { 
-      id: 3, staff_id: 6, date: "Wednesday", start_time: "13:00:00", end_time: "14:00:00", is_active: false,
-      staff: { first_name: "มานะ", last_name: "อดทน", roles: { role_name: "ทันตแพทย์เฉพาะทาง" } }
-    },
-  ] as WorkScheduleType[]
-};
-
-const TIME_SLOTS = [
-  { start: 8, end: 9, label: "08:00 - 09:00" },
-  { start: 9, end: 10, label: "09:00 - 10:00" },
-  { start: 10, end: 11, label: "10:00 - 11:00" },
-  { start: 11, end: 12, label: "11:00 - 12:00" },
-  { start: 12, end: 13, label: "12:00 - 13:00" },
-  { start: 13, end: 14, label: "13:00 - 14:00" },
-  { start: 14, end: 15, label: "14:00 - 15:00" },
-  { start: 15, end: 16, label: "15:00 - 16:00" },
-  { start: 16, end: 17, label: "16:00 - 17:00" },
-  { start: 17, end: 18, label: "17:00 - 18:00" },
-  { start: 18, end: 19, label: "18:00 - 19:00" },
-  { start: 19, end: 20, label: "19:00 - 20:00" },
-];
 
 const DAYS = [
   { key: 'Monday', label: 'จันทร์' },
@@ -65,170 +38,187 @@ const DAYS = [
   { key: 'Sunday', label: 'อาทิตย์' }
 ];
 
-export default function DentistWorkSchedulePage() {
+const START_HOUR = 8;
+const END_HOUR = 20;
+
+export default function SingleDentistSchedulePage() {
   const router = useRouter();
+  const [form] = Form.useForm();
   const [allData, setAllData] = useState<WorkScheduleType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<WorkScheduleType | null>(null);
+
+  const [currentUser] = useState({
+    id: 5,
+    first_name: "สมหญิง",
+    last_name: "ใจดี",
+    role: "ทันตแพทย์เฉพาะทาง"
+  });
+
+  const initialMockData: WorkScheduleType[] = [
+  {
+    id: 101,
+    staff_id: 5,
+    date: "Monday",
+    start_time: "09:00:00",
+    end_time: "12:00:00",
+    is_active: true,
+    staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์เฉพาะทาง" } }
+  },
+  {
+    id: 102,
+    staff_id: 5,
+    date: "Wednesday",
+    start_time: "13:00:00",
+    end_time: "17:00:00",
+    is_active: true,
+    staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์เฉพาะทาง" } }
+  },
+  {
+    id: 103,
+    staff_id: 5,
+    date: "Friday",
+    start_time: "09:00:00",
+    end_time: "11:00:00",
+    is_active: false, // สถานะงดตรวจ
+    staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์เฉพาะทาง" } }
+  }
+];
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const storedData = localStorage.getItem('work_schedules');
-        if (storedData) {
-          setAllData(JSON.parse(storedData));
-        } else {
-          setAllData(mockApi.data);
-          localStorage.setItem('work_schedules', JSON.stringify(mockApi.data));
-        }
-      } finally {
-        setLoading(false);
+  const loadData = () => {
+    setLoading(true);
+    const storedData = localStorage.getItem('work_schedules');
+    
+    if (storedData) {
+      // ถ้ามีข้อมูลในเครื่องแล้ว ให้ใช้ข้อมูลนั้น
+      setAllData(JSON.parse(storedData));
+    } else {
+      // ถ้าเปิดครั้งแรกและยังไม่มีข้อมูล ให้ใช้ Mock Data และบันทึกลง LocalStorage ทันที
+      setAllData(initialMockData);
+      localStorage.setItem('work_schedules', JSON.stringify(initialMockData));
+    }
+    setLoading(false);
+  };
+  loadData();
+}, []);
+
+  const filteredData = useMemo(() => 
+    allData.filter(item => item.staff_id === currentUser.id), 
+    [allData, currentUser.id]
+  );
+
+  const handleAddSchedule = (values: any) => {
+    const startTime = values.timeRange[0].format("HH:00:00");
+    const endTime = values.timeRange[1].format("HH:00:00");
+
+    const newEntry: WorkScheduleType = {
+      id: Date.now(),
+      staff_id: currentUser.id,
+      date: values.date,
+      start_time: startTime,
+      end_time: endTime,
+      is_active: values.status === 'active',
+      staff: {
+        first_name: currentUser.first_name,
+        last_name: currentUser.last_name,
+        roles: { role_name: currentUser.role }
       }
     };
-    loadData();
-  }, []);
 
-  const staffOptions = useMemo(() => {
-    const uniqueStaff = Array.from(new Set(allData.map(item => item.staff_id)));
-    return uniqueStaff.map(id => {
-      const staffInfo = allData.find(item => item.staff_id === id)?.staff;
-      return {
-        value: id,
-        label: staffInfo ? `ทพ. ${staffInfo.first_name} ${staffInfo.last_name}` : `รหัสแพทย์: ${id}`
-      };
-    });
-  }, [allData]);
-
-  const filteredData = useMemo(() => {
-    if (!selectedStaffId) return [];
-    return allData.filter(item => item.staff_id === selectedStaffId);
-  }, [allData, selectedStaffId]);
+    const updatedData = [...allData, newEntry];
+    setAllData(updatedData);
+    localStorage.setItem('work_schedules', JSON.stringify(updatedData));
+    message.success('เพิ่มตารางการทำงานเรียบร้อยแล้ว');
+    setIsAddModalOpen(false);
+    form.resetFields();
+  };
 
   const tableData = useMemo(() => {
     const matrix: Record<string, any[]> = {};
+    const totalSlots = END_HOUR - START_HOUR;
+
     DAYS.forEach(d => {
-      matrix[d.key] = Array(TIME_SLOTS.length).fill(null).map(() => ({ type: 'empty', span: 1 }));
+      matrix[d.key] = Array(totalSlots).fill(null).map(() => ({ type: 'empty', span: 1 }));
     });
 
     filteredData.forEach(sched => {
-      const day = sched.date; 
-      if (!day || !matrix[day]) return;
+      const day = sched.date;
+      const startH = parseInt(sched.start_time.split(':')[0], 10);
+      const endH = parseInt(sched.end_time.split(':')[0], 10);
+      const startIndex = startH - START_HOUR;
+      const span = endH - startH;
 
-      const startHour = parseInt(sched.start_time.split(':')[0], 10);
-      const endHour = parseInt(sched.end_time.split(':')[0], 10);
-
-      const startIndex = TIME_SLOTS.findIndex(s => s.start === startHour);
-      const endIndex = TIME_SLOTS.findIndex(s => s.end === endHour);
-
-      if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
-        const span = endIndex - startIndex + 1;
+      if (startIndex >= 0 && startIndex < totalSlots) {
         matrix[day][startIndex] = { type: 'start', schedule: sched, span };
-        for (let i = startIndex + 1; i <= endIndex; i++) {
-          matrix[day][i] = { type: 'span', schedule: sched, span: 0 };
+        for (let i = 1; i < span; i++) {
+          if (startIndex + i < totalSlots) matrix[day][startIndex + i] = { type: 'span', span: 0 };
         }
       }
     });
 
-    return TIME_SLOTS.map((slot, index) => {
-      const row: any = { key: slot.label, time: slot.label };
-      DAYS.forEach(d => {
-        row[d.key] = matrix[d.key][index];
-      });
+    return Array.from({ length: totalSlots }, (_, i) => {
+      const currentHour = START_HOUR + i;
+      const timeLabel = `${String(currentHour).padStart(2, '0')}:00 - ${String(currentHour + 1).padStart(2, '0')}:00`;
+      const row: any = { key: timeLabel, time: timeLabel };
+      DAYS.forEach(d => { row[d.key] = matrix[d.key][i]; });
       return row;
     });
   }, [filteredData]);
-
-  const getStatusStyles = (isActive: boolean) => {
-    return isActive 
-      ? { bg: '#e6f7ff', border: '#1890ff', text: '#0050b3', label: 'ลงตรวจ', tagColor: 'blue' }
-      : { bg: '#fff2f0', border: '#ffccc7', text: '#cf1322', label: 'งดตรวจ', tagColor: 'error' };
-  };
 
   const columns: any = [
     {
       title: "เวลา",
       dataIndex: "time",
       key: "time",
-      width: 110,
+      width: 120,
       align: 'center',
-      render: (text: string) => <div style={{ fontWeight: '600', color: '#555' }}>{text}</div>
+      render: (text: string) => <Text strong style={{ color: '#595959' }}>{text}</Text>
     },
     ...DAYS.map(day => ({
       title: day.label,
       dataIndex: day.key,
       key: day.key,
       width: 160,
+      onCell: () => ({ style: { padding: 0 } }), // กำหนดให้ช่องตารางไม่มี Padding เพื่อให้เนื้อหาเต็มช่อง
       render: (cellData: any) => {
-        if (!cellData || cellData.type === 'empty') return { children: null, props: { rowSpan: 1 } };
-        if (cellData.type === 'span') return { children: null, props: { rowSpan: 0 } };
+        if (!cellData || cellData.type === 'empty') return { props: { rowSpan: 1 } };
+        if (cellData.type === 'span') return { props: { rowSpan: 0 } };
         
-        const sched: WorkScheduleType = cellData.schedule;
-        const styles = getStatusStyles(sched.is_active); 
-        
-        const doctorName = sched.staff ? `ทพ. ${sched.staff.first_name} ${sched.staff.last_name}` : `รหัสแพทย์: ${sched.staff_id}`;
-        const doctorRole = sched.staff?.roles?.role_name || 'ทันตแพทย์';
-
-        const content = (
-          <div 
-            onClick={() => router.push(`/personnel/work-schedule/${sched.id}`)} 
-            style={{
-              backgroundColor: styles.bg,
-              borderLeft: `4px solid ${styles.border}`,
-              color: styles.text,
-              padding: '10px 12px',
-              borderRadius: '6px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              height: '100%',
-              minHeight: `${(cellData.span * 65) - 8}px`, 
-              margin: '2px 0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              position: 'relative', 
-              transition: 'all 0.2s ease-in-out', 
-            }}
-            onMouseEnter={(e) => { 
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => { 
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
-            }}
-          >
-            <div style={{ position: 'absolute', top: '8px', right: '8px', opacity: 0.6 }}>
-              <EditOutlined />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', opacity: 0.85, paddingRight: '16px' }}>
-              <ClockCircleOutlined /> 
-              {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
-            </div>
-
-            <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <UserOutlined />
-              <Text ellipsis style={{ color: 'inherit', margin: 0 }}>{doctorName}</Text>
-            </div>
-
-            <div style={{ fontSize: '12px', marginBottom: '8px', opacity: 0.9, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <IdcardOutlined />
-              <span>{doctorRole}</span>
-            </div>
-
-            <div style={{ marginTop: 'auto' }}>
-              <Tag color={styles.tagColor} style={{ margin: 0, borderRadius: '4px' }}>
-                {styles.label}
-              </Tag>
-            </div>
-          </div>
-        );
+        const sched = cellData.schedule;
+        const isActive = sched.is_active;
 
         return {
-          children: content,
-          props: { rowSpan: cellData.span } 
+          children: (
+            <div 
+              onClick={() => { setSelectedSchedule(sched); setIsDetailModalOpen(true); }}
+              style={{ 
+                backgroundColor: isActive ? '#e6f7ff' : '#fff2f0', 
+                borderLeft: `5px solid ${isActive ? '#1890ff' : '#ffccc7'}`, 
+                padding: '12px', 
+                height: '100%', // ขยายความสูงเต็มช่อง
+                width: '100%',  // ขยายความกว้างเต็มช่อง
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center', // จัดเนื้อหาไว้ตรงกลางแนวตั้ง
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                boxSizing: 'border-box',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isActive ? '#bae7ff' : '#ffd8d3'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = isActive ? '#e6f7ff' : '#fff2f0'}
+            >
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: isActive ? '#0050b3' : '#cf1322', marginBottom: '4px' }}>
+                <ClockCircleOutlined /> {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
+              </div>
+              <Tag color={isActive ? 'blue' : 'error'} style={{ width: 'fit-content', margin: 0 }}>
+                {isActive ? 'ลงตรวจ' : 'งดตรวจ'}
+              </Tag>
+            </div>
+          ),
+          props: { rowSpan: cellData.span }
         };
       }
     }))
@@ -236,52 +226,91 @@ export default function DentistWorkSchedulePage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      <Breadcrumb
-        style={{ marginBottom: '24px', fontSize: '15px' }}
-        items={[
-          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
-          { title: <span><CalendarOutlined /> ตารางการทำงาน</span> },
-        ]}
-      />
+    
 
-      <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: '16px' }}>
-          <Title level={3} style={{ margin: 0 }}>ตารางการทำงาน</Title>
-          
-          <Space size="middle">
-            <Select
-              showSearch
-              placeholder="🔍 ค้นหารายชื่อทันตแพทย์..."
-              style={{ width: 300 }}
-              optionFilterProp="label"
-              onChange={(value) => setSelectedStaffId(value)}
-              options={staffOptions}
-              allowClear
-              size="large"
-            />
-            
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
-              size="large"
-              onClick={() => router.push('/personnel/work-schedule/create')}
-            >
-              เพิ่มเวลาทำงาน
-            </Button>
-          </Space>
+      <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, padding: '4px' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>ตารางการทำงาน</Title>
+            <Text type="secondary"><UserOutlined /> ทพ. {currentUser.first_name} {currentUser.last_name} | {currentUser.role}</Text>
+          </div>
+          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setIsAddModalOpen(true)}>
+            เพิ่มตารางงาน
+          </Button>
         </div>
 
-        <Table
-          rowKey="key"
+        <Table 
+          dataSource={tableData} 
+          columns={columns} 
+          pagination={false} 
+          bordered 
           loading={loading}
-          pagination={false}
-          dataSource={tableData}
-          columns={columns}
-          bordered={true}
-          scroll={{ x: 1000 }}
-          locale={{ emptyText: selectedStaffId ? "ไม่มีตารางงานสำหรับแพทย์ท่านนี้" : "กรุณาเลือกรายชื่อทันตแพทย์เพื่อดูตารางงาน" }}
+          scroll={{ x: 1000 }} 
+          // ปรับความสูงขั้นต่ำของแต่ละแถวในตารางเพื่อให้รายการดูใหญ่ขึ้น
+          rowClassName={() => 'schedule-row'}
         />
       </Card>
+
+      {/* สไตล์เพิ่มเติมเพื่อให้ตารางดูใหญ่ขึ้น */}
+      <style jsx global>{`
+        .ant-table-cell {
+          height: 80px !important; /* ปรับความสูงของช่องตาราง */
+          vertical-align: top !important;
+        }
+        .schedule-row:hover > td {
+          background-color: inherit !important; /* ปิด hover effect ของ antd เพื่อไม่ให้รบกวนแถบงาน */
+        }
+      `}</style>
+
+      {/* Modal เพิ่มตารางงาน */}
+      <Modal
+        title="เพิ่มตารางการทำงานใหม่"
+        open={isAddModalOpen}
+        onCancel={() => setIsAddModalOpen(false)}
+        onOk={() => form.submit()}
+        okText="บันทึกข้อมูล"
+        cancelText="ยกเลิก"
+        destroyOnClose
+      >
+        <Form form={form} layout="vertical" onFinish={handleAddSchedule} style={{ marginTop: 16 }}>
+          <Form.Item label="แพทย์เจ้าของตาราง">
+            <div style={{ padding: '8px 12px', background: '#f5f5f5', borderRadius: '6px', border: '1px solid #d9d9d9' }}>
+               ทพ. {currentUser.first_name} {currentUser.last_name}
+            </div>
+          </Form.Item>
+          <Form.Item name="date" label="เลือกวันทำงาน" rules={[{ required: true, message: 'กรุณาเลือกวัน' }]}>
+            <Select placeholder="เลือกวัน">{DAYS.map(d => <Select.Option key={d.key} value={d.key}>{d.label}</Select.Option>)}</Select>
+          </Form.Item>
+          <Form.Item name="timeRange" label="ช่วงเวลาทำงาน" rules={[{ required: true, message: 'กรุณาระบุเวลา' }]}>
+            <TimePicker.RangePicker format="HH:00" showNow={false} style={{ width: '100%' }} />
+          </Form.Item>
+          <Form.Item name="status" label="สถานะการลงตรวจ" initialValue="active">
+            <Select>
+              <Select.Option value="active">ลงตรวจ (Active)</Select.Option>
+              <Select.Option value="inactive">งดตรวจ (Inactive)</Select.Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal ดูรายละเอียด */}
+      <Modal
+        title={<span><InfoCircleOutlined /> รายละเอียดงาน</span>}
+        open={isDetailModalOpen}
+        onCancel={() => setIsDetailModalOpen(false)}
+        footer={[<Button key="close" onClick={() => setIsDetailModalOpen(false)}>ปิด</Button>]}
+      >
+        {selectedSchedule && (
+          <Descriptions bordered column={1} size="small" style={{ marginTop: 16 }}>
+            <Descriptions.Item label="แพทย์">{`ทพ. ${currentUser.first_name} ${currentUser.last_name}`}</Descriptions.Item>
+            <Descriptions.Item label="วันที่">{DAYS.find(d => d.key === selectedSchedule.date)?.label}</Descriptions.Item>
+            <Descriptions.Item label="ช่วงเวลา">{`${selectedSchedule.start_time.substring(0, 5)} - ${selectedSchedule.end_time.substring(0, 5)} น.`}</Descriptions.Item>
+            <Descriptions.Item label="สถานะ">
+              <Tag color={selectedSchedule.is_active ? 'blue' : 'error'}>{selectedSchedule.is_active ? 'ลงตรวจ' : 'งดตรวจ'}</Tag>
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
     </div>
   );
 }

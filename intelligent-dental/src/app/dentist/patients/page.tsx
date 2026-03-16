@@ -3,18 +3,16 @@
 import { useState } from "react";
 import { 
   Table, Button, Modal, Input, Space, Form, Row, Col, 
-  DatePicker, Select, Tag, Tooltip, Tabs, Timeline, Divider, message 
+  DatePicker, Select, Tag, Tooltip, Tabs, Timeline, Divider, message, Card, Typography 
 } from "antd";
 import { 
-  ReadOutlined, IdcardOutlined, SearchOutlined, 
-  MedicineBoxOutlined, HistoryOutlined, UserOutlined, 
-  PlusOutlined, MinusCircleOutlined
+  ReadOutlined, SearchOutlined, MedicineBoxOutlined, 
+  HistoryOutlined, UserOutlined, PlusOutlined, MinusCircleOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const { Search } = Input;
+const { Title, Text } = Typography;
 
-// --- Options สำหรับ Status (อ้างอิงจาก Enum ใน API) ---
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
   { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
@@ -22,7 +20,6 @@ const STATUS_OPTIONS = [
   { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
 ];
 
-// --- Mock Data สมบูรณ์แบบ 4 คน ---
 const MOCK_PATIENTS = [
   { 
     id: 1, name: "สมชาย ใจดี", email: "somchai.j@email.com", first_name: "สมชาย", last_name: "ใจดี", phone: "081-234-5678", 
@@ -52,12 +49,9 @@ export default function PatientsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  
-  // State สำหรับ Modal เพิ่ม/แก้ไข
   const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
   const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
   const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
-  
   const [inspectForm] = Form.useForm();
   const [medicalForm] = Form.useForm();
 
@@ -72,11 +66,14 @@ export default function PatientsPage() {
     setIsDetailOpen(true);
   };
 
-  // --- Logic สำหรับบันทึก (ทั้งเพิ่มใหม่และแก้ไข) ---
+  const updateState = (updatedPatient: any) => {
+    setItems(items.map(p => p.id === updatedPatient.id ? updatedPatient : p));
+    setSelectedPatient(updatedPatient);
+  };
+
   const handleSaveInspection = async () => {
     const values = await inspectForm.validateFields();
     const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
-    
     let updatedInspects;
     if (editingRecordId) {
       updatedInspects = selectedPatient.inspection_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
@@ -85,16 +82,13 @@ export default function PatientsPage() {
       updatedInspects = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.inspection_records || [])];
       message.success("เพิ่มประวัติการตรวจสำเร็จ");
     }
-
-    const updatedPatient = { ...selectedPatient, inspection_records: updatedInspects };
-    updateState(updatedPatient);
+    updateState({ ...selectedPatient, inspection_records: updatedInspects });
     setIsInspectModalOpen(false);
   };
 
   const handleSaveMedical = async () => {
     const values = await medicalForm.validateFields();
     const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
-    
     let updatedMedicals;
     if (editingRecordId) {
       updatedMedicals = selectedPatient.medical_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
@@ -103,18 +97,10 @@ export default function PatientsPage() {
       updatedMedicals = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.medical_records || [])];
       message.success("เพิ่มประวัติการรักษาสำเร็จ");
     }
-
-    const updatedPatient = { ...selectedPatient, medical_records: updatedMedicals };
-    updateState(updatedPatient);
+    updateState({ ...selectedPatient, medical_records: updatedMedicals });
     setIsMedicalModalOpen(false);
   };
 
-  const updateState = (updatedPatient: any) => {
-    setItems(items.map(p => p.id === updatedPatient.id ? updatedPatient : p));
-    setSelectedPatient(updatedPatient);
-  };
-
-  // --- เปิด Modal แก้ไข (Pre-populate ข้อมูลเดิม) ---
   const openEditInspect = (record: any) => {
     setEditingRecordId(record.id);
     inspectForm.setFieldsValue({ ...record, date: dayjs(record.date) });
@@ -129,7 +115,7 @@ export default function PatientsPage() {
 
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { title: "ชื่อ-นามสกุล", dataIndex: "name", key: "name" },
+    { title: "ชื่อ-นามสกุล", dataIndex: "name", key: "name", render: (text: string) => <b>{text}</b> },
     { 
       title: "ประเภทผู้ป่วย", 
       dataIndex: "patient_type", 
@@ -137,29 +123,59 @@ export default function PatientsPage() {
     },
     { title: "อีเมล", dataIndex: "email", key: "email" },
     {
-      title: "รายละเอียด",
+      title: "จัดการ",
       key: "action",
-      width: 110,
+      width: 80,
       align: 'center' as const,
       render: (_: any, record: any) => (
-        <Tooltip title="Detail"><Button type="link" icon={<ReadOutlined style={{ fontSize: '22px' }} />} onClick={() => showDetail(record)} /></Tooltip>
+        <Tooltip title="รายละเอียด">
+          <Button 
+            type="text" 
+            icon={<ReadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />} 
+            onClick={() => showDetail(record)} 
+          />
+        </Tooltip>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between' }}>
-        <h2>📋 ระบบจัดการข้อมูลผู้ป่วย</h2>
-        <Space>
-          <Select defaultValue="all" style={{ width: 160 }} onChange={setTypeFilter} options={[{ value: 'all', label: 'ทั้งหมด' }, { value: 'general', label: 'ผู้ป่วยธรรมดา' }, { value: 'onsite', label: 'นอกสถานที่' }]} />
-          <Search placeholder="ค้นหาชื่อ หรือเลขบัตร..." allowClear onChange={e => setSearchText(e.target.value)} style={{ width: 300 }} />
-        </Space>
-      </div>
+    <div style={{ padding: '0' }}>
+      <Card 
+        bordered={false} 
+        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}
+      >
+        {/* Header ภายใน Card */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>📋 ระบบจัดการข้อมูลผู้ป่วย</Title>
+            <Text type="secondary">จัดการข้อมูลส่วนตัวและประวัติการรักษาของคนไข้</Text>
+          </div>
+          <Space size="middle">
+            <Select 
+              defaultValue="all" 
+              style={{ width: 160 }} 
+              onChange={setTypeFilter} 
+              options={[
+                { value: 'all', label: 'ทั้งหมด' }, 
+                { value: 'general', label: 'ผู้ป่วยธรรมดา' }, 
+                { value: 'onsite', label: 'นอกสถานที่' }
+              ]} 
+            />
+            <Input 
+              placeholder="ค้นหาชื่อ หรือเลขบัตร..." 
+              prefix={<SearchOutlined style={{ color: '#1890ff' }} />} 
+              style={{ width: 300 }} 
+              onChange={e => setSearchText(e.target.value)}
+              allowClear
+            />
+          </Space>
+        </div>
 
-      <Table columns={columns} dataSource={filteredItems} rowKey="id" pagination={{ pageSize: 10 }} />
+        <Table columns={columns} dataSource={filteredItems} rowKey="id" pagination={{ pageSize: 10 }} />
+      </Card>
 
-      {/* --- Main Detail Modal --- */}
+      {/* --- Modals (คงเดิม) --- */}
       <Modal open={isDetailOpen} title={`แฟ้มประวัติ: ${selectedPatient?.name}`} onCancel={() => setIsDetailOpen(false)} width={850} footer={[<Button key="close" onClick={() => setIsDetailOpen(false)}>ปิดหน้าต่าง</Button>]}>
         <Tabs items={[
           {
@@ -187,10 +203,7 @@ export default function PatientsPage() {
                   children: (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span><Tag color="blue">{r.date}</Tag> <Tag>{r.status}</Tag> {r.history}</span>
-                      {/* --- ส่วนที่แก้ไข: ไอคอน Edit เหมือน Detail --- */}
-                      <Tooltip title="Detail" placement="top">
-                        <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditInspect(r)} />
-                      </Tooltip>
+                      <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditInspect(r)} />
                     </div>
                   )
                 }))} />
@@ -210,10 +223,7 @@ export default function PatientsPage() {
                         <p style={{ margin: '8px 0' }}>{r.history}</p>
                         {r.detail?.map((d: any, i: number) => <Tag key={i} color="orange">{d.diagnosis}</Tag>)}
                       </div>
-                      {/* --- ส่วนที่แก้ไข: ไอคอน Edit เหมือน Detail --- */}
-                      <Tooltip title="Detail" placement="top">
-                        <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditMedical(r)} />
-                      </Tooltip>
+                      <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditMedical(r)} />
                     </div>
                   )
                 }))} />
@@ -223,7 +233,7 @@ export default function PatientsPage() {
         ]} />
       </Modal>
 
-      {/* --- Sub-Modal: Add/Edit Inspection --- */}
+      {/* บรรดา Modal ย่อยๆ ของการ Add/Edit */}
       <Modal title={editingRecordId ? "แก้ไขบันทึกการตรวจ" : "เพิ่มบันทึกการตรวจ"} open={isInspectModalOpen} onOk={handleSaveInspection} onCancel={() => setIsInspectModalOpen(false)} okText="บันทึก" cancelText="ยกเลิก">
         <Form form={inspectForm} layout="vertical">
           <Form.Item name="date" label="วันที่ตรวจ" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item>
@@ -232,7 +242,6 @@ export default function PatientsPage() {
         </Form>
       </Modal>
 
-      {/* --- Sub-Modal: Add/Edit Medical --- */}
       <Modal title={editingRecordId ? "แก้ไขบันทึกการรักษา" : "เพิ่มบันทึกการรักษา"} open={isMedicalModalOpen} onOk={handleSaveMedical} onCancel={() => setIsMedicalModalOpen(false)} width={600} okText="บันทึก" cancelText="ยกเลิก">
         <Form form={medicalForm} layout="vertical">
           <Row gutter={16}>

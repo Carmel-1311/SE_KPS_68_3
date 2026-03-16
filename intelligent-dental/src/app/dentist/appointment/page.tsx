@@ -2,33 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import { 
-  Table, 
-  Typography, 
-  Tag, 
-  Input, 
-  Modal, 
-  Descriptions, 
-  Tooltip, 
-  Button, 
-  Space,
-  Divider
+  Table, Typography, Tag, Input, Modal, Descriptions, 
+  Tooltip, Button, Space, Card 
 } from "antd";
 import { 
-  SearchOutlined, 
-  ReadOutlined, 
-  IdcardOutlined,
-  ClockCircleOutlined,
-  CalendarOutlined,
-  SolutionOutlined
+  SearchOutlined, ReadOutlined, IdcardOutlined,
+  ClockCircleOutlined, CalendarOutlined, SolutionOutlined
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import { ThemeWebColor } from "@/app/utils/constants";
 
 dayjs.locale("th");
-
 const { Title, Text } = Typography;
 
-// --- Interface ตาม API Appointment ที่ให้มา ---
+// --- Interface เดิม (คงเดิม) ---
 interface Appointment {
   appointment_id: number;
   patient: { id: number; name: string };
@@ -41,7 +29,7 @@ interface Appointment {
   inspection_record_id: number | null;
 }
 
-export default function DoctorDatabaseTable() {
+export default function AppointmentPage() {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [searchText, setSearchText] = useState("");
@@ -54,7 +42,6 @@ export default function DoctorDatabaseTable() {
 
   const fetchAppointments = async () => {
     setLoading(true);
-    // Mock ข้อมูลทั้งหมดตาม API
     const mockApiResponse = {
       "data": [
         {
@@ -88,35 +75,26 @@ export default function DoctorDatabaseTable() {
   };
 
   const columns = [
-    {
-      title: "ID",
-      dataIndex: "appointment_id",
-      key: "id",
-      width: 70,
+    { title: "ID", dataIndex: "appointment_id", key: "id", width: 70 },
+    { 
+      title: "ชื่อ-นามสกุล", 
+      dataIndex: ["patient", "name"], 
+      key: "patientName", 
+      render: (text: string) => <Text strong>{text}</Text> 
     },
-    {
-      title: "ชื่อ-นามสกุล",
-      dataIndex: ["patient", "name"],
-      key: "patientName",
-      render: (text: string) => <Text strong>{text}</Text>,
+    { 
+      title: "วันที่", 
+      dataIndex: "appointment_date", 
+      key: "date", 
+      render: (date: string) => dayjs(date).format("DD/MM/YYYY") 
     },
-    {
-      title: "วันที่",
-      dataIndex: "appointment_date",
-      key: "date",
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+    { 
+      title: "เวลา", 
+      dataIndex: "appointment_time", 
+      key: "time", 
+      render: (time: string) => time.substring(0, 5) 
     },
-    {
-      title: "เวลา",
-      dataIndex: "appointment_time",
-      key: "time",
-      render: (time: string) => time.substring(0, 5),
-    },
-    {
-      title: "ประเภท",
-      dataIndex: "type",
-      key: "type",
-    },
+    { title: "ประเภท", dataIndex: "type", key: "type" },
     {
       title: "สถานะ",
       dataIndex: "status",
@@ -129,19 +107,19 @@ export default function DoctorDatabaseTable() {
           request_cancel: { color: "orange", text: "Req. Cancel" }
         };
         const current = statusMap[status] || { color: "default", text: status };
-        return <Tag color={current.color} bordered={false} style={{ fontSize: '11px' }}>{current.text.toUpperCase()}</Tag>;
+        return <Tag color={current.color} bordered={false}>{current.text.toUpperCase()}</Tag>;
       },
     },
     {
-      title: "Detail",
+      title: "จัดการ",
       key: "action",
       width: 80,
       align: 'center' as const,
       render: (_: any, record: Appointment) => (
-        <Tooltip title="Detail" color="#262626">
+        <Tooltip title="รายละเอียด">
           <Button 
             type="text" 
-            icon={<ReadOutlined style={{ fontSize: '18px', color: '#595959' }} />} 
+            icon={<ReadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />} 
             onClick={() => { setSelectedAppointment(record); setIsModalOpen(true); }}
           />
         </Tooltip>
@@ -150,109 +128,64 @@ export default function DoctorDatabaseTable() {
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Title level={4} style={{ margin: 0 }}>ตารางการนัดหมาย</Title>
-        <Input 
-          placeholder="ค้นหาชื่อคนไข้..." 
-          prefix={<SearchOutlined />} 
-          style={{ width: 280 }} 
-          onChange={(e) => setSearchText(e.target.value)}
+    <div style={{ padding: '0px' }}>
+      <Card 
+        bordered={false} 
+        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}
+        bodyStyle={{ padding: '24px' }}
+      >
+        {/* ส่วน Header ที่อยู่ภายใน Card และไม่มีเส้นคั่น */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <Title level={3} style={{ margin: 0 }}>📅 ตารางการนัดหมาย</Title>
+            <Text type="secondary">ตรวจสอบและจัดการรายการนัดหมายทั้งหมดในระบบ</Text>
+          </div>
+          <Input 
+            placeholder="ค้นหาชื่อคนไข้..." 
+            prefix={<SearchOutlined style={{ color: '#1890ff' }} />} 
+            style={{ width: 300 }} 
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
+          />
+        </div>
+
+        {/* ตารางข้อมูลที่อยู่ใต้ Header ทันที */}
+        <Table 
+          columns={columns} 
+          dataSource={appointments.filter(a => a.patient.name.includes(searchText))}
+          rowKey="appointment_id"
+          loading={loading}
+          size="middle"
+          pagination={{ pageSize: 15 }}
         />
-      </div>
+      </Card>
 
-      <Table 
-        columns={columns} 
-        dataSource={appointments.filter(a => a.patient.name.includes(searchText))}
-        rowKey="appointment_id"
-        loading={loading}
-        size="small"
-        bordered
-        pagination={{ pageSize: 15 }}
-      />
-
-      {/* --- Modal แสดงข้อมูลทั้งหมดตาม API --- */}
-      <Modal
-        title={
-          <Space>
-            <SolutionOutlined style={{ color: '#1890ff' }} />
-            <span>Full Appointment Details</span>
-          </Space>
-        }
-        open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        footer={[
-          <Button key="close" type="primary" onClick={() => setIsModalOpen(false)}>
-            Close
-          </Button>
-        ]}
+      {/* --- Modal (คงเดิม) --- */}
+      <Modal 
+        title={<Space><SolutionOutlined style={{ color: '#1890ff' }} /><span>Full Appointment Details</span></Space>} 
+        open={isModalOpen} 
+        onCancel={() => setIsModalOpen(false)} 
+        footer={[<Button key="close" type="primary" onClick={() => setIsModalOpen(false)}>Close</Button>]} 
         width={650}
       >
         {selectedAppointment && (
           <div style={{ marginTop: '16px' }}>
-            <Descriptions 
-              bordered 
-              column={2} 
-              size="small"
-              labelStyle={{ background: '#fafafa', fontWeight: 'bold' }}
-            >
-              {/* ข้อมูลพื้นฐานของการนัดหมาย */}
-              <Descriptions.Item label="Appointment ID" span={2}>
-                <Text code>{selectedAppointment.appointment_id}</Text>
-              </Descriptions.Item>
-
-              {/* ข้อมูลผู้ป่วย */}
-              <Descriptions.Item label="ชื่อ-นามสกุล">
-                <Text strong>{selectedAppointment.patient.name}</Text>
-              </Descriptions.Item>
-              <Descriptions.Item label="Patient ID">
-                <Tag icon={<IdcardOutlined />}>{selectedAppointment.patient.id}</Tag>
-              </Descriptions.Item>
-
-              {/* ข้อมูลแพทย์ */}
-              <Descriptions.Item label="Attending Staff">
-                {selectedAppointment.staff.name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Staff ID">
-                {selectedAppointment.staff.id}
-              </Descriptions.Item>
-
-              {/* วันเวลาและประเภท */}
-              <Descriptions.Item label="วันที่">
-                <CalendarOutlined /> {dayjs(selectedAppointment.appointment_date).format("D MMMM YYYY")}
-              </Descriptions.Item>
-              <Descriptions.Item label="เวลา">
-                <ClockCircleOutlined /> {selectedAppointment.appointment_time.substring(0, 5)} น.
-              </Descriptions.Item>
-              
-              <Descriptions.Item label="ประเภทการรักษา" span={2}>
-                {selectedAppointment.type}
-              </Descriptions.Item>
-
-              {/* สถานะและรหัสอ้างอิง */}
-              <Descriptions.Item label="สถานะ" span={2}>
-                {selectedAppointment.status.toUpperCase()}
-              </Descriptions.Item>
-
-              <Descriptions.Item label="Medical Record ID">
-                {selectedAppointment.medical_record_id ? (
-                   <Text strong style={{ color: '#52c41a' }}>{selectedAppointment.medical_record_id}</Text>
-                ) : <Text type="secondary">N/A</Text>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Inspection ID">
-                {selectedAppointment.inspection_record_id ? (
-                   <Text strong style={{ color: '#1890ff' }}>{selectedAppointment.inspection_record_id}</Text>
-                ) : <Text type="secondary">N/A</Text>}
-              </Descriptions.Item>
+            <Descriptions bordered column={2} size="small" labelStyle={{ background: '#fafafa', fontWeight: 'bold' }}>
+              <Descriptions.Item label="Appointment ID" span={2}><Text code>{selectedAppointment.appointment_id}</Text></Descriptions.Item>
+              <Descriptions.Item label="ชื่อ-นามสกุล"><Text strong>{selectedAppointment.patient.name}</Text></Descriptions.Item>
+              <Descriptions.Item label="Patient ID"><Tag icon={<IdcardOutlined />}>{selectedAppointment.patient.id}</Tag></Descriptions.Item>
+              <Descriptions.Item label="Attending Staff">{selectedAppointment.staff.name}</Descriptions.Item>
+              <Descriptions.Item label="Staff ID">{selectedAppointment.staff.id}</Descriptions.Item>
+              <Descriptions.Item label="วันที่"><CalendarOutlined /> {dayjs(selectedAppointment.appointment_date).format("D MMMM YYYY")}</Descriptions.Item>
+              <Descriptions.Item label="เวลา"><ClockCircleOutlined /> {selectedAppointment.appointment_time.substring(0, 5)} น.</Descriptions.Item>
+              <Descriptions.Item label="ประเภทการรักษา" span={2}>{selectedAppointment.type}</Descriptions.Item>
+              <Descriptions.Item label="สถานะ" span={2}>{selectedAppointment.status.toUpperCase()}</Descriptions.Item>
+              <Descriptions.Item label="Medical Record ID">{selectedAppointment.medical_record_id ? <Text strong style={{ color: '#52c41a' }}>{selectedAppointment.medical_record_id}</Text> : <Text type="secondary">N/A</Text>}</Descriptions.Item>
+              <Descriptions.Item label="Inspection ID">{selectedAppointment.inspection_record_id ? <Text strong style={{ color: '#1890ff' }}>{selectedAppointment.inspection_record_id}</Text> : <Text type="secondary">N/A</Text>}</Descriptions.Item>
             </Descriptions>
           </div>
         )}
       </Modal>
-
-      <style jsx global>{`
-        .ant-table-thead > tr > th { background: #f0f2f5 !important; font-weight: bold !important; }
-        .ant-table-row:hover { cursor: pointer; }
-      `}</style>
     </div>
   );
 }
