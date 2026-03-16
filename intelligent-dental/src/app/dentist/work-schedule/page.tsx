@@ -137,36 +137,41 @@ export default function SingleDentistSchedulePage() {
   };
 
   const tableData = useMemo(() => {
-    const matrix: Record<string, any[]> = {};
-    const totalSlots = END_HOUR - START_HOUR;
+  const matrix: Record<string, any[]> = {};
+  const totalSlots = END_HOUR - START_HOUR;
 
-    DAYS.forEach(d => {
-      matrix[d.key] = Array(totalSlots).fill(null).map(() => ({ type: 'empty', span: 1 }));
-    });
+  DAYS.forEach(d => {
+    matrix[d.key] = Array(totalSlots).fill(null).map(() => ({ type: 'empty', span: 1 }));
+  });
 
-    filteredData.forEach(sched => {
-      const day = sched.date;
-      const startH = parseInt(sched.start_time.split(':')[0], 10);
-      const endH = parseInt(sched.end_time.split(':')[0], 10);
-      const startIndex = startH - START_HOUR;
-      const span = endH - startH;
+  filteredData.forEach(sched => {
+    const day = sched.date;
+    // เปลี่ยนมาดึงนาทีด้วย
+    const [startH, startM] = sched.start_time.split(':').map(Number);
+    const [endH, endM] = sched.end_time.split(':').map(Number);
+    
+    const startIndex = startH - START_HOUR;
+    // คำนวณ Span แบบทศนิยม (เช่น 1.5 ชั่วโมง) 
+    // แต่สำหรับการรวม Row ใน Table antd จะต้องเป็นเลขจำนวนเต็ม
+    // ในที่นี้จะยังคงใช้พิกัดชั่วโมงเป็นหลัก แต่แสดงผลเวลาจริงในแถบงาน
+    const span = Math.ceil(endH + endM/60) - Math.floor(startH + startM/60);
 
-      if (startIndex >= 0 && startIndex < totalSlots) {
-        matrix[day][startIndex] = { type: 'start', schedule: sched, span };
-        for (let i = 1; i < span; i++) {
-          if (startIndex + i < totalSlots) matrix[day][startIndex + i] = { type: 'span', span: 0 };
-        }
+    if (startIndex >= 0 && startIndex < totalSlots) {
+      matrix[day][startIndex] = { type: 'start', schedule: sched, span: span || 1 };
+      for (let i = 1; i < span; i++) {
+        if (startIndex + i < totalSlots) matrix[day][startIndex + i] = { type: 'span', span: 0 };
       }
-    });
+    }
+  });
 
-    return Array.from({ length: totalSlots }, (_, i) => {
-      const currentHour = START_HOUR + i;
-      const timeLabel = `${String(currentHour).padStart(2, '0')}:00 - ${String(currentHour + 1).padStart(2, '0')}:00`;
-      const row: any = { key: timeLabel, time: timeLabel };
-      DAYS.forEach(d => { row[d.key] = matrix[d.key][i]; });
-      return row;
-    });
-  }, [filteredData]);
+  return Array.from({ length: totalSlots }, (_, i) => {
+    const hour = START_HOUR + i;
+    const timeLabel = `${String(hour).padStart(2, '0')}:00`;
+    const row: any = { key: timeLabel, time: timeLabel };
+    DAYS.forEach(d => { row[d.key] = matrix[d.key][i]; });
+    return row;
+  });
+}, [filteredData]);
 
   const columns: any = [
     {
@@ -234,9 +239,15 @@ export default function SingleDentistSchedulePage() {
             <Title level={3} style={{ margin: 0 }}>ตารางการทำงาน</Title>
             <Text type="secondary"><UserOutlined /> ทพ. {currentUser.first_name} {currentUser.last_name} | {currentUser.role}</Text>
           </div>
-          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={() => setIsAddModalOpen(true)}>
-            เพิ่มตารางงาน
-          </Button>
+          <Button 
+  type="primary" 
+  size="large" 
+  icon={<PlusOutlined />} 
+  onClick={() => router.push('/dentist/work-schedule/create')} // เปลี่ยนจาก setIsAddModalOpen
+  style={{ borderRadius: '8px' }}
+>
+  เพิ่มตารางงาน
+</Button>
         </div>
 
         <Table 

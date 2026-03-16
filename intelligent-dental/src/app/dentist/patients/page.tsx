@@ -1,24 +1,17 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
-  Table, Button, Modal, Input, Space, Form, Row, Col, 
-  DatePicker, Select, Tag, Tooltip, Tabs, Timeline, Divider, message, Card, Typography 
+  Table, Button, Modal, Input, Space, Row, Col, 
+  Select, Tag, Tooltip, Tabs, Timeline, Card, Typography 
 } from "antd";
 import { 
   ReadOutlined, SearchOutlined, MedicineBoxOutlined, 
-  HistoryOutlined, UserOutlined, PlusOutlined, MinusCircleOutlined
+  HistoryOutlined, UserOutlined, PlusOutlined, EditOutlined
 } from "@ant-design/icons";
-import dayjs from "dayjs";
 
 const { Title, Text } = Typography;
-
-const STATUS_OPTIONS = [
-  { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
-  { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
-  { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
-  { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
-];
 
 const MOCK_PATIENTS = [
   { 
@@ -44,16 +37,12 @@ const MOCK_PATIENTS = [
 ];
 
 export default function PatientsPage() {
-  const [items, setItems] = useState(MOCK_PATIENTS);
+  const router = useRouter();
+  const [items] = useState(MOCK_PATIENTS);
   const [searchText, setSearchText] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
-  const [isInspectModalOpen, setIsInspectModalOpen] = useState(false);
-  const [isMedicalModalOpen, setIsMedicalModalOpen] = useState(false);
-  const [editingRecordId, setEditingRecordId] = useState<number | null>(null);
-  const [inspectForm] = Form.useForm();
-  const [medicalForm] = Form.useForm();
 
   const filteredItems = items.filter((item) => {
     const matchesSearch = item.name.toLowerCase().includes(searchText.toLowerCase()) || item.citizen_id.includes(searchText);
@@ -64,53 +53,6 @@ export default function PatientsPage() {
   const showDetail = (record: any) => {
     setSelectedPatient(record);
     setIsDetailOpen(true);
-  };
-
-  const updateState = (updatedPatient: any) => {
-    setItems(items.map(p => p.id === updatedPatient.id ? updatedPatient : p));
-    setSelectedPatient(updatedPatient);
-  };
-
-  const handleSaveInspection = async () => {
-    const values = await inspectForm.validateFields();
-    const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
-    let updatedInspects;
-    if (editingRecordId) {
-      updatedInspects = selectedPatient.inspection_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
-      message.success("แก้ไขประวัติการตรวจสำเร็จ");
-    } else {
-      updatedInspects = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.inspection_records || [])];
-      message.success("เพิ่มประวัติการตรวจสำเร็จ");
-    }
-    updateState({ ...selectedPatient, inspection_records: updatedInspects });
-    setIsInspectModalOpen(false);
-  };
-
-  const handleSaveMedical = async () => {
-    const values = await medicalForm.validateFields();
-    const formattedValue = { ...values, date: values.date.format("YYYY-MM-DD") };
-    let updatedMedicals;
-    if (editingRecordId) {
-      updatedMedicals = selectedPatient.medical_records.map((r: any) => r.id === editingRecordId ? { ...r, ...formattedValue } : r);
-      message.success("แก้ไขประวัติการรักษาสำเร็จ");
-    } else {
-      updatedMedicals = [{ ...formattedValue, id: Date.now() }, ...(selectedPatient.medical_records || [])];
-      message.success("เพิ่มประวัติการรักษาสำเร็จ");
-    }
-    updateState({ ...selectedPatient, medical_records: updatedMedicals });
-    setIsMedicalModalOpen(false);
-  };
-
-  const openEditInspect = (record: any) => {
-    setEditingRecordId(record.id);
-    inspectForm.setFieldsValue({ ...record, date: dayjs(record.date) });
-    setIsInspectModalOpen(true);
-  };
-
-  const openEditMedical = (record: any) => {
-    setEditingRecordId(record.id);
-    medicalForm.setFieldsValue({ ...record, date: dayjs(record.date) });
-    setIsMedicalModalOpen(true);
   };
 
   const columns = [
@@ -141,11 +83,7 @@ export default function PatientsPage() {
 
   return (
     <div style={{ padding: '0' }}>
-      <Card 
-        bordered={false} 
-        style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}
-      >
-        {/* Header ภายใน Card */}
+      <Card bordered={false} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <Title level={3} style={{ margin: 0 }}>📋 ระบบจัดการข้อมูลผู้ป่วย</Title>
@@ -175,8 +113,13 @@ export default function PatientsPage() {
         <Table columns={columns} dataSource={filteredItems} rowKey="id" pagination={{ pageSize: 10 }} />
       </Card>
 
-      {/* --- Modals (คงเดิม) --- */}
-      <Modal open={isDetailOpen} title={`แฟ้มประวัติ: ${selectedPatient?.name}`} onCancel={() => setIsDetailOpen(false)} width={850} footer={[<Button key="close" onClick={() => setIsDetailOpen(false)}>ปิดหน้าต่าง</Button>]}>
+      <Modal 
+        open={isDetailOpen} 
+        title={`แฟ้มประวัติ: ${selectedPatient?.name}`} 
+        onCancel={() => setIsDetailOpen(false)} 
+        width={850} 
+        footer={[<Button key="close" onClick={() => setIsDetailOpen(false)}>ปิดหน้าต่าง</Button>]}
+      >
         <Tabs items={[
           {
             key: '1', label: <span><UserOutlined /> ข้อมูลทั่วไป</span>,
@@ -198,12 +141,29 @@ export default function PatientsPage() {
             key: '2', label: <span><HistoryOutlined /> ประวัติการตรวจ</span>,
             children: (
               <div style={{ padding: '16px 0' }}>
-                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => { setEditingRecordId(null); inspectForm.resetFields(); setIsInspectModalOpen(true); }} style={{ marginBottom: 20 }}>เพิ่มบันทึกการตรวจ</Button>
+                {/* ส่วนหัวของ Tab ที่มีหัวข้อและปุ่มอยู่คนละฝั่ง */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Title level={5} style={{ margin: 0 }}>บันทึกการตรวจทั้งหมด</Title>
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />} 
+                    onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/inspect/new`)} 
+                  >
+                    เพิ่มบันทึกการตรวจ
+                  </Button>
+                </div>
+                
                 <Timeline items={selectedPatient?.inspection_records?.map((r: any) => ({
                   children: (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <span><Tag color="blue">{r.date}</Tag> <Tag>{r.status}</Tag> {r.history}</span>
-                      <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditInspect(r)} />
+                      <Button 
+                        type="link" 
+                        icon={<ReadOutlined style={{ fontSize: '18px' }} />} 
+                        onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/inspect/${r.id}`)} 
+                      >
+                        
+                      </Button>
                     </div>
                   )
                 }))} />
@@ -214,7 +174,18 @@ export default function PatientsPage() {
             key: '3', label: <span><MedicineBoxOutlined /> ประวัติการรักษา</span>,
             children: (
               <div style={{ padding: '16px 0' }}>
-                <Button type="dashed" block icon={<PlusOutlined />} onClick={() => { setEditingRecordId(null); medicalForm.resetFields(); setIsMedicalModalOpen(true); }} style={{ marginBottom: 20 }}>เพิ่มบันทึกการรักษา</Button>
+                {/* ส่วนหัวของ Tab ที่มีหัวข้อและปุ่มอยู่คนละฝั่ง */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <Title level={5} style={{ margin: 0 }}>บันทึกการรักษาทั้งหมด</Title>
+                  <Button 
+                    type="primary" 
+                    icon={<PlusOutlined />} 
+                    onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/medical/new`)} 
+                  >
+                    เพิ่มบันทึกการรักษา
+                  </Button>
+                </div>
+
                 <Timeline items={selectedPatient?.medical_records?.map((r: any) => ({
                   children: (
                     <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between' }}>
@@ -223,7 +194,13 @@ export default function PatientsPage() {
                         <p style={{ margin: '8px 0' }}>{r.history}</p>
                         {r.detail?.map((d: any, i: number) => <Tag key={i} color="orange">{d.diagnosis}</Tag>)}
                       </div>
-                      <Button type="link" icon={<ReadOutlined style={{ fontSize: '20px' }} />} onClick={() => openEditMedical(r)} />
+                      <Button 
+                        type="link" 
+                        icon={<ReadOutlined style={{ fontSize: '18px' }} />} 
+                        onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/medical/${r.id}`)} 
+                      >
+                        
+                      </Button>
                     </div>
                   )
                 }))} />
@@ -231,40 +208,6 @@ export default function PatientsPage() {
             )
           }
         ]} />
-      </Modal>
-
-      {/* บรรดา Modal ย่อยๆ ของการ Add/Edit */}
-      <Modal title={editingRecordId ? "แก้ไขบันทึกการตรวจ" : "เพิ่มบันทึกการตรวจ"} open={isInspectModalOpen} onOk={handleSaveInspection} onCancel={() => setIsInspectModalOpen(false)} okText="บันทึก" cancelText="ยกเลิก">
-        <Form form={inspectForm} layout="vertical">
-          <Form.Item name="date" label="วันที่ตรวจ" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item>
-          <Form.Item name="history" label="ประวัติ/อาการ" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item>
-          <Form.Item name="status" label="สถานะ" rules={[{ required: true }]}><Select options={STATUS_OPTIONS} /></Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal title={editingRecordId ? "แก้ไขบันทึกการรักษา" : "เพิ่มบันทึกการรักษา"} open={isMedicalModalOpen} onOk={handleSaveMedical} onCancel={() => setIsMedicalModalOpen(false)} width={600} okText="บันทึก" cancelText="ยกเลิก">
-        <Form form={medicalForm} layout="vertical">
-          <Row gutter={16}>
-            <Col span={12}><Form.Item name="date" label="วันที่รักษา" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item></Col>
-            <Col span={12}><Form.Item name="status" label="สถานะ" rules={[{ required: true }]}><Select options={STATUS_OPTIONS} /></Form.Item></Col>
-          </Row>
-          <Form.Item name="history" label="ประวัติการรักษา" rules={[{ required: true }]}><Input.TextArea rows={2} /></Form.Item>
-          <Divider style={{ textAlign: "left" }}>รายละเอียดวินิจฉัย</Divider>
-          <Form.List name="detail">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                    <Form.Item {...restField} name={[name, 'type_id']} rules={[{ required: true }]}><Input placeholder="ID" type="number" style={{ width: 80 }} /></Form.Item>
-                    <Form.Item {...restField} name={[name, 'diagnosis']} rules={[{ required: true }]}><Input placeholder="วินิจฉัย" style={{ width: 350 }} /></Form.Item>
-                    {fields.length > 1 && <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red' }} />}
-                  </Space>
-                ))}
-                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>เพิ่มรายการวินิจฉัย</Button>
-              </>
-            )}
-          </Form.List>
-        </Form>
       </Modal>
     </div>
   );
