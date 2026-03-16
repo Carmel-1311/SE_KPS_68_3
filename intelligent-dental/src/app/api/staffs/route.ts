@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
 import * as staffService from "@/services/staffService";
-import { AppError } from "@/utils/AppError";
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/permissions";
 import { handleError } from "@/utils/errorHandler";
