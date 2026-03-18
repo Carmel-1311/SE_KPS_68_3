@@ -1,12 +1,12 @@
 import { components, paths } from "../../types/api"; // path ไปยังไฟล์ api.ts ของคุณ
-import { Prisma, patient_in_mobile,patient,mobile_dental} from "@prisma/client";
+import { Prisma, patient_in_mobile, patient } from "@prisma/client";
 
 export type PaMobileResponse = paths["/api/mobile_dental/{id}/patients"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
 export type CreatePaMobileInput =  paths["/api/mobile_dental/{id}/patients"]["post"]["requestBody"]["content"]["application/json"];
 
 export const PaMoMap = {
 
-  toResponseList(list: (patient_in_mobile& { patient: patient} & {mobile_dental:mobile_dental})[]): PaMobileResponse {
+  toResponseList(list: (patient_in_mobile & { patient: patient })[]): PaMobileResponse {
     return list.map(item => ({
         id:item.patient_in_mobile_id,
         patient_id: item.patient_id,
@@ -30,10 +30,9 @@ export const PaMoMap = {
             last_name:item.last_name,
             id_card: item.idcard,
             phone:item.phone??"",
-            birthday:item.birthday??""
+            birthday:item.birthday ? new Date(item.birthday) : null
             }
-        },
-        inspection_id:0
+        }
     }));
   },
 

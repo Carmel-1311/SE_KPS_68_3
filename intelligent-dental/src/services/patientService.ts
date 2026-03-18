@@ -7,6 +7,21 @@ import { status_user } from "@prisma/client"
 
 const validStatuses = new Set(Object.values(status_user))
 
+function getDuplicatePatientMessage(
+  duplicate: { email: string | null; phone: string | null },
+  data: { email: string; phone: string }
+) {
+  if (duplicate.email === data.email) {
+    return "Patient with this email already exists"
+  }
+
+  if (duplicate.phone === data.phone) {
+    return "Patient with this phone already exists"
+  }
+
+  return "Patient with this email or phone already exists"
+}
+
 export async function listPatients(limit: number, page: number) {
   const patients = await repo.findPatients((page - 1) * limit, limit)
   return map.patientMap.toResponseList(patients)
@@ -19,16 +34,10 @@ export async function createPatient(data: CreatePatientInput) {
 
   const duplicate = await repo.findPatientDuplicate(data.email, data.phone)
   if (duplicate) {
-    throw new AppError(409, "PAT-002", "Patient with this email or phone already exists", "CONFLICT")
+    throw new AppError(409, "PAT-002", getDuplicatePatientMessage(duplicate, data), "CONFLICT")
   }
 
-  const maxPatient = await repo.getMaxPatientId()
-  const created = await repo.createPatient(
-    {
-      patient_id: (maxPatient._max.patient_id ?? 0) + 1,
-      ...map.patientMap.toCreateInput(data)
-    }
-  )
+  const created = await repo.createPatient(map.patientMap.toCreateInput(data))
   return map.patientMap.toResponseList([created])[0]
 }
 
@@ -53,7 +62,7 @@ export async function updatePatient(id: number, data: UpdatePatientInput) {
 
   const duplicate = await repo.findPatientDuplicate(data.email, data.phone, id)
   if (duplicate) {
-    throw new AppError(409, "PAT-002", "Patient with this email or phone already exists", "CONFLICT")
+    throw new AppError(409, "PAT-002", getDuplicatePatientMessage(duplicate, data), "CONFLICT")
   }
 
   const updated = await repo.updatePatient(

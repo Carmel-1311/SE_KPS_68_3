@@ -4,18 +4,6 @@ import * as appointmentService from "@/services/appointmentService"
 import { handleError } from "@/utils/errorHandler"
 import * as res from "@/utils/responseFormatter"
 
-<<<<<<< HEAD
-export async function GET() {
-    try {
-
-        const user = getCurrentUser()
-        requireRole(user.role, ["staff", "dentist", "patient"])
-        const data = await appointmentService.getAppointmentsForUser(user)
-        return res.ok(data)
-    } catch (err: any) {
-        return handleError(err)
-    }
-=======
 export async function GET(req: Request) {
   try {
     const user = getCurrentUser()
@@ -37,7 +25,6 @@ export async function GET(req: Request) {
   } catch (err: any) {
     return handleError(err)
   }
->>>>>>> origin/api
 }
 export async function POST(request: Request) {
     try {

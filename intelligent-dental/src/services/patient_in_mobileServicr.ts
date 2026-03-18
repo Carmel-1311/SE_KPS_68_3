@@ -54,12 +54,10 @@ export async function createPatients(user: { id: number, role: string },list: ma
       }
 
       // 3️⃣ create patient_in_mobile
-      const paMobile = await repo.createPaMo({
+      await repo.createPaMo({
         mobile_dental_id: item.mobile_id,
-        patient:{
-            create:{patient_id:patient.patient_id}
-        },
-        inspection_record:{
+        patient: {
+          connect: { patient_id: patient.patient_id }
         }
       });
 
