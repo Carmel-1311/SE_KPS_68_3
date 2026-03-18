@@ -3,24 +3,37 @@ import * as repo from "@/repositories/work_schedulesRepository"
 import { AppError } from "@/utils/AppError"
 import { CreateScheduleInput } from "@/app/mappers/work_schedules.mapper"
 
-export async function getAllWorkSchedulesByUser(user: { id: number, role: string }): Promise<ReturnType<typeof map.workScheduleMap.toResponseList>> {
-    if (user.role === "dentist") {
-        return map.workScheduleMap.toResponseList(await repo.findWorkSchedulesByStaffId(user.id))
-    }
-    else {
-        return map.workScheduleMap.toResponseList(await repo.findAllWorkSchedules())
+export async function getAllWorkSchedulesByUser(
+    user: { id: number, role: string },
+    page: number,
+    limit: number
+): Promise<{
+    data: ReturnType<typeof map.workScheduleMap.toResponseList>
+    total: number
+}> {
+
+    const skip = (page - 1) * limit
+
+    const result =
+        user.role === "dentist"
+            ? await repo.findWorkSchedulesByStaffId(user.id, skip, limit)
+            : await repo.findAllWorkSchedules(skip, limit)
+
+    return {
+        data: map.workScheduleMap.toResponseList(result.data),
+        total: result.total
     }
 }
 
-export async function getWorkScheduleById(id: number) 
-: Promise<ReturnType<typeof map.workScheduleMap.toResponse>> {
+export async function getWorkScheduleById(id: number)
+    : Promise<ReturnType<typeof map.workScheduleMap.toResponse>> {
 
     const schedule = await repo.findWorkScheduleById(id)
 
     if (!schedule) {
         throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
     }
-    
+
     return map.workScheduleMap.toResponse(schedule)
 }
 

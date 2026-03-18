@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Card,
   Col,
@@ -12,39 +12,28 @@ import {
   Empty,
   Tag,
   Alert,
+  Space,
 } from "antd";
 import {
   TeamOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
+  HistoryOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 
 import { getCurrentCompanyId } from "@/mock/mockUser";
-import { withAuthHeaders } from "@/app/utils/auth.client";
+import { MobileDental } from "@/mock/mockMobileDental";
+
+type MobileDentalStatus = MobileDental["status"];
 
 const { Title, Text } = Typography;
 
-type Status =
-  | "request"
-  | "scheduled"
-  | "completed"
-  | "request_cancel"
-  | "cancel";
-
-type MobileDentalRequest = {
-  mobile_dental_id: number;
-  company_id: number;
-  date: string;
-  count: number;
-  status: Status;
-  address: string;
-};
-
-const statusConfig: Record<Status, { color: string; label: string }> = {
+const statusConfig: Record<MobileDentalStatus, { color: string; label: string }> = {
   request: { color: "blue", label: "รอดำเนินการ" },
   scheduled: { color: "green", label: "นัดหมายแล้ว" },
   completed: { color: "default", label: "เสร็จสิ้น" },
@@ -53,10 +42,17 @@ const statusConfig: Record<Status, { color: string; label: string }> = {
 };
 
 export default function CompanyDashboard() {
-  const [data, setData] = useState<MobileDentalRequest[]>([]);
+  const [data, setData] = useState<MobileDental[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setCurrentTime(new Date());
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,7 +66,7 @@ export default function CompanyDashboard() {
 
         if (!res.ok) throw new Error("fetch failed");
 
-        const json: { data: MobileDentalRequest[] } = await res.json();
+        const json: { data: MobileDental[] } = await res.json();
 
         setData(json.data ?? []);
       } catch (err) {
@@ -87,12 +83,17 @@ export default function CompanyDashboard() {
   const totalRequests = data.length;
 
   const pendingRequests = useMemo(
-    () => data.filter((d) => d.status === "request").length,
+    () => data.filter((d) => d.status === "request" || d.status === "request_cancel").length,
     [data]
   );
 
   const approvedRequests = useMemo(
     () => data.filter((d) => d.status === "scheduled").length,
+    [data]
+  );
+
+  const historyRequests = useMemo(
+    () => data.filter((d) => d.status === "completed" || d.status === "cancel").length,
     [data]
   );
 
@@ -106,19 +107,22 @@ export default function CompanyDashboard() {
       .slice(0, 5);
   }, [data]);
 
-  const columns: ColumnsType<MobileDentalRequest> = [
+  const formattedDate = useMemo(() => currentTime ? new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(currentTime) : "", [currentTime]);
+  const formattedTime = useMemo(() => currentTime ? currentTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "", [currentTime]);
+
+  const columns: ColumnsType<MobileDental> = useMemo(() => [
     {
       title: "รหัสคำขอ",
       dataIndex: "mobile_dental_id",
-      render: (id: number, record: MobileDentalRequest) => {
-        if (record.status === "scheduled") {
+      render: (id: number, record: MobileDental) => {
+        if (record.status === "scheduled" || record.status === "completed") {
           return (
             <Link href={`/company/status/${id}/patients`}>
-              <Text strong style={{ color: '#1677ff' }}>#{id}</Text>
+              <Typography.Text strong style={{ color: '#1677ff' }}>#{id}</Typography.Text>
             </Link>
           );
         }
-        return <Text strong>#{id}</Text>;
+        return <Typography.Text strong>#{id}</Typography.Text>;
       },
     },
     {
@@ -139,12 +143,24 @@ export default function CompanyDashboard() {
     {
       title: "สถานะ",
       dataIndex: "status",
-      render: (status: Status) => {
+      render: (status: MobileDentalStatus) => {
         const config = statusConfig[status];
         return <Tag color={config.color}>{config.label}</Tag>;
       },
     },
-  ];
+  ], []);
+
+  const handleRowClick = useCallback((record: MobileDental) => {
+    const tabMap: Record<string, string> = {
+      request: "1",
+      request_cancel: "1",
+      scheduled: "2",
+      completed: "3",
+      cancel: "3",
+    };
+    const tab = tabMap[record.status] || "1";
+    router.push(`/company/status?tab=${tab}&highlight=${record.mobile_dental_id}`);
+  }, [router]);
 
   return (
     <div style={{ padding: 24 }}>
@@ -155,7 +171,33 @@ export default function CompanyDashboard() {
             <TeamOutlined style={{ marginRight: 8 }} />
             หน้าหลักหน่วยงานภายนอก
           </Title>
-          <Text type="secondary">ภาพรวมการขอออกหน่วยตรวจฟัน</Text>
+          <Space style={{ color: '#8c8c8c', marginTop: 8 }} size="middle">
+            <Text type="secondary">ภาพรวมการขอออกหน่วยตรวจฟัน</Text>
+            {currentTime && (
+              <>
+                <Divider orientation="vertical" />
+                <Space size="small">
+                  <CalendarOutlined />
+                  <Text type="secondary">{formattedDate}</Text>
+                </Space>
+                <Space size="small">
+                  <ClockCircleOutlined />
+                  <Text type="secondary" style={{ fontFamily: 'monospace' }}>{formattedTime} น.</Text>
+                </Space>
+              </>
+            )}
+          </Space>
+        </Col>
+        <Col>
+          <Card variant="borderless" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)', minWidth: '180px' }}>
+            <Statistic
+              title={<Text type="secondary" style={{ fontSize: '12px', fontWeight: 'bold' }}>คำขอทั้งหมด</Text>}
+              value={totalRequests}
+              prefix={<FileTextOutlined style={{ color: '#1677ff' }} />}
+              loading={loading}
+              styles={{ content: { fontWeight: 'bold' } }}
+            />
+          </Card>
         </Col>
       </Row>
 
@@ -182,28 +224,11 @@ export default function CompanyDashboard() {
             <Col xs={24} sm={8}>
               <Card
                 hoverable
+                onClick={() => router.push("/company/status?tab=1")}
                 style={{
                   borderRadius: 16,
                   background:
-                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
-                }}
-              >
-                <Statistic
-                  title="คำขอทั้งหมด"
-                  value={totalRequests}
-                  prefix={<FileTextOutlined />}
-                  loading={loading}
-                />
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={8}>
-              <Card
-                hoverable
-                style={{
-                  borderRadius: 16,
-                  background:
-                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                    "linear-gradient(135deg, #fffbe6 0%, #fff 100%)",
                 }}
               >
                 <Statistic
@@ -219,10 +244,11 @@ export default function CompanyDashboard() {
             <Col xs={24} sm={8}>
               <Card
                 hoverable
+                onClick={() => router.push("/company/status?tab=2")}
                 style={{
                   borderRadius: 16,
                   background:
-                    "linear-gradient(135deg, #e6f7ff 0%, #fff 100%)",
+                    "linear-gradient(135deg, #f6ffed 0%, #fff 100%)",
                 }}
               >
                 <Statistic
@@ -230,6 +256,26 @@ export default function CompanyDashboard() {
                   value={approvedRequests}
                   prefix={<CheckCircleOutlined />}
                   styles={{ content: { color: "#52c41a" } }}
+                  loading={loading}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={8}>
+              <Card
+                hoverable
+                onClick={() => router.push("/company/status?tab=3")}
+                style={{
+                  borderRadius: 16,
+                  background:
+                    "linear-gradient(135deg, #f0f0f0 0%, #fff 100%)",
+                }}
+              >
+                <Statistic
+                  title="ประวัติอื่นๆ"
+                  value={historyRequests}
+                  prefix={<HistoryOutlined />}
+                  styles={{ content: { color: "#8c8c8c" } }}
                   loading={loading}
                 />
               </Card>
@@ -253,8 +299,9 @@ export default function CompanyDashboard() {
                   rowKey="mobile_dental_id"
                   pagination={false}
                   loading={loading}
-                  onRow={() => ({
-                    onClick: () => router.push("/company/status"),
+                  sticky={{ offsetHeader: 76 }}
+                  onRow={(record) => ({
+                    onClick: () => handleRowClick(record),
                     style: { cursor: "pointer" },
                   })}
                 />

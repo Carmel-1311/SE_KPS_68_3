@@ -1,14 +1,40 @@
 import { Prisma } from "@prisma/client"
 import { prisma } from "@/utils/prisma"
 import * as map from "@/app/mappers/mobile_dentals.mapper"
-export async function findAllMobileDental(){
-    return prisma.mobile_dental.findMany(map.mobileDentalQuery);
+
+export async function findAllMobileDental(skip: number, limit: number) {
+
+  const [data, total] = await Promise.all([
+    prisma.mobile_dental.findMany({
+      skip,
+      take: limit,
+      ...map.mobileDentalQuery
+    }),
+    prisma.mobile_dental.count()
+  ])
+
+  return { data, total }
 }
 
-export async function findAllByUser(company_id:number ) {
-    return prisma.mobile_dental.findMany(
-        {where: {company_id:company_id},...map.mobileDentalQuery}
-    )
+export async function findAllByUser(
+  userId: number,
+  skip: number,
+  limit: number
+) {
+
+  const [data, total] = await Promise.all([
+    prisma.mobile_dental.findMany({
+      where: { company_id: userId },
+      skip,
+      take: limit,
+      ...map.mobileDentalQuery
+    }),
+    prisma.mobile_dental.count({
+      where: { company_id: userId }
+    })
+  ])
+
+  return { data, total }
 }
 
 export async function findMobileDentalById(id: number) {

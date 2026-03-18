@@ -1,21 +1,11 @@
+import { paths } from "../../types/api"
 import { Prisma } from "@prisma/client"
 
-export type CompanyListResponse = {
-  id: number
-  contect_name: string
-  office_name: string
-  phone: string
-  address: string
-  email: string
-}
+export type CompanyResponse = NonNullable<
+  paths["/api/company/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["data"]
+>
 
-export type CompanyResponse = {
-  contect_name: string
-  office_name: string
-  phone: string
-  address: string
-  email: string
-}
+export type CompanyListResponse = CompanyResponse
 
 export const companyListQuery =
   Prisma.validator<Prisma.companyDefaultArgs>()({
@@ -47,7 +37,6 @@ export type CompanyDetail = Prisma.companyGetPayload<typeof companyDetailQuery>
 export const companyMap = {
   toResponseListItem(data: CompanyList): CompanyListResponse {
     return {
-      id: data.company_id,
       contect_name: data.contect_name ?? "",
       office_name: data.office_name ?? "",
       phone: data.phone ?? "",

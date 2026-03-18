@@ -6,11 +6,21 @@ export async function findAllMedicalRecords() {
     return prisma.medical_records.findMany(map.medicalRecordQuery)
 }
 
-export async function findMedicalRecordsByPatientId(patient_id: number) {
-  return prisma.medical_records.findMany({
-    where: { patient_id: patient_id },
-    ...map.medicalRecordQuery
-  })
+export async function findMedicalRecordsByPatientId(patient_id: number,skip: number,
+  limit: number) {
+  const [data, total] = await Promise.all([
+    prisma.medical_records.findMany({
+      where: { patient_id },
+      skip,
+      take: limit,
+      ...map.medicalRecordQuery
+    }),
+    prisma.medical_records.count({
+      where: { patient_id }
+    })
+  ])
+
+  return { data, total }
 }
 export async function createMedicalRecord(data: Prisma.medical_recordsCreateInput) {
     return prisma.medical_records.create({ data, ...map.medicalRecordQuery })

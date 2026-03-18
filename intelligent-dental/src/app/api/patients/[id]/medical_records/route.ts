@@ -10,8 +10,13 @@ export async function GET(request: Request,{ params }: { params: Promise<{ id: s
         const medical_id = parseInt(id);
         const user = getCurrentUser()
         requireRole(user.role, ["patient", "dentist"])
-        const data = await medicalService.getAllInspectionRecordByUser(user,medical_id)
-        return res.ok(data)
+
+        const { searchParams } = new URL(request.url)
+        const page = Number(searchParams.get("page")) || 1
+        const limit = Number(searchParams.get("limit")) || 10
+
+        const data = await medicalService.getAllInspectionRecordByUser(user,medical_id,page,limit)
+        return res.okList(data.data,{page,limit,total:data.total})
     } catch (err: any) {
         return handleError(err)
     }

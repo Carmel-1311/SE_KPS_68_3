@@ -354,7 +354,15 @@
                   "citizen_id"
                 ]
               },
-              "examples": {}
+              "example": {
+                "first_name": "สาหญิง",
+                "last_name": "สุขใจ",
+                "birthday": "2000-01-20",
+                "allergy": "Penicillin",
+                "email": "somying_new@example.com",
+                "phone": "0812345678",
+                "status": "active"
+              }
             }
           },
           "required": true
@@ -659,7 +667,26 @@
         "tags": [
           "Root/API/Patients"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -748,6 +775,9 @@
                           "status"
                         ]
                       }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/meta"
                     }
                   },
                   "required": [
@@ -831,7 +861,7 @@
               "example": {
                 "patient_id": 35,
                 "appointment_date": "2026-03-09T07:16:56.392Z",
-                "appointment_time": "2026-03-09T07:16:56.392Z",
+                "appointment_time": "09:30",
                 "type": "culpa do aliquip est"
               }
             }
@@ -1810,7 +1840,15 @@
                   "role"
                 ]
               },
-              "examples": {}
+              "example": {
+                "first_name": "Suda",
+                "last_name": "dee",
+                "birthday": "1995-08-20",
+                "email": "suda.kaeo@example.com",
+                "phone": "0891234567",
+                "license_number": null,
+                "role": "staff"
+              }
             }
           },
           "required": true
@@ -2207,7 +2245,28 @@
         "tags": [
           "Root/API/Staff"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -2255,6 +2314,30 @@
                         ]
                       },
                       "description": "ข้อมูลที่ส่งคืน"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
                     }
                   },
                   "required": [
@@ -2779,6 +2862,26 @@
             "schema": {
               "type": "integer"
             }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -2823,6 +2926,30 @@
                           "inspection_record_id"
                         ]
                       }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
                     }
                   },
                   "required": [
@@ -2871,6 +2998,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -3515,7 +3643,7 @@
         "security": []
       }
     },
-    "/api/inspection_records": {
+    "/api/patients/{patient_id}/inspection_records": {
       "get": {
         "summary": "inspection_records",
         "deprecated": false,
@@ -3523,7 +3651,38 @@
         "tags": [
           "Root/API/Medical"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "patient_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -3563,117 +3722,29 @@
                           "status"
                         ]
                       }
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ]
-                }
-              }
-            },
-            "headers": {}
-          },
-          "401": {
-            "$ref": "#/components/responses/401 Unauthorized",
-            "description": ""
-          },
-          "403": {
-            "$ref": "#/components/responses/403 Forbidden",
-            "description": ""
-          },
-          "500": {
-            "$ref": "#/components/responses/500 Internal Server Error",
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
-      "post": {
-        "summary": "inspection_records",
-        "deprecated": false,
-        "description": "",
-        "tags": [
-          "Root/API/Medical"
-        ],
-        "parameters": [
-          {
-            "name": "Content-Type",
-            "in": "header",
-            "description": "",
-            "required": false,
-            "example": "application/json",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "date": {
-                    "type": "string",
-                    "format": "date"
-                  },
-                  "history": {
-                    "type": "string"
-                  },
-                  "status": {
-                    "type": "string"
-                  },
-                  "patient_id": {
-                    "type": "integer"
-                  }
-                },
-                "required": [
-                  "date",
-                  "history",
-                  "status",
-                  "patient_id"
-                ]
-              },
-              "examples": {}
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
+                    },
+                    "meta": {
                       "type": "object",
                       "properties": {
-                        "id": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
                           "type": "integer",
-                          "description": "ID"
+                          "maximum": 20
                         },
-                        "date": {
-                          "type": "string",
-                          "format": "date"
+                        "total": {
+                          "type": "integer"
                         },
-                        "history": {
-                          "type": "string"
-                        },
-                        "status": {
-                          "type": "string"
+                        "total_pages": {
+                          "type": "integer"
                         }
                       },
                       "required": [
-                        "id",
-                        "date",
-                        "history",
-                        "status"
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
                       ]
                     }
                   },
@@ -3685,24 +3756,12 @@
             },
             "headers": {}
           },
-          "400": {
-            "$ref": "#/components/responses/400 Bad Request",
-            "description": ""
-          },
           "401": {
             "$ref": "#/components/responses/401 Unauthorized",
             "description": ""
           },
           "403": {
             "$ref": "#/components/responses/403 Forbidden",
-            "description": ""
-          },
-          "409": {
-            "$ref": "#/components/responses/409 Conflict",
-            "description": ""
-          },
-          "422": {
-            "$ref": "#/components/responses/422 Unprocessable Entity",
             "description": ""
           },
           "500": {
@@ -3731,6 +3790,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -3915,6 +3975,205 @@
         ]
       }
     },
+    "/api/inspection_records": {
+      "post": {
+        "summary": "inspection_records",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Medical"
+        ],
+        "parameters": [
+          {
+            "name": "Content-Type",
+            "in": "header",
+            "description": "",
+            "required": false,
+            "example": "application/json",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "history": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string"
+                  },
+                  "patient_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "date",
+                  "history",
+                  "status",
+                  "patient_id"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "ID"
+                        },
+                        "date": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "history": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "date",
+                        "history",
+                        "status"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "422": {
+            "$ref": "#/components/responses/422 Unprocessable Entity",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/company": {
+      "get": {
+        "summary": "company",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "contect_name": {
+                            "type": "string"
+                          },
+                          "office_name": {
+                            "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "email": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "contect_name",
+                          "office_name",
+                          "phone",
+                          "email"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": []
+      }
+    },
     "/api/company/{id}": {
       "get": {
         "summary": "company",
@@ -3930,7 +4189,7 @@
             "description": "",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             }
           }
         ],
@@ -3943,31 +4202,7 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "object",
-                      "properties": {
-                        "contect_name": {
-                          "type": "string"
-                        },
-                        "office_name": {
-                          "type": "string"
-                        },
-                        "phone": {
-                          "type": "string"
-                        },
-                        "address": {
-                          "type": "string"
-                        },
-                        "email": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "contect_name",
-                        "office_name",
-                        "phone",
-                        "address",
-                        "email"
-                      ]
+                      "$ref": "#/components/schemas/company"
                     }
                   }
                 }
@@ -4003,7 +4238,28 @@
         "tags": [
           "Root/API/Company"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -4053,6 +4309,30 @@
                           "address"
                         ]
                       }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
                     }
                   },
                   "required": [
@@ -4106,12 +4386,16 @@
                   "address": {
                     "type": "string",
                     "description": "สถานที่"
+                  },
+                  "company_id": {
+                    "type": "number"
                   }
                 },
                 "required": [
                   "date",
                   "count",
-                  "address"
+                  "address",
+                  "company_id"
                 ]
               },
               "examples": {}
@@ -4398,7 +4682,7 @@
         ]
       }
     },
-    "/api/mobile-dental/{id}/patients": {
+    "/api/mobile_dentals/{id}/patients": {
       "post": {
         "summary": "patient_in_mobile",
         "deprecated": false,
@@ -4412,6 +4696,26 @@
             "in": "path",
             "description": "",
             "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
             "schema": {
               "type": "integer"
             }
@@ -4439,6 +4743,9 @@
                     },
                     "idcard": {
                       "type": "string"
+                    },
+                    "mobile_id": {
+                      "type": "integer"
                     }
                   },
                   "required": [
@@ -4446,7 +4753,8 @@
                     "last_name",
                     "birthday",
                     "phone",
-                    "idcard"
+                    "idcard",
+                    "mobile_id"
                   ]
                 }
               },
@@ -4476,14 +4784,42 @@
                           },
                           "status": {
                             "type": "string"
+                          },
+                          "id": {
+                            "type": "integer"
                           }
                         },
                         "required": [
                           "patient_id",
                           "name",
-                          "status"
+                          "status",
+                          "id"
                         ]
                       }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 50
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
                     }
                   },
                   "required": [
@@ -4534,6 +4870,27 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
             "schema": {
               "type": "integer"
             }
@@ -4552,6 +4909,9 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
                           "patient_id": {
                             "type": "integer"
                           },
@@ -4560,14 +4920,47 @@
                           },
                           "status": {
                             "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "idcard": {
+                            "type": "string"
                           }
                         },
                         "required": [
                           "patient_id",
                           "name",
-                          "status"
+                          "status",
+                          "phone",
+                          "idcard",
+                          "id"
                         ]
                       }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
                     }
                   },
                   "required": [
@@ -5023,6 +5416,61 @@
           "count",
           "status",
           "address"
+        ]
+      },
+      "company": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "contect_name": {
+            "type": "string"
+          },
+          "office_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contect_name",
+          "office_name",
+          "phone",
+          "address",
+          "email",
+          "id"
+        ]
+      },
+      "meta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 20
+          },
+          "total": {
+            "type": "integer"
+          },
+          "total_pages": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "total_pages"
         ]
       }
     },

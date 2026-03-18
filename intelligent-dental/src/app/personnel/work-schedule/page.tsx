@@ -1,16 +1,16 @@
 ﻿'use client';
 
-import { Button, Card, Space, Table, Typography, Breadcrumb, Tag } from "antd";
+import { Button, Card, Space, Table, Typography, Breadcrumb, Tag, Select } from "antd";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { HomeOutlined, CalendarOutlined, PlusOutlined, ClockCircleOutlined, UserOutlined, IdcardOutlined, EditOutlined } from "@ant-design/icons";
+import { HomeOutlined, CalendarOutlined, PlusOutlined, ClockCircleOutlined, UserOutlined, IdcardOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
 interface WorkScheduleType {
   id: number;
   staff_id: number;
-  date: string; // 🌟 ตรวจสอบ GET: ใช้ date ตรงตาม API
+  date: string;
   start_time: string;
   end_time: string;
   is_active: boolean;
@@ -67,38 +67,43 @@ const DAYS = [
 
 export default function DentistWorkSchedulePage() {
   const router = useRouter();
-  const [data, setData] = useState<WorkScheduleType[]>([]);
+  const [allData, setAllData] = useState<WorkScheduleType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       try {
-        setTimeout(async () => {
-          const storedData = localStorage.getItem('work_schedules');
-          if (storedData) {
-            setData(JSON.parse(storedData));
-          } else {
-            setData(mockApi.data);
-            localStorage.setItem('work_schedules', JSON.stringify(mockApi.data));
-          }
-          setLoading(false);
-        }, 500);
-      } catch (error) {
+        const storedData = localStorage.getItem('work_schedules');
+        if (storedData) {
+          setAllData(JSON.parse(storedData));
+        } else {
+          setAllData(mockApi.data);
+          localStorage.setItem('work_schedules', JSON.stringify(mockApi.data));
+        }
+      } finally {
         setLoading(false);
       }
     };
     loadData();
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        loadData();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  const staffOptions = useMemo(() => {
+    const uniqueStaff = Array.from(new Set(allData.map(item => item.staff_id)));
+    return uniqueStaff.map(id => {
+      const staffInfo = allData.find(item => item.staff_id === id)?.staff;
+      return {
+        value: id,
+        label: staffInfo ? `ทพ. ${staffInfo.first_name} ${staffInfo.last_name}` : `รหัสแพทย์: ${id}`
+      };
+    });
+  }, [allData]);
+
+  const filteredData = useMemo(() => {
+    if (!selectedStaffId) return [];
+    return allData.filter(item => item.staff_id === selectedStaffId);
+  }, [allData, selectedStaffId]);
 
   const tableData = useMemo(() => {
     const matrix: Record<string, any[]> = {};
@@ -106,8 +111,7 @@ export default function DentistWorkSchedulePage() {
       matrix[d.key] = Array(TIME_SLOTS.length).fill(null).map(() => ({ type: 'empty', span: 1 }));
     });
 
-    data.forEach(sched => {
-      // 🌟 ตรวจสอบ GET: อ้างอิงด้วย sched.date โดยตรง
+    filteredData.forEach(sched => {
       const day = sched.date; 
       if (!day || !matrix[day]) return;
 
@@ -119,9 +123,7 @@ export default function DentistWorkSchedulePage() {
 
       if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
         const span = endIndex - startIndex + 1;
-        
         matrix[day][startIndex] = { type: 'start', schedule: sched, span };
-        
         for (let i = startIndex + 1; i <= endIndex; i++) {
           matrix[day][i] = { type: 'span', schedule: sched, span: 0 };
         }
@@ -135,14 +137,12 @@ export default function DentistWorkSchedulePage() {
       });
       return row;
     });
-  }, [data]);
+  }, [filteredData]);
 
   const getStatusStyles = (isActive: boolean) => {
-    if (isActive) {
-      return { bg: '#e6f7ff', border: '#1890ff', text: '#0050b3', label: 'ลงตรวจ', tagColor: 'blue' };
-    } else {
-      return { bg: '#fff2f0', border: '#ffccc7', text: '#cf1322', label: 'งดตรวจ', tagColor: 'error' };
-    }
+    return isActive 
+      ? { bg: '#e6f7ff', border: '#1890ff', text: '#0050b3', label: 'ลงตรวจ', tagColor: 'blue' }
+      : { bg: '#fff2f0', border: '#ffccc7', text: '#cf1322', label: 'งดตรวจ', tagColor: 'error' };
   };
 
   const columns: any = [
@@ -236,7 +236,6 @@ export default function DentistWorkSchedulePage() {
 
   return (
     <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      
       <Breadcrumb
         style={{ marginBottom: '24px', fontSize: '15px' }}
         items={[
@@ -246,16 +245,28 @@ export default function DentistWorkSchedulePage() {
       />
 
       <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: '16px' }}>
           <Title level={3} style={{ margin: 0 }}>ตารางการทำงาน</Title>
-          <Space>
+          
+          <Space size="middle">
+            <Select
+              showSearch
+              placeholder="🔍 ค้นหารายชื่อทันตแพทย์..."
+              style={{ width: 300 }}
+              optionFilterProp="label"
+              onChange={(value) => setSelectedStaffId(value)}
+              options={staffOptions}
+              allowClear
+              size="large"
+            />
+            
             <Button 
               type="primary" 
               icon={<PlusOutlined />} 
+              size="large"
               onClick={() => router.push('/personnel/work-schedule/create')}
             >
-              เพิ่มวันเวลาการทำงาน
+              เพิ่มเวลาทำงาน
             </Button>
           </Space>
         </div>
@@ -267,8 +278,8 @@ export default function DentistWorkSchedulePage() {
           dataSource={tableData}
           columns={columns}
           bordered={true}
-          style={{ width: '100%' }}
-          scroll={{ x: 1000 }} 
+          scroll={{ x: 1000 }}
+          locale={{ emptyText: selectedStaffId ? "ไม่มีตารางงานสำหรับแพทย์ท่านนี้" : "กรุณาเลือกรายชื่อทันตแพทย์เพื่อดูตารางงาน" }}
         />
       </Card>
     </div>

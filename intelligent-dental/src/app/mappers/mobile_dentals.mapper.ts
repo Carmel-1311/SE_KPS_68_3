@@ -1,6 +1,5 @@
 import { components, paths } from "../../types/api"; // path ไปยังไฟล์ api.ts ของคุณ
 import { Prisma, mobile_dental, company } from "@prisma/client";
-import { toUpdateAppointmentInput } from "./appointment.mapper";
 
 
 export const mobileDentalQuery = {
@@ -27,10 +26,14 @@ export const MobileDentalsMap = {
         return list.map(item => this.toRespons(item));
     },
     toCreateInput(data:CreateMobileDentalsInput):Prisma.mobile_dentalCreateInput{
+        const parsedDate = data.date ? new Date(`${data.date}T00:00:00.000Z`) : null
         return {
-            date: data.date,
+            date: parsedDate,
             count:data.count ?? 0,
-            address:data.address
+            address:data.address,
+            company:{
+                 connect:{company_id:data.company_id,}
+            }
         };
     },
     toUpdateInput(data:UpdateMobileDentalnput):Prisma.mobile_dentalUpdateInput{

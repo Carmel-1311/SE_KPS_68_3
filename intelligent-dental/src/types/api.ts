@@ -177,6 +177,17 @@ export interface paths {
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *       "first_name": "สาหญิง",
+                     *       "last_name": "สุขใจ",
+                     *       "birthday": "2000-01-20",
+                     *       "allergy": "Penicillin",
+                     *       "email": "somying_new@example.com",
+                     *       "phone": "0812345678",
+                     *       "status": "active"
+                     *     }
+                     */
                     "application/json": {
                         first_name: string;
                         last_name: string;
@@ -338,7 +349,10 @@ export interface paths {
         /** appointments */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    page?: number;
+                    limit?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -372,6 +386,7 @@ export interface paths {
                                 medical_record_id: number | null;
                                 inspection_record_id: number | null;
                             }[];
+                            meta?: components["schemas"]["meta"];
                         };
                     };
                 };
@@ -399,7 +414,7 @@ export interface paths {
                      * @example {
                      *       "patient_id": 35,
                      *       "appointment_date": "2026-03-09T07:16:56.392Z",
-                     *       "appointment_time": "2026-03-09T07:16:56.392Z",
+                     *       "appointment_time": "09:30",
                      *       "type": "culpa do aliquip est"
                      *     }
                      */
@@ -814,6 +829,17 @@ export interface paths {
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *       "first_name": "Suda",
+                     *       "last_name": "dee",
+                     *       "birthday": "1995-08-20",
+                     *       "email": "suda.kaeo@example.com",
+                     *       "phone": "0891234567",
+                     *       "license_number": null,
+                     *       "role": "staff"
+                     *     }
+                     */
                     "application/json": {
                         first_name: string;
                         last_name: string;
@@ -1026,7 +1052,12 @@ export interface paths {
         /** work_schedules */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1050,6 +1081,12 @@ export interface paths {
                                 /** Format: time */
                                 end_time: string;
                             }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
                         };
                     };
                 };
@@ -1283,9 +1320,15 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
                 header?: never;
                 path: {
+                    /** @example 1 */
                     patient_id: number;
                 };
                 cookie?: never;
@@ -1307,6 +1350,12 @@ export interface paths {
                                 patient_id: number;
                                 inspection_record_id: number;
                             }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
                         };
                     };
                 };
@@ -1340,6 +1389,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @example 1 */
                     id: number;
                 };
                 cookie?: never;
@@ -1597,7 +1647,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/inspection_records": {
+    "/api/patients/{patient_id}/inspection_records": {
         parameters: {
             query?: never;
             header?: never;
@@ -1607,9 +1657,17 @@ export interface paths {
         /** inspection_records */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
                 header?: never;
-                path?: never;
+                path: {
+                    /** @example 1 */
+                    patient_id: number;
+                };
                 cookie?: never;
             };
             requestBody?: never;
@@ -1629,6 +1687,12 @@ export interface paths {
                                 /** @description status */
                                 status: string;
                             }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
                         };
                     };
                 };
@@ -1638,54 +1702,7 @@ export interface paths {
             };
         };
         put?: never;
-        /** inspection_records */
-        post: {
-            parameters: {
-                query?: never;
-                header?: {
-                    /** @example application/json */
-                    "Content-Type"?: string;
-                };
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** Format: date */
-                        date: string;
-                        history: string;
-                        status: string;
-                        patient_id: number;
-                    };
-                };
-            };
-            responses: {
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: {
-                                /** @description ID */
-                                id: number;
-                                /** Format: date */
-                                date: string;
-                                history: string;
-                                status: string;
-                            };
-                        };
-                    };
-                };
-                400: components["responses"]["400 Bad Request"];
-                401: components["responses"]["401 Unauthorized"];
-                403: components["responses"]["403 Forbidden"];
-                409: components["responses"]["409 Conflict"];
-                422: components["responses"]["422 Unprocessable Entity"];
-                500: components["responses"]["500 Internal Server Error"];
-            };
-        };
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1705,6 +1722,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @example 1 */
                     id: number;
                 };
                 cookie?: never;
@@ -1784,6 +1802,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/inspection_records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** inspection_records */
+        post: {
+            parameters: {
+                query?: never;
+                header?: {
+                    /** @example application/json */
+                    "Content-Type"?: string;
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** Format: date */
+                        date: string;
+                        history: string;
+                        status: string;
+                        patient_id: number;
+                    };
+                };
+            };
+            responses: {
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                /** @description ID */
+                                id: number;
+                                /** Format: date */
+                                date: string;
+                                history: string;
+                                status: string;
+                            };
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                409: components["responses"]["409 Conflict"];
+                422: components["responses"]["422 Unprocessable Entity"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/company": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** company */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                id: string;
+                                contect_name: string;
+                                office_name: string;
+                                phone: string;
+                                email: string;
+                            }[];
+                        };
+                    };
+                };
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                404: components["responses"]["404 Not Found"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/company/{id}": {
         parameters: {
             query?: never;
@@ -1797,7 +1925,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    id: number;
+                    id: string;
                 };
                 cookie?: never;
             };
@@ -1809,13 +1937,7 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            data?: {
-                                contect_name: string;
-                                office_name: string;
-                                phone: string;
-                                address: string;
-                                email: string;
-                            };
+                            data?: components["schemas"]["company"];
                         };
                     };
                 };
@@ -1843,7 +1965,12 @@ export interface paths {
         /** mobile_dentals */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1866,6 +1993,12 @@ export interface paths {
                                 status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
                                 address: string;
                             }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
                         };
                     };
                 };
@@ -1891,6 +2024,7 @@ export interface paths {
                         count: number;
                         /** @description สถานที่ */
                         address: string;
+                        company_id: number;
                     };
                 };
             };
@@ -2016,22 +2150,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/mobile-dental/{mobile_dental_id}/patients": {
+    "/api/mobile_dentals/{id}/patients": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** patient_in_mobiles */
+        get: {
+            parameters: {
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    /** @example 1 */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                id: number;
+                                patient_id: number;
+                                name: string;
+                                status: string;
+                                phone: string;
+                                idcard: string;
+                            }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                409: components["responses"]["409 Conflict"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
         put?: never;
         /** patient_in_mobile */
         post: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @example 0 */
+                    page?: number;
+                    /** @example 0 */
+                    limit?: number;
+                };
                 header?: never;
                 path: {
-                    mobile_dental_id: number;
+                    id: number;
                 };
                 cookie?: never;
             };
@@ -2043,7 +2229,8 @@ export interface paths {
                         birthday: string;
                         phone: string;
                         idcard: string;
-                    };
+                        mobile_id: number;
+                    }[];
                 };
             };
             responses: {
@@ -2057,7 +2244,14 @@ export interface paths {
                                 patient_id: number;
                                 name: string;
                                 status: string;
+                                id: number;
                             }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
                         };
                     };
                 };
@@ -2212,6 +2406,20 @@ export interface components {
             status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
             address: string;
         };
+        company: {
+            id: string;
+            contect_name: string;
+            office_name: string;
+            phone: string;
+            address: string;
+            email: string;
+        };
+        meta: {
+            page: number;
+            limit: number;
+            total: number;
+            total_pages: number;
+        };
     };
     responses: {
         "400 Bad Request": {
@@ -2353,3 +2561,62 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
+
+// Custom additions (kept here per project convention).
+export type AppErrorDefinition = {
+    status: number;
+    code: string;
+    message: string;
+    category: string;
+};
+
+export const staffErrors = {
+    invalidRole: {
+        status: 400,
+        code: "STAFF-001",
+        message: "Invalid role. Allowed values: staff, dentist",
+        category: "VALIDATION",
+    },
+    duplicate: {
+        status: 409,
+        code: "STAFF-002",
+        message: "Staff with this email or phone already exists",
+        category: "CONFLICT",
+    },
+    notFound: {
+        status: 404,
+        code: "STAFF-003",
+        message: "Staff not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;
+
+export const patientErrors = {
+    invalidStatus: {
+        status: 400,
+        code: "PAT-001",
+        message: "Invalid status. Allowed values: active, inactive",
+        category: "VALIDATION",
+    },
+    duplicate: {
+        status: 409,
+        code: "PAT-002",
+        message: "Patient with this email or phone already exists",
+        category: "CONFLICT",
+    },
+    notFound: {
+        status: 404,
+        code: "PAT-003",
+        message: "Patient not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;
+
+export const companyErrors = {
+    notFound: {
+        status: 404,
+        code: "COMP-001",
+        message: "Company not found",
+        category: "NOT_FOUND",
+    },
+} as const satisfies Record<string, AppErrorDefinition>;

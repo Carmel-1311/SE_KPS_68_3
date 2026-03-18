@@ -153,7 +153,7 @@ export default function EditWorkSchedulePage() {
             <Text type="secondary">รหัสรายการ: {idParam}</Text>
           </div>
           <Popconfirm title="คุณแน่ใจหรือไม่ที่จะยกเลิก/ลบ ตารางงานนี้?" onConfirm={handleDelete} okText="ยืนยัน" cancelText="ปิด" okButtonProps={{ danger: true }}>
-            <Button danger icon={<DeleteOutlined />}>ลบตารางงาน</Button>
+            <Button danger icon={<DeleteOutlined />}>ยกเลิกตารางงาน</Button>
           </Popconfirm>
         </div>
 
