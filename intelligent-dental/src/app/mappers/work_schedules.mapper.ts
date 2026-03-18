@@ -22,7 +22,7 @@ export const workScheduleMap = {
       id: data.schedule_id.toString(), // OpenAPI คาดหวังเป็น string
       staff: {
         id: data.staff_id.toString(),
-        name: `${data.staff.first_name} ${data.staff.last_name}`,
+        name: `${data.staff.prefix} ${data.staff.first_name} ${data.staff.last_name}`,
         role: data.staff.role?.toString() || "staff" // กรณี role เป็น enum หรือ string ใน DB
       },
       date: data.date as "Mon" | "Tue" | "Wed" | "Thu" | "Fri" | "Sat" | "Sun",
