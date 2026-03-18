@@ -44,7 +44,7 @@ export async function findMobileDentalById(id: number) {
     })  
 }
 
-export async function createMobileDental(id:number,data: Prisma.mobile_dentalCreateInput) {
+export async function createMobileDental(data: Prisma.mobile_dentalCreateInput) {
     return prisma.mobile_dental.create({ data, ...map.mobileDentalQuery})
 }
 

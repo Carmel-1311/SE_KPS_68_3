@@ -1,8 +1,8 @@
 import { components, paths } from "../../types/api"; // path ไปยังไฟล์ api.ts ของคุณ
 import { Prisma, patient_in_mobile,patient,mobile_dental} from "@prisma/client";
 
-export type PaMobileResponse = paths["/api/mobile_dental/{id}/patients"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
-export type CreatePaMobileInput =  paths["/api/mobile_dental/{id}/patients"]["post"]["requestBody"]["content"]["application/json"];
+export type PaMobileResponse = paths["/api/mobile_dentals/{id}/patients"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
+export type CreatePaMobileInput =  paths["/api/mobile_dentals/{id}/patients"]["post"]["requestBody"]["content"]["application/json"];
 
 export const PaMoMap = {
 
