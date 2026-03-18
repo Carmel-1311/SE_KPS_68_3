@@ -26,8 +26,9 @@ export const MobileDentalsMap = {
         return list.map(item => this.toRespons(item));
     },
     toCreateInput(data:CreateMobileDentalsInput):Prisma.mobile_dentalCreateInput{
+        const parsedDate = data.date ? new Date(`${data.date}T00:00:00.000Z`) : null
         return {
-            date: data.date,
+            date: parsedDate,
             count:data.count ?? 0,
             address:data.address,
             company:{
