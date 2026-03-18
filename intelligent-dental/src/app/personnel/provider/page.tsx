@@ -213,7 +213,7 @@ export default function UserIndexPage() {
       lastName: form.getFieldValue("lastName"),
     });
   };
-
+  const canCreate = role === "patient";
   return (
     <>
 
@@ -280,7 +280,7 @@ export default function UserIndexPage() {
                   </Button>
                 </Form>
               </Col>
-
+              {canCreate  && (
               <Col>
                 <Button
                   type="primary"
@@ -290,6 +290,7 @@ export default function UserIndexPage() {
                   เพิ่มข้อมูลผู้ใช้
                 </Button>
               </Col>
+            )}
             </Row>
             {/* TABLE */}
 
