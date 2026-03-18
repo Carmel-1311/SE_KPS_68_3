@@ -3,6 +3,7 @@ import * as map from "@/app/mappers/appointment.mapper"
 import { AppError } from "@/utils/AppError"
 import { AppointmentResponseDTO, CreateAppointmentDTO, UpdateAppointmentDTO } from "@/dtos/appointment.dto"
 import { getFreeDentist } from "./dentistService"
+import { ForbiddenError } from "@/lib/permissions"
 
 export async function getAppointmentsForUser(
   user: { id: number, role: string },
@@ -89,6 +90,14 @@ export async function deleteAppointment(id: number,
 
     if (!appointment) {
         throw new AppError(404, "APPT-001", "Appointment not found", "NOT_FOUND")
+    }
+
+    if (user.role === "patient" && appointment.patient_id !== user.id) {
+        throw new ForbiddenError()
+    }
+
+    if (user.role === "dentist" && appointment.staff_id !== user.id) {
+        throw new ForbiddenError()
     }
 
     await repo.deleteAppointment(id)

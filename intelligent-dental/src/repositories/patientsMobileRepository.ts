@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client"
-import * as map from "@/app/mappers/patientsMobile.mapper"
 import { prisma } from "@/utils/prisma"
 
 
@@ -15,15 +14,13 @@ export async function findPaMoByMobileId(
       skip,
       take: limit,
       include: {
-        patient: true,
-        mobile_dental: true
+        patient: true
       }
     }),
     prisma.patient_in_mobile.count({
       where: { mobile_dental_id }
     })
   ])
-
   return { data, total }
 }
 

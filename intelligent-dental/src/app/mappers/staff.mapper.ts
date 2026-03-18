@@ -1,17 +1,16 @@
+import { components, paths } from "../../types/api"
 import { Prisma, role_staff } from "@prisma/client"
 
-export type StaffListResponse = {
-  id: number
-  name: string
-  email: string
-  role: string
-}
+export type StaffListResponse =
+  paths["/api/staff"]["get"]["responses"]["200"]["content"]["application/json"]["data"][number]
 
-export type StaffResponse = {
-  id: number
-  name: string
-  email: string
-}
+export type StaffResponse = components["schemas"]["staff"]
+
+export type CreateStaffInput =
+  paths["/api/staff"]["post"]["requestBody"]["content"]["application/json"]
+
+export type UpdateStaffInput =
+  paths["/api/staff/{id}"]["put"]["requestBody"]["content"]["application/json"]
 
 export const staffListQuery =
   Prisma.validator<Prisma.staffDefaultArgs>()({
@@ -32,7 +31,11 @@ export const staffDetailQuery =
       staff_id: true,
       first_name: true,
       last_name: true,
-      email: true
+      email: true,
+      phone: true,
+      birthday: true,
+      license_number: true,
+      role: true
     }
   })
 
@@ -44,7 +47,7 @@ export const staffMap = {
       id: data.staff_id,
       name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
       email: data.email ?? "",
-      role: data.role ?? ""
+      role: (data.role ?? "staff") as StaffListResponse["role"]
     }
   },
 
@@ -56,45 +59,34 @@ export const staffMap = {
     return {
       id: data.staff_id,
       name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
-      email: data.email ?? ""
+      email: data.email ?? "",
+      phone: data.phone ?? "",
+      birthday: data.birthday ? data.birthday.toISOString().slice(0, 10) : "",
+      license_number: data.license_number ?? null,
+      role: (data.role ?? "staff") as StaffResponse["role"]
     }
   },
 
-  toCreateInput(data: {
-    first_name: string
-    last_name: string
-    birthday: Date
-    email: string
-    phone: string
-    license_number: string | null
-    role: string
-  }): Prisma.staffCreateInput {
+  toCreateInput(data: CreateStaffInput): Prisma.staffCreateInput {
     return {
       first_name: data.first_name,
       last_name: data.last_name,
-      birthday: data.birthday,
+      birthday: new Date(data.birthday),
       email: data.email,
       phone: data.phone,
-      license_number: data.license_number,
+      license_number: data.license_number ?? null,
       role: data.role as role_staff
     }
   },
 
-  toUpdateInput(data: {
-    first_name: string
-    last_name: string
-    birthday: Date
-    email: string
-    phone: string
-    license_number: string | null
-  }): Prisma.staffUpdateInput {
+  toUpdateInput(data: UpdateStaffInput): Prisma.staffUpdateInput {
     return {
       first_name: data.first_name,
       last_name: data.last_name,
-      birthday: data.birthday,
+      birthday: new Date(data.birthday),
       email: data.email,
       phone: data.phone,
-      license_number: data.license_number
+      license_number: data.license_number ?? null
     }
   }
 }
