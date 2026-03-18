@@ -29,7 +29,10 @@ export const MobileDentalsMap = {
         return {
             date: data.date,
             count:data.count ?? 0,
-            address:data.address
+            address:data.address,
+            company:{
+                 connect:{company_id:data.company_id,}
+            }
         };
     },
     toUpdateInput(data:UpdateMobileDentalnput):Prisma.mobile_dentalUpdateInput{
