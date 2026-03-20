@@ -43,6 +43,7 @@ export default function LoginPage() {
         localStorage.setItem("auth_token", result?.data?.token || "");
         localStorage.setItem("account_role", result?.data?.role || "");
         localStorage.setItem("account_id", String(result?.data?.account_id || ""));
+        localStorage.setItem("patient_id", String(result?.data?.patient_id || ""));
         const firstName = result?.data?.first_name || "";
         const lastName = result?.data?.last_name || "";
         const fullName = `${firstName} ${lastName}`.trim();

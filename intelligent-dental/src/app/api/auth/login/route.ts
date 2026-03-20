@@ -42,14 +42,16 @@ export async function POST(request: Request) {
     let firstName = ""
     let lastName = ""
     let displayName = ""
+    let patientId: number | null = null
 
     if (account.account_role === "patient") {
       const patient = await prisma.patient.findFirst({
         where: { account_id: account.account_id },
-        select: { first_name: true, last_name: true }
+        select: { patient_id: true, first_name: true, last_name: true }
       })
       firstName = patient?.first_name ?? ""
       lastName = patient?.last_name ?? ""
+      patientId = patient?.patient_id ?? null
     } else if (account.account_role === "staff" || account.account_role === "doctor") {
       const staff = await prisma.staff.findFirst({
         where: { account_id: account.account_id },
@@ -75,6 +77,7 @@ export async function POST(request: Request) {
       {
         data: {
           account_id: account.account_id,
+          patient_id: patientId,
           username: account.username ?? account.email ?? "",
           role,
           token: randomUUID(),

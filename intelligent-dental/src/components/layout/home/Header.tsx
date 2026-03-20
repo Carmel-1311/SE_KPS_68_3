@@ -47,6 +47,7 @@ export default function HomeHeader() {
       localStorage.removeItem("auth_token");
       localStorage.removeItem("account_role");
       localStorage.removeItem("account_id");
+      localStorage.removeItem("patient_id");
       localStorage.removeItem("account_name");
       localStorage.removeItem("account_username");
     }

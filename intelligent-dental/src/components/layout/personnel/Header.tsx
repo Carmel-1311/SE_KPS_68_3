@@ -4,18 +4,19 @@ import { ThemeWebColor } from "@/app/utils/constants";
 import { Layout, Flex } from "antd";
 import { LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 
 const { Header } = Layout;
 
 export default function PersonnelHeader() {
   const router = useRouter();
+  const [displayName, setDisplayName] = useState("ผู้ใช้");
 
-  const user = {
-    firstname: "Personnel",
-    lastname: "User",
-  };
-
-  const displayName = `${user.firstname} ${user.lastname}`;
+  useEffect(() => {
+    const name = getAccountName() || getAccountUsername();
+    if (name) setDisplayName(name);
+  }, []);
 
   return (
     <Header
