@@ -1,18 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { withAuthHeaders } from "@/app/utils/auth.client";
-
-export type UserProfile = {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  birthday: string;
-  allergy: string | null;
-};
-
-type ApiResponse<T> = {
-  data: T;
-};
+import type { ApiResponse, User } from "@/types/user";
 
 const getPatientId = () => {
   if (typeof window === "undefined") return null;
@@ -23,8 +11,8 @@ const getPatientId = () => {
   return parsed;
 };
 
-export function usePatientProfile() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+export function useUser() {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,11 +30,11 @@ export function usePatientProfile() {
       const response = await fetch(`/api/patients/${patientId}`, {
         headers: withAuthHeaders()
       });
-      const result = (await response.json()) as ApiResponse<UserProfile>;
+      const result = (await response.json()) as ApiResponse<User>;
       if (!response.ok) {
         throw new Error((result as { message?: string })?.message || "โหลดข้อมูลไม่สำเร็จ");
       }
-      setProfile(result.data);
+      setUser(result.data);
     } catch (err) {
       const message = err instanceof Error ? err.message : "โหลดข้อมูลไม่สำเร็จ";
       setError(message);
@@ -60,10 +48,10 @@ export function usePatientProfile() {
   }, [fetchProfile]);
 
   return {
-    profile,
+    user,
     loading,
     error,
     refresh: fetchProfile,
-    setProfile
+    setUser
   };
 }

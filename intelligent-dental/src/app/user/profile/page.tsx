@@ -17,8 +17,9 @@ import {
   message,
 } from "antd";
 import { EditOutlined } from "@ant-design/icons";
-import { usePatientProfile, type UserProfile } from "@/hook/usePatientProfile";
+import { useUser } from "@/hook/useUser";
 import { withAuthHeaders } from "@/app/utils/auth.client";
+import type { User } from "@/types/user";
 
 const thaiMonthsShort = [
   "ม.ค.",
@@ -43,9 +44,9 @@ const formatThaiDate = (dateValue: string) => {
 };
 
 function UserForm() {
-  const [form] = Form.useForm<UserProfile>();
-  const { profile, loading, error, setProfile } = usePatientProfile();
-  const [formData, setFormData] = useState<UserProfile | null>(null);
+  const [form] = Form.useForm<User>();
+  const { user, loading, error, setUser } = useUser();
+  const [formData, setFormData] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -60,11 +61,11 @@ function UserForm() {
   };
 
   useEffect(() => {
-    if (profile) {
-      setFormData(profile);
-      form.setFieldsValue({ allergy: profile.allergy ?? "" });
+    if (user) {
+      setFormData(user);
+      form.setFieldsValue({ allergy: user.allergy ?? "" });
     }
-  }, [form, profile]);
+  }, [form, user]);
 
   useEffect(() => {
     if (error) {
@@ -123,7 +124,7 @@ function UserForm() {
       });
 
       const result = (await response.json()) as {
-        data?: UserProfile;
+        data?: User;
         error?: { message?: string };
         message?: string;
       };
@@ -133,7 +134,7 @@ function UserForm() {
 
       const updated = result.data ?? { ...formData, allergy };
       setFormData(updated);
-      setProfile(updated);
+      setUser(updated);
       setIsEditing(false);
       showNotification("success", "ข้อมูลได้รับการบันทึกเรียบร้อย");
     } catch (error) {
@@ -149,9 +150,9 @@ function UserForm() {
   };
 
   const handleCancel = () => {
-    if (profile) {
-      setFormData(profile);
-      form.setFieldsValue({ allergy: profile.allergy ?? "" });
+    if (user) {
+      setFormData(user);
+      form.setFieldsValue({ allergy: user.allergy ?? "" });
     }
     setIsEditing(false);
   };
