@@ -24,13 +24,11 @@ export async function findPatientDuplicate(email: string, phone: string, exclude
       ...(excludeId ? { patient_id: { not: excludeId } } : {}),
       OR: [{ email }, { phone }]
     },
-    select: { patient_id: true }
-  })
-}
-
-export async function getMaxPatientId() {
-  return prisma.patient.aggregate({
-    _max: { patient_id: true }
+    select: {
+      patient_id: true,
+      email: true,
+      phone: true
+    }
   })
 }
 

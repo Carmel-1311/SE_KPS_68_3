@@ -1,9 +1,11 @@
 import { AppError } from "@/utils/AppError"
 import * as res from "@/utils/responseFormatter"
 
+import { Prisma } from "@prisma/client"
 import { ZodError } from "zod"
 
 export function handleError(err: unknown) {
+  console.error(err)
 
   if (err instanceof ZodError) {
     const message = err.issues[0]?.message || "Validation error"
@@ -30,6 +32,17 @@ export function handleError(err: unknown) {
       err.message,
       err.category
     ) }
+
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    if (err.code === "P2002") {
+      return res.error(
+        409,
+        "DB-UNIQUE",
+        "Unique constraint failed",
+        "CONFLICT"
+      )
+    }
+  }
 
     return res.error(
       500,

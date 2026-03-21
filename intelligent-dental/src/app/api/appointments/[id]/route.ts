@@ -39,7 +39,7 @@ export async function DELETE(request: Request,{ params }: { params: Promise<{ id
         const { id } = await params;
         const appointmentId = parseInt(id);
         const user = getCurrentUser()
-        requireRole(user.role, ["staff"])           
+        requireRole(user.role, ["staff", "dentist", "patient"])
         await appointmentService.deleteAppointment(appointmentId, user)
         return res.noContent()
     } catch (err: any) {

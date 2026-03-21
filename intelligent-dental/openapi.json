@@ -354,7 +354,15 @@
                   "citizen_id"
                 ]
               },
-              "examples": {}
+              "example": {
+                "first_name": "สาหญิง",
+                "last_name": "สุขใจ",
+                "birthday": "2000-01-20",
+                "allergy": "Penicillin",
+                "email": "somying_new@example.com",
+                "phone": "0812345678",
+                "status": "active"
+              }
             }
           },
           "required": true
@@ -853,7 +861,7 @@
               "example": {
                 "patient_id": 35,
                 "appointment_date": "2026-03-09T07:16:56.392Z",
-                "appointment_time": "2026-03-09T07:16:56.392Z",
+                "appointment_time": "09:30",
                 "type": "culpa do aliquip est"
               }
             }
@@ -1832,7 +1840,15 @@
                   "role"
                 ]
               },
-              "examples": {}
+              "example": {
+                "first_name": "Suda",
+                "last_name": "dee",
+                "birthday": "1995-08-20",
+                "email": "suda.kaeo@example.com",
+                "phone": "0891234567",
+                "license_number": null,
+                "role": "staff"
+              }
             }
           },
           "required": true
@@ -2982,6 +2998,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -3773,6 +3790,7 @@
             "in": "path",
             "description": "",
             "required": true,
+            "example": 1,
             "schema": {
               "type": "integer"
             }
@@ -4114,6 +4132,9 @@
                           "office_name": {
                             "type": "string"
                           },
+                          "phone": {
+                            "type": "string"
+                          },
                           "email": {
                             "type": "string"
                           }
@@ -4122,6 +4143,7 @@
                           "id",
                           "contect_name",
                           "office_name",
+                          "phone",
                           "email"
                         ]
                       }
@@ -4364,12 +4386,16 @@
                   "address": {
                     "type": "string",
                     "description": "สถานที่"
+                  },
+                  "company_id": {
+                    "type": "number"
                   }
                 },
                 "required": [
                   "date",
                   "count",
-                  "address"
+                  "address",
+                  "company_id"
                 ]
               },
               "examples": {}

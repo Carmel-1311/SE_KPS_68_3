@@ -27,7 +27,7 @@ export default function RequestServicePage() {
 
             const res = await fetch("/api/mobile_dentals", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify(payload)
             });
 

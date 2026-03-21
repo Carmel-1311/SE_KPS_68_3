@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import dayjs from "dayjs";
 import {
   Avatar,
@@ -17,7 +17,9 @@ import {
   message,
 } from "antd";
 import { EditOutlined } from "@ant-design/icons";
-import { mockUserProfile, type UserProfile } from "@/mock/mockUserProfile";
+import { useUser } from "@/hook/useUser";
+import { withAuthHeaders } from "@/app/utils/auth.client";
+import type { User } from "@/types/user";
 
 const thaiMonthsShort = [
   "ม.ค.",
@@ -42,8 +44,9 @@ const formatThaiDate = (dateValue: string) => {
 };
 
 function UserForm() {
-  const [form] = Form.useForm<UserProfile>();
-  const [formData, setFormData] = useState<UserProfile>(mockUserProfile);
+  const [form] = Form.useForm<User>();
+  const { user, loading, error, setUser } = useUser();
+  const [formData, setFormData] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -57,14 +60,31 @@ function UserForm() {
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      setFormData(user);
+      form.setFieldsValue({ allergy: user.allergy ?? "" });
+    }
+  }, [form, user]);
+
+  useEffect(() => {
+    if (error) {
+      messageApi.error(error);
+    }
+  }, [error, messageApi]);
+
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) =>
+      prev
+        ? {
+            ...prev,
+            [name]: value,
+          }
+        : prev,
+    );
   };
 
   const handleEdit = () => {
@@ -80,7 +100,41 @@ function UserForm() {
     setIsSaving(true);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (!formData) {
+        throw new Error("ไม่พบข้อมูลผู้ใช้");
+      }
+
+      const allergy = form.getFieldValue("allergy") ?? "";
+      const [firstName, ...rest] = formData.name.trim().split(" ");
+      const lastName = rest.join(" ");
+      const response = await fetch(`/api/patients/${formData.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...withAuthHeaders()
+        },
+        body: JSON.stringify({
+          first_name: firstName || formData.name,
+          last_name: lastName,
+          birthday: formData.birthday,
+          allergy,
+          email: formData.email,
+          phone: formData.phone
+        })
+      });
+
+      const result = (await response.json()) as {
+        data?: User;
+        error?: { message?: string };
+        message?: string;
+      };
+      if (!response.ok) {
+        throw new Error(result?.error?.message || result?.message || "บันทึกไม่สำเร็จ");
+      }
+
+      const updated = result.data ?? { ...formData, allergy };
+      setFormData(updated);
+      setUser(updated);
       setIsEditing(false);
       showNotification("success", "ข้อมูลได้รับการบันทึกเรียบร้อย");
     } catch (error) {
@@ -96,13 +150,20 @@ function UserForm() {
   };
 
   const handleCancel = () => {
-    setFormData((prev) => ({
-      ...prev,
-      allergy: mockUserProfile.allergy,
-    }));
-    form.setFieldsValue({ allergy: mockUserProfile.allergy });
+    if (user) {
+      setFormData(user);
+      form.setFieldsValue({ allergy: user.allergy ?? "" });
+    }
     setIsEditing(false);
   };
+
+  if (loading && !formData) {
+    return <Typography.Text>กำลังโหลดข้อมูล...</Typography.Text>;
+  }
+
+  if (!formData) {
+    return <Typography.Text>ไม่พบข้อมูล</Typography.Text>;
+  }
 
   return (
     <>

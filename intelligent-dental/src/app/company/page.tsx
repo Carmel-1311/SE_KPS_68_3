@@ -61,7 +61,7 @@ export default function CompanyDashboard() {
 
         const res = await fetch(
           `/api/mobile_dentals?company_id=${companyId}`,
-          { cache: "no-store" }
+          { cache: "no-store", headers: withAuthHeaders() }
         );
 
         if (!res.ok) throw new Error("fetch failed");

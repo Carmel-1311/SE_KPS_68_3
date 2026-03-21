@@ -82,7 +82,7 @@ function RequestsPageContent() {
 
             const res = await fetch(
                 `/api/mobile_dentals?company_id=${companyId}`,
-                { cache: "no-store" }
+                { cache: "no-store", headers: withAuthHeaders() }
             );
 
             if (!res.ok) throw new Error("Fetch failed");
@@ -131,7 +131,7 @@ function RequestsPageContent() {
 
             const res = await fetch(`/api/mobile_dentals/${id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ status: "request_cancel" }),
             });
 
@@ -153,7 +153,7 @@ function RequestsPageContent() {
 
             const res = await fetch(`/api/mobile_dentals/${id}`, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify({ status: "request" }),
             });
 
