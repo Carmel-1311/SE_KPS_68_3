@@ -26,10 +26,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 
-import { getCurrentCompanyId } from "@/mock/mockUser";
-import { MobileDental } from "@/mock/mockMobileDental";
-
-type MobileDentalStatus = MobileDental["status"];
+import { useMobileDentals, type MobileDental, type MobileDentalStatus } from "@/hook/useMobileDentals";
 
 const { Title, Text } = Typography;
 
@@ -42,42 +39,13 @@ const statusConfig: Record<MobileDentalStatus, { color: string; label: string }>
 };
 
 export default function CompanyDashboard() {
-  const [data, setData] = useState<MobileDental[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading, error } = useMobileDentals();
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const router = useRouter();
 
   useEffect(() => {
-    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const companyId = getCurrentCompanyId();
-
-        const res = await fetch(
-          `/api/mobile_dentals?company_id=${companyId}`,
-          { cache: "no-store", headers: withAuthHeaders() }
-        );
-
-        if (!res.ok) throw new Error("fetch failed");
-
-        const json: { data: MobileDental[] } = await res.json();
-
-        setData(json.data ?? []);
-      } catch (err) {
-        console.error(err);
-        setError("ไม่สามารถโหลดข้อมูลได้");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
   }, []);
 
   const totalRequests = data.length;
@@ -133,7 +101,15 @@ export default function CompanyDashboard() {
     {
       title: "วันที่",
       dataIndex: "date",
-      render: (value?: string) => value ?? "-",
+      render: (value?: string) => {
+        if (!value) return "-";
+        const dateObj = new Date(value);
+        return dateObj.toLocaleDateString("th-TH", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      },
     },
     {
       title: "จำนวนผู้ป่วย",
