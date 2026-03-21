@@ -11,22 +11,13 @@ import {
 } from "antd";
 import { HomeOutlined, UserOutlined } from "@ant-design/icons";
 import { useParams, useRouter } from "next/navigation";
+// import { usePatientById } from "@/hook/usePatientById";
+// import { useCompanyById } from "@/hook/useCompanyById";
+// import { useStaffById } from "@/hook/useStaffById";
 
 type Role = "patient" | "dentist" | "staff" | "company";
 
-interface User {
-    id: number;
-    name?: string;
-    role: Role;
-    phone: string;
-    email?: string;
-    allergy?: string;
-    licenseNumber?: string;
-    position?: string;
-    officeName?: string;
-    contactName?: string;
-    address?: string;
-}
+
 
 export default function ProviderDetailPage() {
     const { Title, Text } = Typography;
@@ -38,41 +29,7 @@ export default function ProviderDetailPage() {
 
     // ===== MOCK DATA =====
 
-    const mockData: Record<Role, User> = {
-        patient: {
-            id: 1,
-            role: "patient",
-            name: "สมชาย ใจดี",
-            phone: "0811111111",
-            email: "patient@test.com",
-            allergy: "Penicillin",
-        },
-        dentist: {
-            id: 2,
-            role: "dentist",
-            name: "สมเกียรติ แพทย์ดี",
-            phone: "0822222222",
-            licenseNumber: "DEN1234",
-        },
-        staff: {
-            id: 3,
-            role: "staff",
-            name: "ศิริพร ดีมาก",
-            phone: "0833333333",
-            position: "ผู้ช่วยทันตแพทย์",
-        },
-        company: {
-            id: 4,
-            role: "company",
-            officeName: "Dental Company",
-            phone: "0999999999",
-            contactName: "สมชาย",
-            address: "กรุงเทพมหานคร",
-            email: "company@test.com",
-        },
-    };
 
-    const user = mockData[role];
 
     const roleLabel = {
         patient: "ผู้ป่วย",

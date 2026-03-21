@@ -28,41 +28,28 @@ import * as Icons from "lucide-react";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
+import { usePatients } from "@/hook/usePatients";
+import { useStaffs } from "@/hook/useStaffs";
+import { useCompany } from "@/hook/useCompany";
+import { paths } from "@/types/api";
 dayjs.locale("th");
 
 type Role = "patient" | "dentist" | "staff" | "company";
 
-interface ApiResponse<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-  };
-}
-
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  role: Role;
-  phone: string;
-  email: string;
-}
 
 export default function UserIndexPage() {
   const { Title } = Typography;
-  const loading = false;
+
   const router = useRouter();
   const [form] = Form.useForm();
 
   const [role, setRole] = useState<Role>("patient");
-  const [users, setUsers] = useState<User[]>([]);
-  const [meta, setMeta] = useState<ApiResponse<User>["meta"]>({
+  const [users, setUsers] = useState<any[]>([]);
+  const [meta, setMeta] = useState({
     page: 1,
     limit: 10,
     total: 0,
+    total_page: 1
   });
 
   const [currentSearch, setCurrentSearch] = useState<{
@@ -70,150 +57,156 @@ export default function UserIndexPage() {
     lastName?: string;
   }>({});
 
-  // ================= MOCK DATA =================
+  const {
+    patients: patients,
+    loading: apiLoading,
+    meta: patientsMeta,
+    refresh: refreshPatients
+  } = usePatients();
 
-  const mockPatients: ApiResponse<User> = {
-    data: [
-      {
-        id: 1,
-        firstName: "สมชาย",
-        lastName: "ใจดี",
-        role: "patient",
-        phone: "0811111111",
-        email: "patient@test.com",
-      },
-    ],
-    meta: { page: 1, limit: 10, total: 1 },
-  };
+  const {
+    staff: staff,
+    loading: apiLoadingStaff,
+    meta: staffMeta,
+    refresh: refreshStaff
+  } = useStaffs();
+  const {
+    company: company,
+    loading: apiLoadingCompany,
+    meta: companyMeta,
+    refresh: refreshCompany
+  } = useCompany();
 
-  const mockStaff: ApiResponse<User> = {
-    data: [
-      {
-        id: 2,
-        firstName: "นพ.",
-        lastName: "สมเกียรติ",
-        role: "dentist",
-        phone: "0822222222",
-        email: "dentist@test.com",
-      },
-      {
-        id: 3,
-        firstName: "ศิริพร",
-        lastName: "ดีมาก",
-        role: "staff",
-        phone: "0833333333",
-        email: "staff@test.com",
-      },
-    ],
-    meta: { page: 1, limit: 10, total: 2 },
-  };
+const loading =
+  role === "patient"
+    ? apiLoading
+    : role === "company"
+    ? apiLoadingCompany
+    : apiLoadingStaff;
 
-  const mockCompany: ApiResponse<User> = {
-    data: [
-      {
-        id: 4,
-        firstName: "Dental",
-        lastName: "Company",
-        role: "company",
-        phone: "0999999999",
-        email: "company@test.com",
-      },
-    ],
-    meta: { page: 1, limit: 10, total: 1 },
-  };
-
-  async function getUsers(role: Role): Promise<ApiResponse<User>> {
-    if (role === "patient") return mockPatients;
-    if (role === "dentist" || role === "staff") return mockStaff;
-    if (role === "company") return mockCompany;
-
-    return { data: [], meta: { page: 1, limit: 10, total: 0 } };
-  }
-
+    
   const loadUsers = async (selectedRole: Role) => {
-    const res = await getUsers(selectedRole);
-    setUsers(res.data);
-    setMeta(res.meta);
+    if (selectedRole === "patient") {
+      setUsers(patients);
+      setMeta(patientsMeta || { page: 1, limit: 10, total: patients.length, total_page: Math.ceil(patients.length / 10) });
+    } else if (selectedRole === "company") {
+      setUsers(company ?? []);
+      setMeta(companyMeta || { page: 1, limit: 10, total: company ? company.length : 0, total_page: company ? Math.ceil(company.length / 10) : 0 });
+    }
+    else {
+      setUsers(staff);
+      setMeta(staffMeta || { page: 1, limit: 10, total: staff.length, total_page: Math.ceil(staff.length / 10) });
+    }
   };
 
   useEffect(() => {
     loadUsers(role);
-  }, [role]);
+  }, [role, patients, staff, company]);
+
+  const [searchText, setSearchText] = useState("");
 
   // ================= FILTER =================
 
-  const filteredUsers = users
-    .filter((u) => {
-      // filter ตาม tab
-      if (role === "dentist") return u.role === "dentist"
-      if (role === "staff") return u.role === "staff"
-      return true
-    })
-    .filter((u) => {
-      // filter search
-      return (
-        (!currentSearch.firstName ||
-          u.firstName.includes(currentSearch.firstName)) &&
-        (!currentSearch.lastName ||
-          u.lastName.includes(currentSearch.lastName))
-      )
-    })
+  const filteredUsers = users.filter((u) => {
+    if (role === "dentist" && u.role !== "dentist") return false;
+    if (role === "staff" && u.role !== "staff") return false;
+
+    if (searchText) {
+      const keyword = searchText.toLowerCase();
+
+      const name =
+        role === "company"
+          ? u.office_name
+          : u.name;
+
+      return name?.toLowerCase().includes(keyword);
+    }
+
+    return true;
+  });
 
   // ================= TABLE =================
+  const getColumns = (): TableProps<any>["columns"] => {
+    if (role === "company") {
+      return [
+        {
+          title: "id",
+          dataIndex: "id",
+        },
+        {
+          title: "ชื่อหน่วยงาน",
+          dataIndex: "office_name",
+        },
+        {
+          title: "อีเมล",
+          dataIndex: "email",
+        },
+        actionColumn,
+      ];
+    }
 
-  const columns: TableProps<User>["columns"] = [
-    {
-      title: "ชื่อ-นามสกุล",
-      render: (_, record) => `${record.firstName} ${record.lastName}`,
-    },
-    {
-      title: "เบอร์โทรศัพท์",
-      dataIndex: "phone",
-    },
-    {
-      title: "อีเมล",
-      dataIndex: "email",
-    },
-    {
-      title: "จัดการ",
-      align: "center",
-      render: (_, record) => (
-        <Space size="middle">
-          <Tooltip title="Detail">
-            <Icons.BookOpenText
-              size={16}
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                router.push(`/personnel/provider/detail/${role}/${record.id}`)
-              }}
-            />
-          </Tooltip>
+    return [
+      {
+        title: "id",
+        dataIndex: "id",
+      },
+      {
+        title: "ชื่อ-นามสกุล",
+        dataIndex: "name",
+      },
+      {
+        title: "อีเมล",
+        dataIndex: "email",
+      },
+      actionColumn,
+    ];
+  };
+  const actionColumn = {
+    title: "จัดการ",
+    align: "center" as const,
+    render: (_: any, record: any) => (
+      <Space size="middle">
+        <Tooltip title="Detail">
+          <Icons.BookOpenText
+            size={16}
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              router.push(`/personnel/provider/detail/${role}/${record.id}`);
+            }}
+          />
+        </Tooltip>
 
-          <Tooltip title="Edit">
-            <Pencil
-              size={16}
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                router.push(`/personnel/provider/edit/${role}/${record.id}`)
-              }}
-            />
-          </Tooltip>
-        </Space>
-      ),
-    },
-  ];
+        <Tooltip title="Edit">
+          <Pencil
+            size={16}
+            style={{ cursor: "pointer" }}
+            onClick={() => {
+              router.push(`/personnel/provider/edit/${role}/${record.id}`);
+            }}
+          />
+        </Tooltip>
+      </Space>
+    ),
+  };
 
   const onPageChange: PaginationProps["onChange"] = (pageNumber) => {
     setMeta({ ...meta, page: pageNumber });
   };
 
+
+
   const onSearch = () => {
-    setCurrentSearch({
-      firstName: form.getFieldValue("firstName"),
-      lastName: form.getFieldValue("lastName"),
-    });
+    setSearchText(form.getFieldValue("search"));
+    setMeta((prev) => ({ ...prev, page: 1 }));
   };
+
+  const paginatedUsers = filteredUsers.slice(
+    (meta.page - 1) * meta.limit,
+    meta.page * meta.limit
+  );
+
   const canCreate = role === "patient";
+
   return (
     <>
 
@@ -252,7 +245,8 @@ export default function UserIndexPage() {
               defaultActiveKey="patient"
               onChange={(key) => {
                 setRole(key as Role);
-                setMeta({ ...meta, page: 1 });
+                setMeta((prev) => ({ ...prev, page: 1 }));
+                setSearchText("");
               }}
               items={[
                 { key: "patient", label: "ผู้ป่วย" },
@@ -266,7 +260,7 @@ export default function UserIndexPage() {
             <Row justify="space-between" align="middle">
               <Col>
                 <Form layout="inline" form={form}>
-                  <Form.Item name="searht">
+                  <Form.Item name="search">
                     <Input
                       placeholder="ค้นหา"
                       allowClear
@@ -280,24 +274,25 @@ export default function UserIndexPage() {
                   </Button>
                 </Form>
               </Col>
-              {canCreate  && (
-              <Col>
-                <Button
-                  type="primary"
-                  icon={<Icons.Plus size={16} />}
-                  onClick={() => router.push(`/personnel/provider/new`)}
-                >
-                  เพิ่มข้อมูลผู้ใช้
-                </Button>
-              </Col>
-            )}
+              {canCreate && (
+                <Col>
+                  <Button
+                    type="primary"
+                    icon={<Icons.Plus size={16} />}
+                    onClick={() => router.push(`/personnel/provider/new`)}
+                  >
+                    เพิ่มข้อมูลผู้ใช้
+                  </Button>
+                </Col>
+              )}
             </Row>
             {/* TABLE */}
 
             <Table
-              columns={columns}
+              columns={getColumns()}
               rowKey="id"
-              dataSource={filteredUsers}
+              dataSource={paginatedUsers}
+              loading={loading}
               pagination={false}
               bordered
               style={{ marginTop: 16 }}
@@ -306,11 +301,12 @@ export default function UserIndexPage() {
             <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
               <Pagination
                 current={meta.page}
-                total={meta.total}
+                total={filteredUsers.length}
                 pageSize={meta.limit}
                 onChange={onPageChange}
               />
             </div>
+
           </Space>
         </Card>
       </div>
