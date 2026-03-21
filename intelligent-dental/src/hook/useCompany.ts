@@ -56,21 +56,6 @@ export function useCompany() {
     }
   }, []);
 
-  const getCompanyById = async (id: string) => {
-  try {
-    const res = await fetch(`/api/company/${id}`, {
-      headers: withAuthHeaders(),
-    });
-
-    const result = await res.json();
-
-    if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
-
-    return result.data;
-  } catch (err) {
-    throw err;
-  }
-};
   // ================= PUT =================
   const updateCompany = async (id: string, payload: any) => {
     try {
