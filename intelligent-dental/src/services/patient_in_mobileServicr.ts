@@ -63,6 +63,40 @@ export async function createPatients(user: { id: number, role: string },list: ma
 
     }
 
-    // ⭐ map response
     return  getAllByMobile(user,list[0].mobile_id,1,10);
   }
+
+export async function updatePatients(
+  user: { id: number, role: string },
+  id: number,
+  body: map.UpdatePaMobileInput
+) {
+
+  const result = await repo.updatePaMoFull(
+    id,
+    map.PaMoMap.toUpdateInput(body)
+  )
+
+  return getAllByMobile(user, result.mobile_dental_id, 1, 10)
+}
+
+export async function deletePatients(
+  user: { id: number; role: string },
+  id: number
+) {
+
+  const existing = await repo.findById(id)
+
+  if (!existing) {
+    throw new AppError(
+      404,
+      "PAMO-404",
+      "patient_in_mobile not found",
+      "NOT_FOUND"
+    )
+  }
+
+  await repo.deletePaMo(id)
+
+  return getAllByMobile(user, existing.mobile_dental_id, 1, 10)
+}

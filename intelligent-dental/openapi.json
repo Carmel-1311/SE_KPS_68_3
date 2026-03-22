@@ -1850,7 +1850,7 @@
         "security": []
       }
     },
-    "/api/staff": {
+    "/api/staffs": {
       "get": {
         "summary": "staffs",
         "deprecated": false,
@@ -1937,7 +1937,78 @@
             "bearer": []
           }
         ]
-      },
+      }
+    },
+    "/api/staffs/{id}": {
+      "get": {
+        "summary": "staff",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/staff"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/staff": {
       "post": {
         "summary": "staff",
         "deprecated": false,
@@ -2084,72 +2155,6 @@
       }
     },
     "/api/staff/{id}": {
-      "get": {
-        "summary": "staff",
-        "deprecated": false,
-        "description": "",
-        "tags": [
-          "Root/API/Staff"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/staff"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {}
-          },
-          "400": {
-            "$ref": "#/components/responses/400 Bad Request",
-            "description": ""
-          },
-          "401": {
-            "$ref": "#/components/responses/401 Unauthorized",
-            "description": ""
-          },
-          "403": {
-            "$ref": "#/components/responses/403 Forbidden",
-            "description": ""
-          },
-          "404": {
-            "$ref": "#/components/responses/404 Not Found",
-            "description": ""
-          },
-          "500": {
-            "$ref": "#/components/responses/500 Internal Server Error",
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
       "put": {
         "summary": "staff",
         "deprecated": false,
@@ -5233,7 +5238,7 @@
         ]
       }
     },
-    "/api/patient_in_mobile/{id}": {
+    "/api/mobile_dentals/{mobile_id}/patients/{id}": {
       "put": {
         "summary": "patient_in_mobile",
         "deprecated": false,
@@ -5242,6 +5247,15 @@
           "Root/API/Company"
         ],
         "parameters": [
+          {
+            "name": "mobile_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
           {
             "name": "id",
             "in": "path",
@@ -5281,11 +5295,6 @@
                   }
                 },
                 "required": [
-                  "first_name",
-                  "last_name",
-                  "birthday",
-                  "phone",
-                  "idcard",
                   "patients_id"
                 ]
               },
@@ -5408,6 +5417,15 @@
           "Root/API/Company"
         ],
         "parameters": [
+          {
+            "name": "mobile_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
           {
             "name": "id",
             "in": "path",
