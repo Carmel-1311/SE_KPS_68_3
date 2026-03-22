@@ -2,8 +2,8 @@ import jwt from "jsonwebtoken"
 
 const SECRET = process.env.JWT_SECRET!
 
-type TokenPayload = {
-  id: number
+export type TokenPayload = {
+  accountId: number
   role: "dentist" | "patient" | "staff" | "company"
 }
 

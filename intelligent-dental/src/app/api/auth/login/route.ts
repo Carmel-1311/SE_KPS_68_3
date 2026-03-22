@@ -104,7 +104,7 @@ export async function POST(request: Request) {
           patient_id: patientId,
           username: account.username ?? account.email ?? "",
           role,
-          token: jwt.sign({ id: userId, role }, secret, { expiresIn: "7d" }),
+          token: jwt.sign({ accountId: account.account_id, role }, secret, { expiresIn: "7d" }),
           first_name: firstName,
           last_name: lastName,
           display_name: displayName
