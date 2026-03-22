@@ -43,3 +43,44 @@ export const patientRepository = {
   }
 
 };
+
+export async function updatePaMoFull(
+  id: number,
+  data: {
+    pamo: Prisma.patient_in_mobileUpdateInput
+    patient: Prisma.patientUpdateInput
+  }
+) {
+  return prisma.$transaction(async (tx) => {
+
+    const pamo = await tx.patient_in_mobile.update({
+      where: { patient_in_mobile_id: id },
+      data: data.pamo
+    })
+
+    if (Object.keys(data.patient).length > 0) {
+      await tx.patient.update({
+        where: { patient_id: pamo.patient_id },
+        data: data.patient
+      })
+    }
+
+    return pamo
+  })
+}
+
+export async function deletePaMo(id: number) {
+  return prisma.patient_in_mobile.delete({
+    where: { patient_in_mobile_id: id }
+  })
+}
+
+export function findById(id: number) {
+  return prisma.patient_in_mobile.findUnique({
+    where: { patient_in_mobile_id: id },
+    include: {
+      patient: true,
+      inspection_record: true
+    }
+  })
+}

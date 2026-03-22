@@ -21,7 +21,10 @@ export async function getAppointmentsForUser(
   if (user.role === "patient") {
     result = await repo.findAppointmentsByPatientId(user.id, skip, limit)
   }
-  else if (user.role === "staff" || user.role === "dentist") {
+  else if(user.role === "dentist"){
+    result = await repo.findAppointmentsByDentistId(user.id, skip, limit)
+  }
+  else if (user.role === "staff" ) {
     result = await repo.findAllAppointments(skip, limit)
   }
   else {

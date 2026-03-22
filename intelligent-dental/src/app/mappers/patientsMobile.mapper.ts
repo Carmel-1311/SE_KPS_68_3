@@ -3,6 +3,7 @@ import { Prisma, patient_in_mobile, patient } from "@prisma/client";
 
 export type PaMobileResponse = paths["/api/mobile_dentals/{id}/patients"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
 export type CreatePaMobileInput =  paths["/api/mobile_dentals/{id}/patients"]["post"]["requestBody"]["content"]["application/json"];
+export type UpdatePaMobileInput =  paths["/api/mobile_dentals/{mobile_id}/patients/{id}"]["put"]["requestBody"]["content"]["application/json"];
 
 export const PaMoMap = {
 
@@ -13,7 +14,9 @@ export const PaMoMap = {
         name:item.patient.first_name+" "+item.patient.last_name,
         status:item.patient.status??"",
         phone:item.patient.phone??"",
-        idcard:item.patient.id_card??""
+        idcard:item.patient.id_card??"",
+        inspection_id:item.inspection_record_id??0
+
     }));
   },
 
@@ -35,6 +38,23 @@ export const PaMoMap = {
         }
     }));
   },
+toUpdateInput(data: UpdatePaMobileInput) {
+  return {
+     pamo: {
+    ...(data.inspection_id !== undefined && {
+      inspection_record_id: data.inspection_id
+    })
+  } as Prisma.patient_in_mobileUpdateInput,
 
-
-};
+  patient: {
+    ...(data.first_name !== undefined && { first_name: data.first_name }),
+    ...(data.last_name !== undefined && { last_name: data.last_name }),
+    ...(data.phone !== undefined && { phone: data.phone }),
+    ...(data.idcard !== undefined && { id_card: data.idcard }),
+    ...(data.birthday !== undefined && {
+      birthday: data.birthday ? new Date(data.birthday) : null
+    }),
+  } as Prisma.patientUpdateInput
+  }
+}
+}

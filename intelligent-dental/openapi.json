@@ -1055,6 +1055,168 @@
         "security": []
       }
     },
+    "/api/patients/{id}/appointments": {
+      "get": {
+        "summary": "appointments",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Patients"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "appointment_id": {
+                            "type": "integer"
+                          },
+                          "patient": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "description": "ID"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "staff": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string",
+                                "description": "name"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "name"
+                            ]
+                          },
+                          "appointment_date": {
+                            "type": "string"
+                          },
+                          "appointment_time": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "scheduled",
+                              "completed",
+                              "cancelled",
+                              "request_cancel"
+                            ]
+                          },
+                          "medical_record_id": {
+                            "type": "integer",
+                            "nullable": true
+                          },
+                          "inspection_record_id": {
+                            "type": "integer",
+                            "nullable": true
+                          }
+                        },
+                        "required": [
+                          "medical_record_id",
+                          "inspection_record_id",
+                          "appointment_id",
+                          "patient",
+                          "staff",
+                          "appointment_date",
+                          "appointment_time",
+                          "type",
+                          "status"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/meta"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
     "/api/appointments/{id}": {
       "get": {
         "summary": "appointments",
@@ -1688,7 +1850,7 @@
         "security": []
       }
     },
-    "/api/staff": {
+    "/api/staffs": {
       "get": {
         "summary": "staffs",
         "deprecated": false,
@@ -1775,7 +1937,78 @@
             "bearer": []
           }
         ]
-      },
+      }
+    },
+    "/api/staffs/{id}": {
+      "get": {
+        "summary": "staff",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Staff"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/staff"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "404": {
+            "$ref": "#/components/responses/404 Not Found",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/staff": {
       "post": {
         "summary": "staff",
         "deprecated": false,
@@ -1922,72 +2155,6 @@
       }
     },
     "/api/staff/{id}": {
-      "get": {
-        "summary": "staff",
-        "deprecated": false,
-        "description": "",
-        "tags": [
-          "Root/API/Staff"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "description": "",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": false,
-                  "required": [
-                    "data"
-                  ],
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/staff"
-                    }
-                  }
-                }
-              }
-            },
-            "headers": {}
-          },
-          "400": {
-            "$ref": "#/components/responses/400 Bad Request",
-            "description": ""
-          },
-          "401": {
-            "$ref": "#/components/responses/401 Unauthorized",
-            "description": ""
-          },
-          "403": {
-            "$ref": "#/components/responses/403 Forbidden",
-            "description": ""
-          },
-          "404": {
-            "$ref": "#/components/responses/404 Not Found",
-            "description": ""
-          },
-          "500": {
-            "$ref": "#/components/responses/500 Internal Server Error",
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ]
-      },
       "put": {
         "summary": "staff",
         "deprecated": false,
@@ -4276,8 +4443,21 @@
                           "mobile_dental_id": {
                             "type": "integer"
                           },
-                          "company_id": {
-                            "type": "integer"
+                          "company": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "description": "ID"
+                              },
+                              "office_name": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "id",
+                              "office_name"
+                            ]
                           },
                           "date": {
                             "type": "string",
@@ -4302,7 +4482,7 @@
                         },
                         "required": [
                           "mobile_dental_id",
-                          "company_id",
+                          "company",
                           "date",
                           "count",
                           "status",
@@ -4417,8 +4597,21 @@
                         "mobile_dental_id": {
                           "type": "integer"
                         },
-                        "company_id": {
-                          "type": "integer"
+                        "company": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "office_name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "office_name"
+                          ]
                         },
                         "date": {
                           "type": "string",
@@ -4443,7 +4636,7 @@
                       },
                       "required": [
                         "mobile_dental_id",
-                        "company_id",
+                        "company",
                         "date",
                         "count",
                         "status",
@@ -4577,6 +4770,22 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "company": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "integer",
+                        "description": "ID"
+                      },
+                      "office_name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "office_name"
+                    ]
+                  },
                   "status": {
                     "type": "string",
                     "enum": [
@@ -4589,6 +4798,7 @@
                   }
                 },
                 "required": [
+                  "company",
                   "status"
                 ]
               },
@@ -4611,8 +4821,21 @@
                         "mobile_dental_id": {
                           "type": "integer"
                         },
-                        "company_id": {
-                          "type": "integer"
+                        "company": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "integer",
+                              "description": "ID"
+                            },
+                            "office_name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "office_name"
+                          ]
                         },
                         "date": {
                           "type": "string",
@@ -4630,7 +4853,7 @@
                       },
                       "required": [
                         "mobile_dental_id",
-                        "company_id",
+                        "company",
                         "date",
                         "count",
                         "status",
@@ -4683,6 +4906,151 @@
       }
     },
     "/api/mobile_dentals/{id}/patients": {
+      "get": {
+        "summary": "patient_in_mobiles",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "example": 1,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "example": 0,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "inspection_id": {
+                            "type": "integer"
+                          },
+                          "idcard": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "patient_id",
+                          "name",
+                          "status",
+                          "phone",
+                          "idcard",
+                          "id",
+                          "inspection_id"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 20
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      },
       "post": {
         "summary": "patient_in_mobile",
         "deprecated": false,
@@ -4764,6 +5132,178 @@
           "required": true
         },
         "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "patient_id": {
+                            "type": "integer"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "phone": {
+                            "type": "string"
+                          },
+                          "inspection_id": {
+                            "type": "integer"
+                          },
+                          "idcard": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "patient_id",
+                          "name",
+                          "status",
+                          "id",
+                          "idcard",
+                          "phone",
+                          "inspection_id"
+                        ]
+                      }
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer",
+                          "maximum": 50
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "total_pages": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "limit",
+                        "total",
+                        "total_pages"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            },
+            "headers": {}
+          },
+          "400": {
+            "$ref": "#/components/responses/400 Bad Request",
+            "description": ""
+          },
+          "401": {
+            "$ref": "#/components/responses/401 Unauthorized",
+            "description": ""
+          },
+          "403": {
+            "$ref": "#/components/responses/403 Forbidden",
+            "description": ""
+          },
+          "409": {
+            "$ref": "#/components/responses/409 Conflict",
+            "description": ""
+          },
+          "500": {
+            "$ref": "#/components/responses/500 Internal Server Error",
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/api/mobile_dentals/{mobile_id}/patients/{id}": {
+      "put": {
+        "summary": "patient_in_mobile",
+        "deprecated": false,
+        "description": "",
+        "tags": [
+          "Root/API/Company"
+        ],
+        "parameters": [
+          {
+            "name": "mobile_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patients_id": {
+                    "type": "string"
+                  },
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "birthday": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "idcard": {
+                    "type": "string"
+                  },
+                  "inspection_id": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "patients_id"
+                ]
+              },
+              "examples": {}
+            }
+          },
+          "required": true
+        },
+        "responses": {
           "200": {
             "description": "",
             "content": {
@@ -4776,6 +5316,9 @@
                       "items": {
                         "type": "object",
                         "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
                           "patient_id": {
                             "type": "integer"
                           },
@@ -4785,15 +5328,24 @@
                           "status": {
                             "type": "string"
                           },
-                          "id": {
+                          "phone": {
+                            "type": "string"
+                          },
+                          "inspection_id": {
                             "type": "integer"
+                          },
+                          "idcard": {
+                            "type": "string"
                           }
                         },
                         "required": [
                           "patient_id",
                           "name",
                           "status",
-                          "id"
+                          "id",
+                          "idcard",
+                          "phone",
+                          "inspection_id"
                         ]
                       }
                     },
@@ -4857,8 +5409,8 @@
           }
         ]
       },
-      "get": {
-        "summary": "patient_in_mobiles",
+      "delete": {
+        "summary": "patient_in_mobile",
         "deprecated": false,
         "description": "",
         "tags": [
@@ -4866,109 +5418,27 @@
         ],
         "parameters": [
           {
+            "name": "mobile_id",
+            "in": "path",
+            "description": "",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
             "name": "id",
             "in": "path",
             "description": "",
             "required": true,
-            "example": 1,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "description": "",
-            "required": false,
-            "example": 0,
-            "schema": {
-              "type": "integer"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "",
-            "required": false,
-            "example": 0,
             "schema": {
               "type": "integer"
             }
           }
         ],
         "responses": {
-          "200": {
+          "204": {
             "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "id": {
-                            "type": "integer"
-                          },
-                          "patient_id": {
-                            "type": "integer"
-                          },
-                          "name": {
-                            "type": "string"
-                          },
-                          "status": {
-                            "type": "string"
-                          },
-                          "phone": {
-                            "type": "string"
-                          },
-                          "idcard": {
-                            "type": "string"
-                          }
-                        },
-                        "required": [
-                          "patient_id",
-                          "name",
-                          "status",
-                          "phone",
-                          "idcard",
-                          "id"
-                        ]
-                      }
-                    },
-                    "meta": {
-                      "type": "object",
-                      "properties": {
-                        "page": {
-                          "type": "integer"
-                        },
-                        "limit": {
-                          "type": "integer",
-                          "maximum": 20
-                        },
-                        "total": {
-                          "type": "integer"
-                        },
-                        "total_pages": {
-                          "type": "integer"
-                        }
-                      },
-                      "required": [
-                        "page",
-                        "limit",
-                        "total",
-                        "total_pages"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ]
-                }
-              }
-            },
             "headers": {}
           },
           "400": {
@@ -5385,8 +5855,21 @@
           "mobile_dental_id": {
             "type": "integer"
           },
-          "company_id": {
-            "type": "integer"
+          "company": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID"
+              },
+              "office_name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "office_name"
+            ]
           },
           "date": {
             "type": "string",
@@ -5411,7 +5894,7 @@
         },
         "required": [
           "mobile_dental_id",
-          "company_id",
+          "company",
           "date",
           "count",
           "status",
