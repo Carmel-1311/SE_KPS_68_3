@@ -6,7 +6,8 @@ import * as res from "@/utils/responseFormatter"
 
 export async function GET(req: Request) {
   try {
-    const user = getCurrentUser()
+    const user = getCurrentUser(req)
+    if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
     requireRole(user.role, ["staff", "dentist", "patient"])
 
     const { searchParams } = new URL(req.url)
@@ -29,7 +30,8 @@ export async function GET(req: Request) {
 export async function POST(request: Request) {
     try {
 
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["patient", "staff"])
 
         const body = await request.json()

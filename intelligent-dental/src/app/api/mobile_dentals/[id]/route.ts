@@ -8,7 +8,8 @@ export async function GET(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const mobile_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["staff", "company"])
         const data = await mobileService.getMobileDentalsById(mobile_id)
         return res.ok(data)
@@ -21,7 +22,8 @@ export async function PUT(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const mobile_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["staff", "company"])
         const body = await request.json()
         const updatedSchedule = await mobileService.updateMobileDentals(mobile_id, body)
@@ -35,7 +37,8 @@ export async function DELETE(request: Request,{ params }: { params: Promise<{ id
     try {
         const { id } = await params;
         const mobile_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["staff"])
         await mobileService.deleteMobileDentals(mobile_id)
         return res.noContent()

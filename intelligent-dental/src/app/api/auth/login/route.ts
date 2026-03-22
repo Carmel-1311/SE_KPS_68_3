@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/utils/prisma"
 import { verifyPassword } from "@/utils/password"
-import { randomUUID } from "crypto"
+import jwt from "jsonwebtoken"
+
+type UserRole = "dentist" | "patient" | "staff" | "company"
 
 type LoginBody = {
   username?: string
@@ -10,6 +12,11 @@ type LoginBody = {
 
 export async function POST(request: Request) {
   try {
+    const secret = process.env.JWT_SECRET?.trim()
+    if (!secret) {
+      return NextResponse.json({ message: "JWT_SECRET is not configured" }, { status: 500 })
+    }
+
     const body = (await request.json()) as LoginBody
     const username = body.username?.trim()
     const password = body.password?.trim()
@@ -25,7 +32,16 @@ export async function POST(request: Request) {
         username: true,
         email: true,
         password_hash: true,
-        account_role: true
+        account_role: true,
+        patient: {
+          select: { patient_id: true, first_name: true, last_name: true }
+        },
+        staff: {
+          select: { staff_id: true, first_name: true, last_name: true, role: true }
+        },
+        company: {
+          select: { company_id: true, contect_name: true, office_name: true }
+        }
       }
     })
 
@@ -38,35 +54,42 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Invalid username or password" }, { status: 401 })
     }
 
-    const role = account.account_role === "doctor" ? "dentist" : account.account_role ?? "patient"
+    const role: UserRole =
+      account.account_role === "company"
+        ? "company"
+        : account.account_role === "doctor" || account.staff?.role === "dentist"
+          ? "dentist"
+          : account.account_role === "staff"
+            ? "staff"
+            : "patient"
+
+    const userId =
+      role === "patient"
+        ? account.patient?.patient_id
+        : role === "company"
+          ? account.company?.company_id
+          : account.staff?.staff_id
+
+    if (!userId) {
+      return NextResponse.json({ message: "Account profile is incomplete" }, { status: 500 })
+    }
+
     let firstName = ""
     let lastName = ""
     let displayName = ""
     let patientId: number | null = null
 
-    if (account.account_role === "patient") {
-      const patient = await prisma.patient.findFirst({
-        where: { account_id: account.account_id },
-        select: { patient_id: true, first_name: true, last_name: true }
-      })
-      firstName = patient?.first_name ?? ""
-      lastName = patient?.last_name ?? ""
-      patientId = patient?.patient_id ?? null
-    } else if (account.account_role === "staff" || account.account_role === "doctor") {
-      const staff = await prisma.staff.findFirst({
-        where: { account_id: account.account_id },
-        select: { first_name: true, last_name: true }
-      })
-      firstName = staff?.first_name ?? ""
-      lastName = staff?.last_name ?? ""
-    } else if (account.account_role === "company") {
-      const company = await prisma.company.findFirst({
-        where: { account_id: account.account_id },
-        select: { contect_name: true, office_name: true }
-      })
-      firstName = company?.contect_name ?? ""
+    if (role === "patient") {
+      firstName = account.patient?.first_name ?? ""
+      lastName = account.patient?.last_name ?? ""
+      patientId = account.patient?.patient_id ?? null
+    } else if (role === "staff" || role === "dentist") {
+      firstName = account.staff?.first_name ?? ""
+      lastName = account.staff?.last_name ?? ""
+    } else if (role === "company") {
+      firstName = account.company?.contect_name ?? ""
       lastName = ""
-      displayName = company?.office_name ?? ""
+      displayName = account.company?.office_name ?? ""
     }
 
     if (!displayName) {
@@ -77,10 +100,11 @@ export async function POST(request: Request) {
       {
         data: {
           account_id: account.account_id,
+          user_id: userId,
           patient_id: patientId,
           username: account.username ?? account.email ?? "",
           role,
-          token: randomUUID(),
+          token: jwt.sign({ id: userId, role }, secret, { expiresIn: "7d" }),
           first_name: firstName,
           last_name: lastName,
           display_name: displayName
