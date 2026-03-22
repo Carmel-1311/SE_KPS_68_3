@@ -491,6 +491,73 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/patients/{id}/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** appointments */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    limit?: number;
+                };
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                appointment_id: number;
+                                patient: {
+                                    /** @description ID */
+                                    id: number;
+                                    /** @description name */
+                                    name: string;
+                                };
+                                staff: {
+                                    id: number;
+                                    /** @description name */
+                                    name: string;
+                                };
+                                appointment_date: string;
+                                appointment_time: string;
+                                type: string;
+                                /** @enum {string} */
+                                status: "scheduled" | "completed" | "cancelled" | "request_cancel";
+                                medical_record_id: number | null;
+                                inspection_record_id: number | null;
+                            }[];
+                            meta?: components["schemas"]["meta"];
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/appointments/{id}": {
         parameters: {
             query?: never;
@@ -1985,7 +2052,11 @@ export interface paths {
                         "application/json": {
                             data: {
                                 mobile_dental_id: number;
-                                company_id: number;
+                                company: {
+                                    /** @description ID */
+                                    id: number;
+                                    office_name: string;
+                                };
                                 /** Format: date */
                                 date: string;
                                 count: number;
@@ -2037,7 +2108,11 @@ export interface paths {
                         "application/json": {
                             data: {
                                 mobile_dental_id: number;
-                                company_id: number;
+                                company: {
+                                    /** @description ID */
+                                    id: number;
+                                    office_name: string;
+                                };
                                 /** Format: date */
                                 date: string;
                                 count: number;
@@ -2110,6 +2185,11 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        company: {
+                            /** @description ID */
+                            id: number;
+                            office_name: string;
+                        };
                         /** @enum {string} */
                         status: "request" | "scheduled" | "completed" | "request_cancel" | "cancel";
                     };
@@ -2124,7 +2204,11 @@ export interface paths {
                         "application/json": {
                             data: {
                                 mobile_dental_id: number;
-                                company_id: number;
+                                company: {
+                                    /** @description ID */
+                                    id: number;
+                                    office_name: string;
+                                };
                                 /** Format: date */
                                 date: string;
                                 count: number;
@@ -2187,6 +2271,7 @@ export interface paths {
                                 name: string;
                                 status: string;
                                 phone: string;
+                                inspection_id: number;
                                 idcard: string;
                             }[];
                             meta?: {
@@ -2234,17 +2319,20 @@ export interface paths {
                 };
             };
             responses: {
-                200: {
+                201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
                         "application/json": {
                             data: {
+                                id: number;
                                 patient_id: number;
                                 name: string;
                                 status: string;
-                                id: number;
+                                phone: string;
+                                inspection_id: number;
+                                idcard: string;
                             }[];
                             meta?: {
                                 page: number;
@@ -2263,6 +2351,100 @@ export interface paths {
             };
         };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/patient_in_mobile/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** patient_in_mobile */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        patients_id: string;
+                        first_name: string;
+                        last_name: string;
+                        birthday: string;
+                        phone: string;
+                        idcard: string;
+                        inspection_id?: number;
+                    };
+                };
+            };
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: {
+                                id: number;
+                                patient_id: number;
+                                name: string;
+                                status: string;
+                                phone: string;
+                                inspection_id: number;
+                                idcard: string;
+                            }[];
+                            meta?: {
+                                page: number;
+                                limit: number;
+                                total: number;
+                                total_pages: number;
+                            };
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                409: components["responses"]["409 Conflict"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        post?: never;
+        /** patient_in_mobile */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                409: components["responses"]["409 Conflict"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2398,7 +2580,11 @@ export interface components {
         };
         mobile_dental: {
             mobile_dental_id: number;
-            company_id: number;
+            company: {
+                /** @description ID */
+                id: number;
+                office_name: string;
+            };
             /** Format: date */
             date: string;
             count: number;
@@ -2561,62 +2747,3 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export type operations = Record<string, never>;
-
-// Custom additions (kept here per project convention).
-export type AppErrorDefinition = {
-    status: number;
-    code: string;
-    message: string;
-    category: string;
-};
-
-export const staffErrors = {
-    invalidRole: {
-        status: 400,
-        code: "STAFF-001",
-        message: "Invalid role. Allowed values: staff, dentist",
-        category: "VALIDATION",
-    },
-    duplicate: {
-        status: 409,
-        code: "STAFF-002",
-        message: "Staff with this email or phone already exists",
-        category: "CONFLICT",
-    },
-    notFound: {
-        status: 404,
-        code: "STAFF-003",
-        message: "Staff not found",
-        category: "NOT_FOUND",
-    },
-} as const satisfies Record<string, AppErrorDefinition>;
-
-export const patientErrors = {
-    invalidStatus: {
-        status: 400,
-        code: "PAT-001",
-        message: "Invalid status. Allowed values: active, inactive",
-        category: "VALIDATION",
-    },
-    duplicate: {
-        status: 409,
-        code: "PAT-002",
-        message: "Patient with this email or phone already exists",
-        category: "CONFLICT",
-    },
-    notFound: {
-        status: 404,
-        code: "PAT-003",
-        message: "Patient not found",
-        category: "NOT_FOUND",
-    },
-} as const satisfies Record<string, AppErrorDefinition>;
-
-export const companyErrors = {
-    notFound: {
-        status: 404,
-        code: "COMP-001",
-        message: "Company not found",
-        category: "NOT_FOUND",
-    },
-} as const satisfies Record<string, AppErrorDefinition>;

@@ -24,6 +24,7 @@ export type CompanyList = Prisma.companyGetPayload<typeof companyListQuery>
 export const companyDetailQuery =
   Prisma.validator<Prisma.companyDefaultArgs>()({
     select: {
+      company_id:true,
       contect_name: true,
       office_name: true,
       phone: true,
@@ -37,6 +38,7 @@ export type CompanyDetail = Prisma.companyGetPayload<typeof companyDetailQuery>
 export const companyMap = {
   toResponseListItem(data: CompanyList): CompanyListResponse {
     return {
+      id:data.company_id.toString(),
       contect_name: data.contect_name ?? "",
       office_name: data.office_name ?? "",
       phone: data.phone ?? "",
@@ -51,6 +53,7 @@ export const companyMap = {
 
   toResponse(data: CompanyDetail): CompanyResponse {
     return {
+      id:data.company_id.toString(),
       contect_name: data.contect_name ?? "",
       office_name: data.office_name ?? "",
       phone: data.phone ?? "",

@@ -59,5 +59,18 @@ export async function findAppointmentsByPatientId(patientId: number,  skip: numb
   ])
   return { data, total }
 }
-  
+export async function findAppointmentsByDentistId(dentistId: number,  skip: number,
+  limit: number): Promise<{ data: map.AppointmentList[]; total: number }> {
+
+    const [data, total] = await Promise.all([
+    prisma.appointment.findMany({
+      where: { staff_id: dentistId },
+      ...map.appointmentListQuery,
+      skip,
+      take: limit
+    }),
+    prisma.appointment.count()
+  ])
+  return { data, total }
+}
 
