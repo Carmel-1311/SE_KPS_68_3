@@ -1,28 +1,70 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, Card, message, Row, Col, Space } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { House, SearchCheck } from "lucide-react";
+import { withAuthHeaders } from "@/app/utils/auth.client";
+import { clearMobileDentalsCache } from "@/hook/useAllMobileDentals";
+import type { paths } from "@/types/api";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+type CreateMobileDentalBody = paths["/api/mobile_dentals"]["post"]["requestBody"]["content"]["application/json"];
+type CreateRequestFormValues = { date: Dayjs; count: number; address: string };
 
-// Remove mockMobileDentals local import
+function getCompanyIdFromToken(): number | null {
+    if (typeof window === "undefined") return null;
+    const token = localStorage.getItem("auth_token");
+    if (!token) return null;
+
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return null;
+
+    try {
+        const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+        const payload = JSON.parse(atob(padded)) as { id?: unknown };
+        const companyId = Number(payload.id);
+        return Number.isInteger(companyId) && companyId > 0 ? companyId : null;
+    } catch {
+        return null;
+    }
+}
+
+function mapCreateErrorMessage(status: number, apiMessage?: string) {
+    if (apiMessage) return apiMessage;
+    if (status === 400 || status === 422) return "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+    if (status === 401) return "กรุณาเข้าสู่ระบบใหม่";
+    if (status === 403) return "คุณไม่มีสิทธิ์ทำรายการนี้";
+    if (status === 409) return "ข้อมูลซ้ำในระบบ";
+    if (status >= 500) return "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง";
+    return "ไม่สามารถส่งคำขอได้";
+}
+
 export default function RequestServicePage() {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const submitLockRef = useRef(false);
     const router = useRouter();
 
-    const onFinish = useCallback(async (values: { date: Dayjs; count: number; address: string }) => {
+    const onFinish = useCallback(async (values: CreateRequestFormValues) => {
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setSubmitting(true);
 
         try {
-            const payload = {
-                date: values.date ? values.date.format('YYYY-MM-DD') : "",
-                count: values.count || 0,
-                address: values.address || "",
+            const companyId = getCompanyIdFromToken();
+            if (!companyId) {
+                throw new Error("ไม่พบข้อมูลหน่วยงานจาก session กรุณาเข้าสู่ระบบใหม่");
+            }
+
+            const payload: CreateMobileDentalBody = {
+                date: values.date.format("YYYY-MM-DD"),
+                count: values.count,
+                address: values.address.trim(),
+                company_id: companyId,
             };
 
             const res = await fetch("/api/mobile_dentals", {
@@ -31,17 +73,27 @@ export default function RequestServicePage() {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Failed to create request");
+            if (!res.ok) {
+                let apiMessage: string | undefined;
+                try {
+                    const errJson = (await res.json()) as { error?: { message?: string }, message?: string };
+                    apiMessage = errJson.error?.message || errJson.message;
+                } catch { }
+                throw new Error(mapCreateErrorMessage(res.status, apiMessage));
+            }
 
             message.success('ส่งคำขอรับบริการออกหน่วยสำเร็จ!');
             form.resetFields();
+            clearMobileDentalsCache();
             router.push('/company/status');
 
         } catch (err) {
             console.error(err);
-            message.error("เกิดข้อผิดพลาด โปรดลองอีกครั้ง");
+            const errMessage = err instanceof Error ? err.message : "เกิดข้อผิดพลาด โปรดลองอีกครั้ง";
+            message.error(errMessage);
         } finally {
             setSubmitting(false);
+            submitLockRef.current = false;
         }
     }, [form, router]);
 
@@ -112,7 +164,14 @@ export default function RequestServicePage() {
                     <Form.Item
                         label="สถานที่ออกหน่วย (address)"
                         name="address"
-                        rules={[{ required: true, message: 'กรุณาระบุสถานที่' }]}
+                        rules={[
+                            {
+                                validator: (_, value: string | undefined) =>
+                                    value?.trim()
+                                        ? Promise.resolve()
+                                        : Promise.reject(new Error("กรุณาระบุสถานที่")),
+                            },
+                        ]}
                     >
                         <TextArea rows={4} placeholder="ระบุ บ้านเลขที่, อาคาร, ชั้น, ถนน, เขต, จังหวัด, รหัสไปรษณีย์" size="large" />
                     </Form.Item>
