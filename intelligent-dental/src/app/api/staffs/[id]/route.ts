@@ -8,9 +8,10 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
-export async function GET(_: Request, { params }: RouteContext) {
+export async function GET(req: Request, { params }: RouteContext) {
   try {
-    const user = getCurrentUser();
+    const user = getCurrentUser(req);
+    if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
     requireRole(user.role, ["staff", "company"]);
 
     const { id } = await params;
@@ -30,7 +31,8 @@ export async function GET(_: Request, { params }: RouteContext) {
 
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
-    const user = getCurrentUser();
+    const user = getCurrentUser(request);
+    if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
     requireRole(user.role, ["staff", "company"]);
 
     const { id } = await params;
