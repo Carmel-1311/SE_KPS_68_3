@@ -8,7 +8,8 @@ export async function GET(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const inspection_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["patient", "dentist"])
         const data = await inspectionService.getInspectionRecordById(inspection_id)
         return res.ok(data)
@@ -21,7 +22,8 @@ export async function PUT(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const inspection_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, [ "dentist"])
         const body = await request.json()
         const updatedSchedule = await inspectionService.updateInspectionRecord(inspection_id, body)
@@ -35,7 +37,8 @@ export async function DELETE(request: Request,{ params }: { params: Promise<{ id
     try {
         const { id } = await params;
         const inspection_id = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["dentist"])
         await inspectionService.deleteInspectionRecord(inspection_id)
         return res.noContent()
