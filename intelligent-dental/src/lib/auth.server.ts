@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken"
 const SECRET = process.env.JWT_SECRET!
 
 export type TokenPayload = {
-  accountId: number
+  id: number
   role: "dentist" | "patient" | "staff" | "company"
 }
 

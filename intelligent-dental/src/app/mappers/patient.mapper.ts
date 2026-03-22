@@ -79,7 +79,7 @@ export const patientMap = {
     return {
       first_name: data.first_name,
       last_name: data.last_name,
-      birthday: new Date(data.birthday),
+      ...(data.birthday ? { birthday: new Date(data.birthday) } : {}),
       allergy: data.allergy ?? undefined,
       email: data.email,
       phone: data.phone,

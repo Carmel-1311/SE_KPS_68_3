@@ -2,7 +2,6 @@ import { decodeToken } from "@/lib/auth.server"
 
 export type User = {
   id: number
-  accountId: number
   role: "dentist" | "patient" | "staff" | "company"
 }
 
@@ -19,8 +18,7 @@ export function getCurrentUser(req: Req): User | null {
   if (!payload) return null 
 
   return {
-    id: payload.accountId,
-    accountId: payload.accountId,
+    id: payload.id,
     role: payload.role
   }
 }

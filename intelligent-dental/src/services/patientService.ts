@@ -51,7 +51,7 @@ export async function getPatientById(id: number) {
 }
 
 export async function updatePatient(id: number, data: UpdatePatientInput) {
-  if (!validStatuses.has(data.status as status_user)) {
+  if (data.status && !validStatuses.has(data.status as status_user)) {
     throw new AppError(400, "PAT-001", "Invalid status. Allowed values: active, inactive", "VALIDATION")
   }
 
@@ -60,9 +60,19 @@ export async function updatePatient(id: number, data: UpdatePatientInput) {
     throw new AppError(404, "PAT-003", "Patient not found", "NOT_FOUND")
   }
 
-  const duplicate = await repo.findPatientDuplicate(data.email, data.phone, id)
-  if (duplicate) {
-    throw new AppError(409, "PAT-002", getDuplicatePatientMessage(duplicate, data), "CONFLICT")
+  const nextEmail = data.email ?? existing.email ?? ""
+  const nextPhone = data.phone ?? existing.phone ?? ""
+
+  if (data.email || data.phone) {
+    const duplicate = await repo.findPatientDuplicate(nextEmail, nextPhone, id)
+    if (duplicate) {
+      throw new AppError(
+        409,
+        "PAT-002",
+        getDuplicatePatientMessage(duplicate, { email: nextEmail, phone: nextPhone }),
+        "CONFLICT"
+      )
+    }
   }
 
   const updated = await repo.updatePatient(
