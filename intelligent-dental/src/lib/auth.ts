@@ -1,4 +1,5 @@
-import {decodeToken} from "@/lib/auth.server"
+import { decodeToken } from "@/lib/auth.server"
+
 export type User = {
   id: number
   role: "dentist" | "patient" | "staff" | "company"
@@ -6,7 +7,7 @@ export type User = {
 
 type Req = Request | { headers: Headers }
 
-export function getCurrentUser(req: Req ) {
+export function getCurrentUser(req: Req): User | null {
   const authHeader = req.headers.get("authorization")
 
   if (!authHeader) return null
