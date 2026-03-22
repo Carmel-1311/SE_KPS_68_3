@@ -21,7 +21,6 @@ export function useCompany() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ================= GET =================
   const fetchCompany = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -56,22 +55,7 @@ export function useCompany() {
     }
   }, []);
 
-  // ================= PUT =================
-  const updateCompany = async (id: string, payload: any) => {
-    try {
-      const res = await fetch(`/api/company/${id}`, {
-        method: "PUT",
-        headers: withAuthHeaders(),
-        body: JSON.stringify(payload),
-      });
 
-      if (!res.ok) throw new Error("อัปเดตไม่สำเร็จ");
-
-      await fetchCompany();
-    } catch (err) {
-      throw err;
-    }
-  };
 
   useEffect(() => {
     fetchCompany();
@@ -84,7 +68,5 @@ export function useCompany() {
     error,
 
     refresh: fetchCompany,
-    updateCompany,
-
   };
 }
