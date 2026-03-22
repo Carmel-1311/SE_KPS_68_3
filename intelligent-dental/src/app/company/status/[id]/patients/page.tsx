@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import {
     Table,
     Form,
@@ -12,22 +12,24 @@ import {
     Card,
     message,
     Modal,
+    Popconfirm,
     Space,
+    Tooltip,
     Upload,
-    Popconfirm
 } from "antd";
 import {
-    HomeOutlined,
-    UnorderedListOutlined,
-    UserAddOutlined,
     TeamOutlined,
-    UploadOutlined
+    UploadOutlined,
+    SaveOutlined,
+    UserAddOutlined
 } from "@ant-design/icons";
+import { BookOpenText, Pencil, Trash2, SearchCheck, House } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import type { UploadProps } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 const { Title, Text } = Typography;
 
@@ -44,6 +46,7 @@ type Mission = {
     company_name: string;
     date: string;
     address?: string;
+    target_count: number;
 };
 
 interface PatientFormValues {
@@ -70,10 +73,11 @@ export default function PatientsPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const [searchText, setSearchText] = useState("");
-
-    const filteredPatients = patients.filter(p =>
-        p.name?.toLowerCase().includes(searchText.toLowerCase()) ?? false
-    );
+    const filteredPatients = useMemo(() => {
+        return patients.filter(p =>
+            p.name?.toLowerCase().includes(searchText.toLowerCase()) ?? false
+        );
+    }, [patients, searchText]);
 
     const [form] = Form.useForm();
 
@@ -81,7 +85,8 @@ export default function PatientsPage() {
         setLoading(true);
         try {
             const res = await fetch(`/api/mobile-dental/${mobileDentalId}/patients`, {
-                cache: "no-store"
+                cache: "no-store",
+                headers: withAuthHeaders()
             });
 
             if (!res.ok) throw new Error();
@@ -98,7 +103,9 @@ export default function PatientsPage() {
 
     const fetchMission = useCallback(async () => {
         try {
-            const res = await fetch(`/api/mobile_dentals/${mobileDentalId}`);
+            const res = await fetch(`/api/mobile_dentals/${mobileDentalId}`, {
+                headers: withAuthHeaders()
+            });
 
             if (!res.ok) throw new Error();
 
@@ -108,7 +115,8 @@ export default function PatientsPage() {
                 mobile_dental_id: String(json.data.mobile_dental_id),
                 company_name: `บริษัท (ID: ${json.data.company_id})`,
                 date: json.data.date,
-                address: json.data.address
+                address: json.data.address,
+                target_count: json.data.count || 0
             });
 
         } catch {
@@ -121,12 +129,12 @@ export default function PatientsPage() {
         fetchMission();
     }, [fetchPatients, fetchMission]);
 
-    const handleDelete = (patientId: number) => {
+    const handleDelete = useCallback((patientId: number) => {
         setPatients(prev => prev.filter(p => p.patient_id !== patientId));
         message.success("ลบผู้ป่วยออกจากรายการแล้ว");
-    };
+    }, []);
 
-    const handleEdit = (patient: PatientResponse) => {
+    const handleEdit = useCallback((patient: PatientResponse) => {
         setEditingPatient(patient);
 
         const [first, ...rest] = patient.name.split(" ");
@@ -141,9 +149,9 @@ export default function PatientsPage() {
         });
 
         setModalOpen(true);
-    };
+    }, [form]);
 
-    const onFinish = async (values: PatientFormValues) => {
+    const onFinish = useCallback(async (values: PatientFormValues) => {
         setSubmitting(true);
 
         try {
@@ -173,11 +181,17 @@ export default function PatientsPage() {
                 message.success("แก้ไขข้อมูลสำเร็จ");
 
             } else {
+                // Validation: Check if exceeding target count
+                if (mission && patients.length >= mission.target_count) {
+                    message.error(`ไม่สามารถเพิ่มรายชื่อได้ เนื่องจากจำนวนผู้รับบริการเกินกำหนด (${mission.target_count} คน)`);
+                    return;
+                }
+
                 const res = await fetch(
                     `/api/mobile-dental/${mobileDentalId}/patients`,
                     {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: withAuthHeaders({ "Content-Type": "application/json" }),
                         body: JSON.stringify(payload)
                     }
                 );
@@ -197,7 +211,7 @@ export default function PatientsPage() {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [editingPatient, mobileDentalId, fetchPatients, form, mission, patients]);
 
     const uploadProps: UploadProps = {
         name: "file",
@@ -212,7 +226,7 @@ export default function PatientsPage() {
         }
     };
 
-    const columns: ColumnsType<PatientResponse> = [
+    const columns: ColumnsType<PatientResponse> = useMemo(() => [
         {
             title: "ลำดับ",
             key: "index",
@@ -228,29 +242,41 @@ export default function PatientsPage() {
             key: "action",
             width: 220,
             render: (_, record) => (
-                <Space>
+                <Space size="middle">
+                    <Tooltip title="ดูข้อมูล">
+                        <BookOpenText
+                            size={18}
+                            style={{ cursor: "pointer", color: "#1890ff" }}
+                            onClick={() => setViewPatient(record)}
+                        />
+                    </Tooltip>
 
-                    <Button type="link" onClick={() => setViewPatient(record)}>
-                        ดูข้อมูล
-                    </Button>
-
-                    <Button type="link" onClick={() => handleEdit(record)}>
-                        แก้ไข
-                    </Button>
+                    <Tooltip title="แก้ไข">
+                        <Pencil
+                            size={18}
+                            style={{ cursor: "pointer", color: "#faad14" }}
+                            onClick={() => handleEdit(record)}
+                        />
+                    </Tooltip>
 
                     <Popconfirm
                         title="ยืนยันการลบ"
+                        description="ต้องการลบผู้ป่วยรายนี้ใช่หรือไม่?"
+                        okText="ยืนยัน"
+                        cancelText="ยกเลิก"
                         onConfirm={() => handleDelete(record.patient_id)}
                     >
-                        <Button danger type="link">
-                            ลบ
-                        </Button>
+                        <Tooltip title="ลบข้อมูล">
+                            <Trash2
+                                size={18}
+                                style={{ cursor: "pointer", color: "#ff4d4f" }}
+                            />
+                        </Tooltip>
                     </Popconfirm>
-
                 </Space>
             )
         }
-    ];
+    ], [handleEdit, handleDelete]);
 
     return (
         <div style={{ padding: 24 }}>
@@ -260,15 +286,17 @@ export default function PatientsPage() {
                 items={[
                     {
                         title: (
-                            <Link href="/company">
-                                <HomeOutlined /> หน้าหลัก
+                            <Link href="/company" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                                <House size={16} />
+                                <span>หน้าหลัก</span>
                             </Link>
                         )
                     },
                     {
                         title: (
-                            <Link href="/company/status">
-                                <UnorderedListOutlined /> ตรวจสอบสถานะ
+                            <Link href="/company/status" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                                <SearchCheck size={16} />
+                                <span>ตรวจสอบสถานะ</span>
                             </Link>
                         )
                     },
@@ -333,7 +361,11 @@ export default function PatientsPage() {
                     columns={columns}
                     rowKey="patient_id"
                     loading={loading}
-                    pagination={{ pageSize: 10 }}
+                    pagination={{
+                        pageSize: 15,
+                        showSizeChanger: false,
+                    }}
+                    sticky={{ offsetHeader: 1 }}
                 />
 
             </Card>
@@ -395,7 +427,7 @@ export default function PatientsPage() {
                     </Form.Item>
 
                     <Form.Item style={{ textAlign: "right" }}>
-                        <Button htmlType="submit" type="primary" loading={submitting}>
+                        <Button htmlType="submit" type="primary" loading={submitting} icon={<SaveOutlined />}>
                             บันทึก
                         </Button>
                     </Form.Item>

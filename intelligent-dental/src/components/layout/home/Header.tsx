@@ -5,6 +5,13 @@ import { Button, Flex, Grid, Layout, Typography } from "antd";
 import { LogIn } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getAccountName,
+  getAccountRole,
+  getAccountUsername,
+  getAuthToken,
+} from "@/app/utils/auth.client";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -13,6 +20,42 @@ export default function HomeHeader() {
   const router = useRouter();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [displayName, setDisplayName] = useState("ผู้ใช้");
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = getAuthToken();
+    const name = getAccountName() || getAccountUsername();
+    const currentRole = getAccountRole();
+
+    setIsLoggedIn(!!token);
+    if (name) setDisplayName(name);
+    setRole(currentRole);
+  }, []);
+
+  const roleHomePath = useMemo(() => {
+    if (role === "company") return "/company";
+    if (role === "dentist") return "/dentist";
+    if (role === "staff") return "/personnel";
+    if (role === "patient") return "/user";
+    return "/home";
+  }, [role]);
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("account_role");
+      localStorage.removeItem("account_id");
+      localStorage.removeItem("patient_id");
+      localStorage.removeItem("account_name");
+      localStorage.removeItem("account_username");
+    }
+    setIsLoggedIn(false);
+    setDisplayName("ผู้ใช้");
+    setRole(null);
+    router.push("/login");
+  };
 
   return (
     <Header
@@ -55,21 +98,55 @@ export default function HomeHeader() {
         </Text>
       </Flex>
 
-      <Button
-        type="default"
-        icon={<LogIn size={isMobile ? 13 : 14} />}
-        style={{
-          height: isMobile ? 30 : 32,
-          paddingInline: isMobile ? 10 : 14,
-          borderRadius: 6,
-          fontWeight: 600,
-          border: "none",
-          flexShrink: 0,
-        }}
-        onClick={() => router.push("/login")}
-      >
-        Login
-      </Button>
+      {isLoggedIn ? (
+        <Flex align="center" gap={8}>
+          <Button
+            type="text"
+            style={{
+              height: isMobile ? 30 : 32,
+              paddingInline: isMobile ? 10 : 14,
+              borderRadius: 6,
+              fontWeight: 600,
+              color: "#d9ffff",
+              border: "1px solid rgba(255,255,255,0.3)",
+              flexShrink: 0,
+            }}
+            onClick={() => router.push(roleHomePath)}
+          >
+            {displayName}
+          </Button>
+          <Button
+            type="default"
+            style={{
+              height: isMobile ? 30 : 32,
+              paddingInline: isMobile ? 10 : 14,
+              borderRadius: 6,
+              fontWeight: 600,
+              border: "none",
+              flexShrink: 0,
+            }}
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
+        </Flex>
+      ) : (
+        <Button
+          type="default"
+          icon={<LogIn size={isMobile ? 13 : 14} />}
+          style={{
+            height: isMobile ? 30 : 32,
+            paddingInline: isMobile ? 10 : 14,
+            borderRadius: 6,
+            fontWeight: 600,
+            border: "none",
+            flexShrink: 0,
+          }}
+          onClick={() => router.push("/login")}
+        >
+          Login
+        </Button>
+      )}
     </Header>
   );
 }

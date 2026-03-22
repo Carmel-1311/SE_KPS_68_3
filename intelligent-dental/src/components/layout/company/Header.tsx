@@ -4,6 +4,8 @@ import { ThemeWebColor } from "@/app/utils/constants";
 import { Button, Layout, Flex, Typography } from "antd";
 import { Building2, CalendarPlus, House, LogOut, SearchCheck } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -11,6 +13,7 @@ const { Text } = Typography;
 export default function CompanyHeader() {
   const router = useRouter();
   const pathname = usePathname();
+  const [displayName, setDisplayName] = useState("ผู้ใช้");
 
   const menuItems = [
     { key: "home", icon: <House size={16} />, label: "Home", path: "/company" },
@@ -19,6 +22,11 @@ export default function CompanyHeader() {
   ];
 
   const selectedKey = pathname.split("/").filter(Boolean)[1] ?? "";
+
+  useEffect(() => {
+    const name = getAccountName() || getAccountUsername();
+    if (name) setDisplayName(name);
+  }, []);
 
   return (
     <Header
@@ -61,7 +69,7 @@ export default function CompanyHeader() {
       </Flex>
 
       <Flex justify="flex-end" align="center" gap={10}>
-        <span style={{ whiteSpace: "nowrap" }}>Company User</span>
+        <span style={{ whiteSpace: "nowrap" }}>{displayName}</span>
         <div
           onClick={() => router.push("/")}
           style={{

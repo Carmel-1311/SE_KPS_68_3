@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import dayjs, { Dayjs } from "dayjs";
-import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, Card, message, Row, Col } from "antd";
-import { HomeOutlined, FileAddOutlined } from "@ant-design/icons";
+import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, Card, message, Row, Col, Space } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { House, SearchCheck } from "lucide-react";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -15,7 +15,7 @@ export default function RequestServicePage() {
     const [submitting, setSubmitting] = useState(false);
     const router = useRouter();
 
-    const onFinish = async (values: { date: Dayjs; count: number; address: string }) => {
+    const onFinish = useCallback(async (values: { date: Dayjs; count: number; address: string }) => {
         setSubmitting(true);
 
         try {
@@ -27,7 +27,7 @@ export default function RequestServicePage() {
 
             const res = await fetch("/api/mobile_dentals", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: withAuthHeaders({ "Content-Type": "application/json" }),
                 body: JSON.stringify(payload)
             });
 
@@ -43,7 +43,7 @@ export default function RequestServicePage() {
         } finally {
             setSubmitting(false);
         }
-    };
+    }, [form, router]);
 
     return (
         <div style={{ padding: "24px", maxWidth: 1000, margin: '0 auto' }}>
@@ -51,10 +51,20 @@ export default function RequestServicePage() {
                 style={{ marginBottom: 16 }}
                 items={[
                     {
-                        title: <Link href="/company"><HomeOutlined /> หน้าหลัก</Link>,
+                        title: (
+                            <Link href="/company" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: 'inherit' }}>
+                                <House size={16} />
+                                <span>หน้าหลัก</span>
+                            </Link>
+                        ),
                     },
                     {
-                        title: <><FileAddOutlined /> เพิ่มการนัดหมาย</>,
+                        title: (
+                            <Space size={8}>
+                                <SearchCheck size={16} />
+                                <span>ตรวจสอบสถานะ</span>
+                            </Space>
+                        ),
                     },
                 ]}
             />

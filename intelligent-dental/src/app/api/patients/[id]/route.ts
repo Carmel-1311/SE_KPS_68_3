@@ -11,13 +11,17 @@ type RouteContext = {
 export async function GET(_: Request, { params }: RouteContext) {
   try {
     const user = getCurrentUser();
-    requireRole(user.role, ["staff", "dentist"]);
+    requireRole(user.role, ["staff", "dentist", "patient"]);
 
     const { id } = await params;
-    const patientId = Number(id);
-
-    if (!Number.isInteger(patientId) || patientId <= 0) {
-      throw new Error("Invalid patient id");
+    let patientId: number;
+    if (user.role === "patient") {
+      patientId = user.id;
+    } else {
+      patientId = Number(id);
+      if (!Number.isInteger(patientId) || patientId <= 0) {
+        throw new Error("Invalid patient id");
+      }
     }
 
     const patient = await patientService.getPatientById(patientId);
@@ -31,21 +35,27 @@ export async function GET(_: Request, { params }: RouteContext) {
 export async function PUT(request: Request, { params }: RouteContext) {
   try {
     const user = getCurrentUser();
-    requireRole(user.role, ["staff", "dentist"]);
+    requireRole(user.role, ["staff", "dentist", "patient"]);
 
     const { id } = await params;
-    const patientId = Number(id);
-
-    if (!Number.isInteger(patientId) || patientId <= 0) {
-      throw new Error("Invalid patient id");
+    let patientId: number;
+    if (user.role === "patient") {
+      patientId = user.id;
+    } else {
+      patientId = Number(id);
+      if (!Number.isInteger(patientId) || patientId <= 0) {
+        throw new Error("Invalid patient id");
+      }
     }
 
     const body = await request.json();
-    const updated = await patientService.updatePatient(patientId, {
+    const payload = {
       ...body,
       birthday: body.birthday,
-      status: body.status || "active"
-    });
+      ...(user.role === "patient" ? {} : { status: body.status || "active" })
+    };
+
+    const updated = await patientService.updatePatient(patientId, payload);
 
     return res.ok(updated);
   } catch (err: unknown) {

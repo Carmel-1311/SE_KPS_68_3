@@ -12,6 +12,8 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 
 const { Header } = Layout;
 const { Text } = Typography;
@@ -19,6 +21,9 @@ const { Text } = Typography;
 export default function UserHeader() {
   const router = useRouter();
   const pathname = usePathname();
+  const [accountName, setAccountName] = useState(
+    () => getAccountName() || getAccountUsername() || "ผู้ใช้"
+  );
 
   const menuItems = [
     {
@@ -54,6 +59,11 @@ export default function UserHeader() {
   ];
 
   const selectedKey = pathname.split("/").filter(Boolean)[1] ?? "";
+
+  useEffect(() => {
+    const name = getAccountName() || getAccountUsername();
+    if (name) setAccountName(name);
+  }, []);
 
   return (
     <Header
@@ -98,7 +108,7 @@ export default function UserHeader() {
       </Flex>
 
       <Flex justify="flex-end" align="center" gap={10}>
-        <span style={{ whiteSpace: "nowrap" }}>General User</span>
+        <span style={{ whiteSpace: "nowrap" }}>{accountName}</span>
         <div
           onClick={() => router.push("/")}
           style={{
