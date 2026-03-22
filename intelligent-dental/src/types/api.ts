@@ -833,7 +833,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/staff": {
+    "/api/staffs": {
         parameters: {
             query?: never;
             header?: never;
@@ -882,6 +882,67 @@ export interface paths {
                 500: components["responses"]["500 Internal Server Error"];
             };
         };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staffs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** staff */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @example 1 */
+                    id: number;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data: components["schemas"]["staff"];
+                        };
+                    };
+                };
+                400: components["responses"]["400 Bad Request"];
+                401: components["responses"]["401 Unauthorized"];
+                403: components["responses"]["403 Forbidden"];
+                404: components["responses"]["404 Not Found"];
+                500: components["responses"]["500 Internal Server Error"];
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
         put?: never;
         /** staff */
         post: {
@@ -960,35 +1021,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** staff */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: number;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data: components["schemas"]["staff"];
-                        };
-                    };
-                };
-                400: components["responses"]["400 Bad Request"];
-                401: components["responses"]["401 Unauthorized"];
-                403: components["responses"]["403 Forbidden"];
-                404: components["responses"]["404 Not Found"];
-                500: components["responses"]["500 Internal Server Error"];
-            };
-        };
+        get?: never;
         /** staff */
         put: {
             parameters: {
@@ -2356,7 +2389,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/patient_in_mobile/{id}": {
+    "/api/mobile_dentals/{mobile_id}/patients/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2370,6 +2403,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    mobile_id: number;
                     id: number;
                 };
                 cookie?: never;
@@ -2378,11 +2412,11 @@ export interface paths {
                 content: {
                     "application/json": {
                         patients_id: string;
-                        first_name: string;
-                        last_name: string;
-                        birthday: string;
-                        phone: string;
-                        idcard: string;
+                        first_name?: string;
+                        last_name?: string;
+                        birthday?: string;
+                        phone?: string;
+                        idcard?: string;
                         inspection_id?: number;
                     };
                 };
@@ -2426,6 +2460,7 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
+                    mobile_id: number;
                     id: number;
                 };
                 cookie?: never;
