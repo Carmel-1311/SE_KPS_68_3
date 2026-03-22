@@ -10,6 +10,11 @@ export type MobileDental = components["schemas"]["mobile_dental"];
 export type MobileDentalStatus = MobileDental["status"];
 
 
+/**
+ * @deprecated Legacy hook for per-page fetching.
+ * Keep this file as the canonical type source (`MobileDental`, `MobileDentalStatus`).
+ * For screens that need complete cross-page data, use `useAllMobileDentals` instead.
+ */
 export function useMobileDentals(initialPage = 1, initialLimit = 10) {
   const [data, setData] = useState<MobileDental[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,7 +57,7 @@ export function useMobileDentals(initialPage = 1, initialLimit = 10) {
       });
 
       if (!res.ok) {
-        
+
         let errMessage = "โหลดข้อมูลไม่สำเร็จ";
         try {
           const errJson = await res.json();
@@ -60,7 +65,7 @@ export function useMobileDentals(initialPage = 1, initialLimit = 10) {
             errMessage = errJson.error.message;
           }
         } catch {
-       
+
         }
         throw new Error(errMessage);
       }

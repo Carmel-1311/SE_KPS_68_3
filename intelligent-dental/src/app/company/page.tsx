@@ -26,7 +26,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ColumnsType } from "antd/es/table";
 
-import { useMobileDentals, type MobileDental, type MobileDentalStatus } from "@/hook/useMobileDentals";
+import type { MobileDental, MobileDentalStatus } from "@/hook/useMobileDentals";
+import { useAllMobileDentals } from "@/hook/useAllMobileDentals";
 
 const { Title, Text } = Typography;
 
@@ -39,8 +40,8 @@ const statusConfig: Record<MobileDentalStatus, { color: string; label: string }>
 };
 
 export default function CompanyDashboard() {
-  const { data, loading, error } = useMobileDentals();
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const { data, loading, error, isTruncated } = useAllMobileDentals();
+  const [currentTime, setCurrentTime] = useState<Date | null>(() => new Date());
   const router = useRouter();
 
   useEffect(() => {
@@ -67,87 +68,107 @@ export default function CompanyDashboard() {
 
   const recentRequests = useMemo(() => {
     return [...data]
-      .sort(
-        (a, b) =>
-          new Date(b.date).getTime() -
-          new Date(a.date).getTime()
-      )
+      .sort((a, b) => {
+        const bt = new Date(b.date).getTime();
+        const at = new Date(a.date).getTime();
+        return (Number.isNaN(bt) ? 0 : bt) - (Number.isNaN(at) ? 0 : at);
+      })
       .slice(0, 5);
   }, [data]);
 
-  const formattedDate = useMemo(() => currentTime ? new Intl.DateTimeFormat('th-TH', { dateStyle: 'long' }).format(currentTime) : "", [currentTime]);
-  const formattedTime = useMemo(() => currentTime ? currentTime.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "", [currentTime]);
+  const formattedDate = useMemo(
+    () => (currentTime ? new Intl.DateTimeFormat("th-TH", { dateStyle: "long" }).format(currentTime) : ""),
+    [currentTime]
+  );
 
-  const columns: ColumnsType<MobileDental> = useMemo(() => [
-    {
-      title: "รหัสคำขอ",
-      dataIndex: "mobile_dental_id",
-      render: (id: number, record: MobileDental) => {
-        if (record.status === "scheduled" || record.status === "completed") {
-          return (
-            <Link href={`/company/status/${id}/patients`}>
-              <Typography.Text strong style={{ color: '#1677ff' }}>#{id}</Typography.Text>
-            </Link>
-          );
-        }
-        return <Typography.Text strong>#{id}</Typography.Text>;
-      },
-    },
-    {
-      title: "สถานที่",
-      dataIndex: "address",
-      render: (value?: string) => value ?? "-",
-    },
-    {
-      title: "วันที่",
-      dataIndex: "date",
-      render: (value?: string) => {
-        if (!value) return "-";
-        const dateObj = new Date(value);
-        return dateObj.toLocaleDateString("th-TH", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      },
-    },
-    {
-      title: "จำนวนผู้ป่วย",
-      dataIndex: "count",
-      render: (value?: number) => value ?? "-",
-    },
-    {
-      title: "สถานะ",
-      dataIndex: "status",
-      render: (status: MobileDentalStatus) => {
-        const config = statusConfig[status];
-        return <Tag color={config.color}>{config.label}</Tag>;
-      },
-    },
-  ], []);
+  const formattedTime = useMemo(
+    () =>
+      currentTime
+        ? currentTime.toLocaleTimeString("th-TH", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          })
+        : "",
+    [currentTime]
+  );
 
-  const handleRowClick = useCallback((record: MobileDental) => {
-    const tabMap: Record<string, string> = {
-      request: "1",
-      request_cancel: "1",
-      scheduled: "2",
-      completed: "3",
-      cancel: "3",
-    };
-    const tab = tabMap[record.status] || "1";
-    router.push(`/company/status?tab=${tab}&highlight=${record.mobile_dental_id}`);
-  }, [router]);
+  const columns: ColumnsType<MobileDental> = useMemo(
+    () => [
+      {
+        title: "รหัสคำขอ",
+        dataIndex: "mobile_dental_id",
+        render: (id: number, record: MobileDental) => {
+          if (record.status === "scheduled" || record.status === "completed") {
+            return (
+              <Link href={`/company/status/${id}/patients`} onClick={(e) => e.stopPropagation()}>
+                <Typography.Text strong style={{ color: "#1677ff" }}>#{id}</Typography.Text>
+              </Link>
+            );
+          }
+          return <Typography.Text strong>#{id}</Typography.Text>;
+        },
+      },
+      {
+        title: "สถานที่",
+        dataIndex: "address",
+        render: (value?: string) => value ?? "-",
+      },
+      {
+        title: "วันที่",
+        dataIndex: "date",
+        render: (value?: string) => {
+          if (!value) return "-";
+          const dateObj = new Date(value);
+          if (Number.isNaN(dateObj.getTime())) return "-";
+          return dateObj.toLocaleDateString("th-TH", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+        },
+      },
+      {
+        title: "จำนวนผู้ป่วย",
+        dataIndex: "count",
+        render: (value?: number) => value ?? "-",
+      },
+      {
+        title: "สถานะ",
+        dataIndex: "status",
+        render: (status: MobileDentalStatus) => {
+          const config = statusConfig[status];
+          return <Tag color={config.color}>{config.label}</Tag>;
+        },
+      },
+    ],
+    []
+  );
+
+  const handleRowClick = useCallback(
+    (record: MobileDental) => {
+      const tabMap: Record<string, string> = {
+        request: "1",
+        request_cancel: "1",
+        scheduled: "2",
+        completed: "3",
+        cancel: "3",
+      };
+      const tab = tabMap[record.status] || "1";
+      router.push(`/company/status?tab=${tab}&highlight=${record.mobile_dental_id}`);
+    },
+    [router]
+  );
 
   return (
     <div style={{ padding: 24 }}>
-      {/* Header */}
       <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
         <Col>
           <Title level={2} style={{ margin: 0 }}>
             <TeamOutlined style={{ marginRight: 8 }} />
             หน้าหลักหน่วยงานภายนอก
           </Title>
-          <Space style={{ color: '#8c8c8c', marginTop: 8 }} size="middle">
+          <Space style={{ color: "#8c8c8c", marginTop: 8 }} size="middle">
             <Text type="secondary">ภาพรวมการขอออกหน่วยตรวจฟัน</Text>
             {currentTime && (
               <>
@@ -158,20 +179,22 @@ export default function CompanyDashboard() {
                 </Space>
                 <Space size="small">
                   <ClockCircleOutlined />
-                  <Text type="secondary" style={{ fontFamily: 'monospace' }}>{formattedTime} น.</Text>
+                  <Text type="secondary" style={{ fontFamily: "monospace" }}>
+                    {formattedTime} น.
+                  </Text>
                 </Space>
               </>
             )}
           </Space>
         </Col>
         <Col>
-          <Card variant="borderless" style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.05)', minWidth: '180px' }}>
+          <Card variant="borderless" style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.05)", minWidth: "180px" }}>
             <Statistic
-              title={<Text type="secondary" style={{ fontSize: '12px', fontWeight: 'bold' }}>คำขอทั้งหมด</Text>}
+              title={<Text type="secondary" style={{ fontSize: "12px", fontWeight: "bold" }}>คำขอทั้งหมด</Text>}
               value={totalRequests}
-              prefix={<FileTextOutlined style={{ color: '#1677ff' }} />}
+              prefix={<FileTextOutlined style={{ color: "#1677ff" }} />}
               loading={loading}
-              styles={{ content: { fontWeight: 'bold' } }}
+              styles={{ content: { fontWeight: "bold" } }}
             />
           </Card>
         </Col>
@@ -179,7 +202,6 @@ export default function CompanyDashboard() {
 
       <Divider />
 
-      {/* Error */}
       {error && (
         <Alert
           type="error"
@@ -190,22 +212,26 @@ export default function CompanyDashboard() {
         />
       )}
 
-      {/* Empty */}
+      {isTruncated && (
+        <Alert
+          type="warning"
+          message="แจ้งเตือนข้อมูลทะลุขีดจำกัด"
+          description="ข้อมูลในระบบมีจำนวนมากเกินไป ระบบกำลังแสดงผลเพียง 3000 รายการล่าสุด"
+          showIcon
+          style={{ marginBottom: 24 }}
+        />
+      )}
+
       {!loading && !error && data.length === 0 ? (
         <Empty description="ยังไม่มีคำขอออกหน่วย" />
       ) : (
         <>
-          {/* Statistics */}
           <Row gutter={[24, 24]}>
             <Col xs={24} sm={8}>
               <Card
                 hoverable
                 onClick={() => router.push("/company/status?tab=1")}
-                style={{
-                  borderRadius: 16,
-                  background:
-                    "linear-gradient(135deg, #fffbe6 0%, #fff 100%)",
-                }}
+                style={{ borderRadius: 16, background: "linear-gradient(135deg, #fffbe6 0%, #fff 100%)" }}
               >
                 <Statistic
                   title="รอดำเนินการ"
@@ -221,11 +247,7 @@ export default function CompanyDashboard() {
               <Card
                 hoverable
                 onClick={() => router.push("/company/status?tab=2")}
-                style={{
-                  borderRadius: 16,
-                  background:
-                    "linear-gradient(135deg, #f6ffed 0%, #fff 100%)",
-                }}
+                style={{ borderRadius: 16, background: "linear-gradient(135deg, #f6ffed 0%, #fff 100%)" }}
               >
                 <Statistic
                   title="นัดหมายแล้ว"
@@ -241,11 +263,7 @@ export default function CompanyDashboard() {
               <Card
                 hoverable
                 onClick={() => router.push("/company/status?tab=3")}
-                style={{
-                  borderRadius: 16,
-                  background:
-                    "linear-gradient(135deg, #f0f0f0 0%, #fff 100%)",
-                }}
+                style={{ borderRadius: 16, background: "linear-gradient(135deg, #f0f0f0 0%, #fff 100%)" }}
               >
                 <Statistic
                   title="ประวัติอื่นๆ"
@@ -258,7 +276,6 @@ export default function CompanyDashboard() {
             </Col>
           </Row>
 
-          {/* Recent Requests */}
           {!loading && recentRequests.length > 0 && (
             <>
               <Divider />
