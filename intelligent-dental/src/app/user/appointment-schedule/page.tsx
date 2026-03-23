@@ -199,7 +199,7 @@ export default function UserAppointmentSchedulePage() {
                 !newAppointmentTime ||
                 isPastDate(newAppointmentDate),
             }}
-            destroyOnClose
+            destroyOnHidden
           >
             <Space orientation="vertical" size={12} style={{ width: "100%" }}>
               <Typography.Text>เลือกวันที่ต้องการนัดหมาย</Typography.Text>

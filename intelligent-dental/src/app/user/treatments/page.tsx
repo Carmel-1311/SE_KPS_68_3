@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
   Button,
@@ -13,11 +12,8 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { Search } from "lucide-react";
-import {
-  mockTreatmentList,
-  type Data as TreatmentData,
-  type Detail as TreatmentDetail,
-} from "@/mock/mockTreatmentById";
+import { type Detail as TreatmentDetail } from "@/mock/mockTreatmentById";
+import { useTreatments } from "@/hook/useTreatments";
 
 const { Text } = Typography;
 
@@ -43,51 +39,53 @@ const formatThaiDate = (dateValue: string | Date) => {
   )}`;
 };
 
-const getStatusColor = (status: string) =>
-  status === "เสร็จสิ้น"
-    ? "green"
-    : status === "กำลังรักษา"
-      ? "blue"
-      : status === "ยกเลิก"
-        ? "red"
-        : "gold";
+const normalizeStatus = (status: string) => {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "done") return "completed";
+  return normalized;
+};
+
+const formatStatusLabel = (status: string) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed") return "เสร็จสิ้น";
+  if (normalized === "cancelled" || normalized === "canceled") return "ยกเลิก";
+  if (normalized === "request_cancel" || normalized === "request cancel")
+    return "ขอยกเลิก";
+  if (normalized === "scheduled") return "นัดหมายแล้ว";
+  if (normalized === "in_progress" || normalized === "in progress")
+    return "กำลังรักษา";
+  return status;
+};
+
+const getStatusColor = (status: string) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "เสร็จสิ้น") return "green";
+  if (normalized === "cancelled" || normalized === "canceled" || normalized === "ยกเลิก")
+    return "red";
+  if (
+    normalized === "request_cancel" ||
+    normalized === "request cancel" ||
+    normalized === "ขอยกเลิก"
+  )
+    return "orange";
+  if (normalized === "scheduled" || normalized === "นัดหมายแล้ว") return "blue";
+  if (normalized === "in_progress" || normalized === "in progress" || normalized === "กำลังรักษา")
+    return "blue";
+  return "gold";
+};
 
 export default function UserTreatmentsPage() {
-  const [search, setSearch] = useState("");
-
-  const treatments = useMemo(() => {
-    return [...mockTreatmentList].sort((a, b) => {
-      const aValue = dayjs(a.date).valueOf();
-      const bValue = dayjs(b.date).valueOf();
-      return bValue - aValue;
-    });
-  }, []);
-
-  const filteredTreatments = useMemo(() => {
-    if (!search.trim()) return treatments;
-    const normalized = search.trim().toLowerCase();
-    return treatments.filter((item) => {
-      const thaiDate = formatThaiDate(item.date).toLowerCase();
-      const isoDate = dayjs(item.date).format("YYYY-MM-DD");
-      return thaiDate.includes(normalized) || isoDate.includes(normalized);
-    });
-  }, [search, treatments]);
-
-  const [activeId, setActiveId] = useState<number>(treatments[0]?.id ?? 0);
-
-  useEffect(() => {
-    if (filteredTreatments.length === 0) return;
-    const hasActive = filteredTreatments.some((item) => item.id === activeId);
-    if (!hasActive) setActiveId(filteredTreatments[0].id);
-  }, [activeId, filteredTreatments]);
-
-  const activeTreatment =
-    filteredTreatments.find((item) => item.id === activeId) ??
-    filteredTreatments[0] ??
-    treatments[0];
-
-  const filteredDetails = activeTreatment?.detail ?? [];
-  const hasActiveTreatment = Boolean(activeTreatment);
+  const {
+    search,
+    setSearch,
+    treatments,
+    filteredTreatments,
+    activeId,
+    setActiveId,
+    activeTreatment,
+    filteredDetails,
+    hasActiveTreatment,
+  } = useTreatments();
 
   const columns: ColumnsType<TreatmentDetail> = [
     {
@@ -161,8 +159,11 @@ export default function UserTreatmentsPage() {
             </div>
             <div>
               <Text className="summary-label">สถานะ</Text>
-              <Tag color={getStatusColor(activeTreatment.status)} className="summary-tag">
-                {activeTreatment.status}
+              <Tag
+                color={getStatusColor(activeTreatment.status)}
+                className="summary-tag"
+              >
+                {formatStatusLabel(activeTreatment.status)}
               </Tag>
             </div>
             <div>
@@ -188,7 +189,7 @@ export default function UserTreatmentsPage() {
               ประวัติ: {activeTreatment.inspection_record.history}
             </Text>
             <Text className="record-line">
-              สถานะ: {activeTreatment.inspection_record.status}
+              สถานะ: {formatStatusLabel(activeTreatment.inspection_record.status)}
             </Text>
           </div>
         </>

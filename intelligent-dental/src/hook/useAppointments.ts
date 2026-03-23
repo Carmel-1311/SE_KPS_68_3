@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { type Datum, Status } from "@/mock/mockAppointment";
+import { getAuthToken, withAuthHeaders } from "@/app/utils/auth.client";
 
 type StatusFilter = "all" | Status;
 
@@ -19,21 +20,48 @@ export function useAppointments() {
       setLoading(true);
       setError(null);
 
+      const token = getAuthToken();
+      if (!token) {
+        if (isMountedRef.current) {
+          setAppointments([]);
+          setError("Please log in to view appointments.");
+          setLoading(false);
+        }
+        return;
+      }
+
       const res = await fetch("/api/appointments?limit=200", {
         cache: "no-store",
+        headers: withAuthHeaders(),
       });
 
-      if (!res.ok) throw new Error("fetch failed");
+      const json = (await res.json()) as
+        | { data?: Datum[] }
+        | { error?: { message?: string } }
+        | { message?: string };
 
-      const json: { data: Datum[] } = await res.json();
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Please log in again.");
+        }
+        const message =
+          (json as { error?: { message?: string } })?.error?.message ||
+          (json as { message?: string })?.message ||
+          "fetch failed";
+        throw new Error(message);
+      }
 
       if (isMountedRef.current) {
-        setAppointments(json.data ?? []);
+        setAppointments((json as { data?: Datum[] }).data ?? []);
       }
     } catch (err) {
       console.error(err);
       if (isMountedRef.current) {
-        setError("ไม่สามารถโหลดข้อมูลนัดหมายได้");
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Unable to load appointments.";
+        setError(message);
       }
     } finally {
       if (isMountedRef.current) {
