@@ -175,7 +175,7 @@ const loading =
             }}
           />
         </Tooltip>
-
+            {role != "company" && (
         <Tooltip title="Edit">
           <Pencil
             size={16}
@@ -184,7 +184,7 @@ const loading =
               router.push(`/personnel/provider/edit/${role}/${record.id}`);
             }}
           />
-        </Tooltip>
+        </Tooltip>)}
       </Space>
     ),
   };

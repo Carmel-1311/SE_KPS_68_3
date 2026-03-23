@@ -59,31 +59,31 @@ export default function ProviderDetailPage() {
 
 
     const user: any | null = (() => {
-  if (!rawUser) return null;
+        if (!rawUser) return null;
 
-   if (role === "company") {
-    const c = rawUser as any;
-    return {
-      id: rawUser.id,
-      role: "company",
-      officeName: c.office_name ?? "" ,
-      phone: rawUser.phone,
-      email: rawUser.email,
-      contactName: c.contact_name ?? "",
-      address: c.address ?? "",
-    };
-  }
-  const c = rawUser as any;
-  return {
-    id: rawUser.id,
-    role: role,
-    name: c.name,
-    phone: rawUser.phone,
-    email: rawUser.email,
-    allergy: c.allergy ?? "",
-    licenseNumber: c.license_number ?? "",
-  };
-})();
+        if (role === "company") {
+            const c = rawUser as any;
+            return {
+                id: rawUser.id,
+                role: "company",
+                officeName: c.office_name ?? "",
+                phone: rawUser.phone,
+                email: rawUser.email,
+                contactName: c.contact_name ?? "",
+                address: c.address ?? "",
+            };
+        }
+        const c = rawUser as any;
+        return {
+            id: rawUser.id,
+            role: role,
+            name: c.name,
+            phone: rawUser.phone,
+            email: rawUser.email,
+            allergy: c.allergy ?? "",
+            licenseNumber: c.license_number ?? "",
+        };
+    })();
 
     const roleLabel = {
         patient: "ผู้ป่วย",
@@ -92,14 +92,14 @@ export default function ProviderDetailPage() {
         company: "หน่วยงานภายนอก",
     };
     if (loading) {
-    return <div>Loading...</div>;
+        return <div>Loading...</div>;
     }
 
     if (!user) {
-    return <div>ไม่พบข้อมูล</div>;
+        return <div>ไม่พบข้อมูล</div>;
     }
     return (
-        
+
         <div style={{ padding: 24 }}>
             {/* Breadcrumb */}
 
@@ -130,7 +130,7 @@ export default function ProviderDetailPage() {
                     boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
                 }}
             >
-                <Space direction="vertical" style={{ width: "100%" }} size={24}>
+                <Space orientation="vertical" style={{ width: "100%" }} size={24}>
                     {/* HEADER */}
 
                     <Space
@@ -155,19 +155,30 @@ export default function ProviderDetailPage() {
                             >
                                 กลับ
                             </Button>
+                            {role === "patient" && (
+                                <Button
+                                    onClick={() =>
+                                        router.push(`/personnel/provider/change-role/${id}`)
+                                    }
+                                >
+                                    แก้ไขบทบาท
+                                </Button>
+                            )}
+                            {role != "company" && (
+                                <Button
+                                    type="primary"
+                                    onClick={() =>
+                                        router.push(
+                                            `/personnel/provider/edit/${role}/${id}`
+                                        )
+                                    }
+                                >
+                                    แก้ไขข้อมูล
+                                </Button>)}
 
-                            <Button
-                                type="primary"
-                                onClick={() =>
-                                    router.push(
-                                        `/personnel/provider/edit/${role}/${id}`
-                                    )
-                                }
-                            >
-                                แก้ไขข้อมูล
-                            </Button>
                         </Space>
                     </Space>
+
                     <Descriptions bordered column={2}>
                         {/* DETAIL */}
                         {role != "company" && (

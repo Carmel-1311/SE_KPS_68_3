@@ -959,6 +959,7 @@ export interface paths {
                 content: {
                     /**
                      * @example {
+                     *       "prefix": "Miss",
                      *       "first_name": "Suda",
                      *       "last_name": "dee",
                      *       "birthday": "1995-08-20",
@@ -969,6 +970,7 @@ export interface paths {
                      *     }
                      */
                     "application/json": {
+                        prefix: string;
                         first_name: string;
                         last_name: string;
                         /** Format: date */
@@ -1038,6 +1040,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        prefix: string;
                         first_name: string;
                         last_name: string;
                         /** Format: date */

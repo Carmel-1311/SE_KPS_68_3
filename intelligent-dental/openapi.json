@@ -2035,6 +2035,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "prefix": {
+                    "type": "string"
+                  },
                   "first_name": {
                     "type": "string"
                   },
@@ -2070,10 +2073,12 @@
                   "birthday",
                   "email",
                   "phone",
-                  "role"
+                  "role",
+                  "prefix"
                 ]
               },
               "example": {
+                "prefix": "Miss",
                 "first_name": "Suda",
                 "last_name": "dee",
                 "birthday": "1995-08-20",
@@ -2190,6 +2195,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
+                  "prefix": {
+                    "type": "string"
+                  },
                   "first_name": {
                     "type": "string"
                   },
@@ -2218,7 +2226,8 @@
                   "birthday",
                   "email",
                   "phone",
-                  "license_number"
+                  "license_number",
+                  "prefix"
                 ],
                 "additionalProperties": false
               },

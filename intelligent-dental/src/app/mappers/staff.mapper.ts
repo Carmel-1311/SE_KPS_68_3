@@ -2,7 +2,7 @@ import { components, paths } from "../../types/api"
 import { Prisma, role_staff } from "@prisma/client"
 
 export type StaffListResponse =
-  paths["/api/staff"]["get"]["responses"]["200"]["content"]["application/json"]["data"][number]
+  paths["/api/staffs"]["get"]["responses"]["200"]["content"]["application/json"]["data"][number]
 
 export type StaffResponse = components["schemas"]["staff"]
 
@@ -16,6 +16,7 @@ export const staffListQuery =
   Prisma.validator<Prisma.staffDefaultArgs>()({
     select: {
       staff_id: true,
+      prefix:true,
       first_name: true,
       last_name: true,
       email: true,
@@ -29,6 +30,7 @@ export const staffDetailQuery =
   Prisma.validator<Prisma.staffDefaultArgs>()({
     select: {
       staff_id: true,
+      prefix:true,
       first_name: true,
       last_name: true,
       email: true,
@@ -45,7 +47,7 @@ export const staffMap = {
   toResponseListItem(data: StaffList): StaffListResponse {
     return {
       id: data.staff_id,
-      name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
+      name: `${data.prefix ?? ""} ${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
       email: data.email ?? "",
       role: (data.role ?? "staff") as StaffListResponse["role"]
     }
@@ -58,7 +60,7 @@ export const staffMap = {
   toResponse(data: StaffDetail): StaffResponse {
     return {
       id: data.staff_id,
-      name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
+      name: `${data.prefix ?? ""} ${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
       email: data.email ?? "",
       phone: data.phone ?? "",
       birthday: data.birthday ? data.birthday.toISOString().slice(0, 10) : "",
@@ -69,6 +71,7 @@ export const staffMap = {
 
   toCreateInput(data: CreateStaffInput): Prisma.staffCreateInput {
     return {
+      prefix:data.prefix,
       first_name: data.first_name,
       last_name: data.last_name,
       birthday: new Date(data.birthday),
@@ -81,6 +84,7 @@ export const staffMap = {
 
   toUpdateInput(data: UpdateStaffInput): Prisma.staffUpdateInput {
     return {
+      ...(data.prefix !== undefined && { prefix:data.prefix}),
       first_name: data.first_name,
       last_name: data.last_name,
       birthday: new Date(data.birthday),

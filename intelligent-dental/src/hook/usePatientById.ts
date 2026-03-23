@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
-import type {patientData } from "../types/patients";
+import type { patientData } from "../types/patients";
 import { withAuthHeaders } from "../app/utils/auth.client";
 
 
 export function usePatientById(id: number) {
-  const [patients, setPatient] = useState<patientData | null >(null);
+  const [patients, setPatient] = useState<patientData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id || isNaN(id)) return;
+    if (!id || isNaN(id)) {
+      setLoading(false);
+      return;
+    }
 
     const fetchData = async () => {
       try {
