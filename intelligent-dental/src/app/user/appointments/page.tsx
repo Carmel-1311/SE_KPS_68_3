@@ -1,8 +1,8 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
-import dayjs, { type Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import {
+  Alert,
   Button,
   Card,
   DatePicker,
@@ -17,10 +17,10 @@ import {
 import type { ColumnsType } from "antd/es/table";
 import { CalendarClock, Search } from "lucide-react";
 import {
-  mockAppointmentList,
   type Datum,
   Status,
 } from "@/mock/mockAppointment";
+import { useAppointments } from "@/hook/useAppointments";
 
 const statusMeta: Record<
   Status,
@@ -55,52 +55,19 @@ const formatThaiDate = (dateValue: string) => {
 };
 
 export default function UserAppointmentsPage() {
-  const [appointments, setAppointments] = useState(mockAppointmentList);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | Status>("all");
-  const [dateFilter, setDateFilter] = useState<Dayjs | null>(null);
-
-  const statusSummary = useMemo(() => {
-    return appointments.reduce(
-      (acc, item) => {
-        acc[item.status] = (acc[item.status] ?? 0) + 1;
-        return acc;
-      },
-      {
-        [Status.Scheduled]: 0,
-        [Status.Completed]: 0,
-        [Status.Cancelled]: 0,
-        [Status.RequestCancel]: 0,
-      } as Record<Status, number>,
-    );
-  }, [appointments]);
-
-  const filteredAppointments = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
-
-    return appointments.filter((item) => {
-      const matchesStatus =
-        statusFilter === "all" ? true : item.status === statusFilter;
-      const matchesDate = dateFilter
-        ? dayjs(item.appointment_date).isSame(dateFilter, "day")
-        : true;
-
-      if (!normalizedSearch) return matchesStatus && matchesDate;
-
-      const matchesSearch = [
-        item.appointment_id,
-        item.appointment_date,
-        item.appointment_time,
-        item.staff?.name,
-        item.type,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(normalizedSearch);
-
-      return matchesStatus && matchesDate && matchesSearch;
-    });
-  }, [appointments, search, statusFilter, dateFilter]);
+  const {
+    filteredAppointments,
+    statusSummary,
+    loading,
+    error,
+    search,
+    setSearch,
+    statusFilter,
+    setStatusFilter,
+    dateFilter,
+    setDateFilter,
+    requestCancel,
+  } = useAppointments();
 
   const handleCancelAppointment = (record: Datum) => {
     Modal.confirm({
@@ -112,13 +79,7 @@ export default function UserAppointmentsPage() {
       cancelText: "ปิด",
       okButtonProps: { danger: true },
       onOk: () => {
-        setAppointments((prev) =>
-          prev.map((item) =>
-            item.appointment_id === record.appointment_id
-              ? { ...item, status: Status.RequestCancel }
-              : item,
-          ),
-        );
+        requestCancel(record.appointment_id);
       },
     });
   };
@@ -188,6 +149,15 @@ export default function UserAppointmentsPage() {
       styles={{ body: { padding: "1rem" } }}
     >
       <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+        {error && (
+          <Alert
+            type="error"
+            message="เกิดข้อผิดพลาด"
+            description={error}
+            showIcon
+          />
+        )}
+
         <Space wrap style={{ width: "100%", justifyContent: "space-between" }}>
           <Space style={{ flex: 1, minWidth: 260 }}>
             <Search size={18} />
@@ -256,6 +226,7 @@ export default function UserAppointmentsPage() {
           rowKey="appointment_id"
           columns={columns}
           dataSource={filteredAppointments}
+          loading={loading}
           pagination={{ pageSize: 8 }}
           locale={{ emptyText: "ไม่พบนัดหมาย" }}
           scroll={{ x: 820 }}

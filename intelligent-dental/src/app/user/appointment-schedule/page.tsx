@@ -1,6 +1,5 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import {
   Badge,
@@ -13,7 +12,6 @@ import {
   Empty,
   Grid,
   Modal,
-  message,
   Segmented,
   Select,
   Row,
@@ -31,19 +29,9 @@ import {
   Stethoscope,
 } from "lucide-react";
 import {
-  mockAppointmentList,
-  type Data,
   Status,
 } from "@/mock/mockAppointmentById";
-
-type Appointment = {
-  id: string;
-  date: string;
-  time: string;
-  service: string;
-  dentist: string;
-  status: Status;
-};
+import { useAppointmentSchedule } from "@/hook/useAppointmentSchedule";
 
 const appointmentStatusLabel: Record<Status, string> = {
   [Status.Scheduled]: "นัดหมายแล้ว",
@@ -59,7 +47,6 @@ const statusColor: Record<Status, "blue" | "green" | "red" | "orange"> = {
   [Status.RequestCancel]: "orange",
 };
 
-const appointmentDateFormat = "YYYY-MM-DD";
 const thaiMonthsShort = [
   "ม.ค.",
   "ก.พ.",
@@ -86,189 +73,36 @@ const formatThaiDate = (dateValue: string) => {
 const formatThaiMonthYear = (value: Dayjs) =>
   `${thaiMonthsShort[value.month()]} ${value.format("YYYY")}`;
 
-const storageKey = "userAppointments";
-
-const toAppointmentId = (item: Data) => {
-  const dateKey = item.appointment_date.replaceAll("-", "");
-  const seq = String(item.appointment_id).padStart(3, "0");
-  return `AP-${dateKey}-${seq}`;
-};
-
-const mapToAppointment = (item: Data): Appointment => ({
-  id: toAppointmentId(item),
-  date: item.appointment_date,
-  time: item.appointment_time,
-  service: item.type,
-  dentist: item.staff?.name ?? "ไม่ระบุ",
-  status: item.status,
-});
-
-const mergeAppointments = (base: Appointment[], extra: Appointment[]) => {
-  const map = new Map<string, Appointment>();
-  base.forEach((item) => map.set(item.id, item));
-  extra.forEach((item) => map.set(item.id, item));
-  return Array.from(map.values());
-};
-const readStoredAppointments = (): Appointment[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Appointment[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item?.id && item?.date && item?.time);
-  } catch {
-    return [];
-  }
-};
-
-const writeStoredAppointments = (items: Appointment[]) => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(storageKey, JSON.stringify(items));
-};
-
-const sortAppointmentsByTime = (items: Appointment[]) => {
-  return [...items].sort((a, b) => a.time.localeCompare(b.time));
-};
-
-const getAppointmentDateTimeValue = (item: Appointment) =>
-  dayjs(`${item.date}T${item.time}`).valueOf();
-
-const filterAppointmentsByStatus = (
-  items: Appointment[],
-  statusFilter: Status | "all",
-) => {
-  if (statusFilter === "all") return items;
-  return items.filter((item) => item.status === statusFilter);
-};
-
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
-  const [appointments, setAppointments] = useState<Appointment[]>(
-    mockAppointmentList.map(mapToAppointment),
-  );
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [newAppointmentDate, setNewAppointmentDate] = useState<Dayjs | null>(
-    dayjs(),
-  );
-  const [newAppointmentTime, setNewAppointmentTime] = useState<Dayjs | null>(
-    null,
-  );
-  const [newAppointmentService, setNewAppointmentService] = useState("");
-  const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-  const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
-  const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
-  useEffect(() => {
-    const stored = readStoredAppointments();
-    setAppointments((prev) => mergeAppointments(prev, stored));
-  }, []);
-
-  const appointmentsByDate = useMemo(() => {
-    return appointments.reduce<Record<string, Appointment[]>>((acc, item) => {
-      acc[item.date] ??= [];
-      acc[item.date].push(item);
-      return acc;
-    }, {});
-  }, [appointments]);
-
-  const selectedDateKey = selectedDate.format(appointmentDateFormat);
-  const selectedDateAppointments = useMemo(() => {
-    const items = appointmentsByDate[selectedDateKey] ?? [];
-    const filtered = filterAppointmentsByStatus(items, statusFilter);
-    return sortAppointmentsByTime(filtered);
-  }, [appointmentsByDate, selectedDateKey, statusFilter]);
-
-  const upcomingAppointments = useMemo(() => {
-    const nowValue = dayjs().valueOf();
-    return appointments
-      .filter((item) => item.status === Status.Scheduled)
-      .map((item) => ({ item, timeValue: getAppointmentDateTimeValue(item) }))
-      .filter(({ timeValue }) => timeValue >= nowValue)
-      .sort((a, b) => a.timeValue - b.timeValue)
-      .map(({ item }) => item);
-  }, [appointments]);
-
-  const nextAppointment = upcomingAppointments[0];
-
-  const uniqueOptions = (key: "service" | "dentist") => {
-    const values = new Set(appointments.map((item) => item[key]).filter(Boolean));
-    return Array.from(values).map((value) => ({ label: value, value }));
-  };
-
-  const isPastDate = (value: Dayjs) => value.isBefore(dayjs(), "day");
-
-  const createAppointmentId = (dateValue: Dayjs) => {
-    const dateKey = dateValue.format("YYYYMMDD");
-    const existing = appointments.filter((item) =>
-      item.id.startsWith(`AP-${dateKey}`),
-    );
-    const nextNumber = String(existing.length + 1).padStart(3, "0");
-    return `AP-${dateKey}-${nextNumber}`;
-  };
-
-  const resetNewAppointment = (dateValue: Dayjs) => {
-    setNewAppointmentDate(dateValue);
-    setNewAppointmentTime(null);
-    setNewAppointmentService("");
-    setNewAppointmentDentist("");
-  };
-
-  const handleAddAppointment = () => {
-    if (!newAppointmentDate || !newAppointmentTime) return;
-    if (!newAppointmentService.trim() || !newAppointmentDentist.trim()) {
-      message.error("กรุณากรอกข้อมูลให้ครบถ้วน");
-      return;
-    }
-
-    if (isPastDate(newAppointmentDate)) {
-      message.error("ไม่สามารถเลือกวันที่ผ่านมาแล้วได้");
-      return;
-    }
-
-    const newAppointment: Appointment = {
-      id: createAppointmentId(newAppointmentDate),
-      date: newAppointmentDate.format("YYYY-MM-DD"),
-      time: newAppointmentTime.format("HH:mm"),
-      dentist: newAppointmentDentist.trim(),
-      service: newAppointmentService.trim(),
-      status: Status.Scheduled,
-    };
-
-    const stored = readStoredAppointments();
-    writeStoredAppointments([...stored, newAppointment]);
-    setAppointments((prev) => [...prev, newAppointment]);
-    setSelectedDate(newAppointmentDate);
-    setViewMonth(newAppointmentDate);
-    message.success("เพิ่มการนัดหมายเรียบร้อยแล้ว");
-    setIsCreateOpen(false);
-    resetNewAppointment(newAppointmentDate);
-  };
-
-  const summary = useMemo(() => {
-    const viewKey = viewMonth.format("YYYY-MM");
-
-    return appointments
-      .filter((item) => item.date.startsWith(viewKey))
-      .reduce(
-        (acc, item) => {
-          acc[item.status] += 1;
-          return acc;
-        },
-        {
-          [Status.Scheduled]: 0,
-          [Status.Completed]: 0,
-          [Status.Cancelled]: 0,
-          [Status.RequestCancel]: 0,
-        } satisfies Record<Status, number>,
-      );
-  }, [viewMonth, appointments]);
-  const summaryTotal =
-    summary[Status.Scheduled] +
-    summary[Status.Completed] +
-    summary[Status.Cancelled] +
-    summary[Status.RequestCancel];
+  const {
+    isCreateOpen,
+    setIsCreateOpen,
+    newAppointmentDate,
+    setNewAppointmentDate,
+    newAppointmentTime,
+    setNewAppointmentTime,
+    newAppointmentService,
+    setNewAppointmentService,
+    newAppointmentDentist,
+    setNewAppointmentDentist,
+    selectedDate,
+    setSelectedDate,
+    viewMonth,
+    setViewMonth,
+    statusFilter,
+    setStatusFilter,
+    nextAppointment,
+    summary,
+    summaryTotal,
+    uniqueOptions,
+    isPastDate,
+    resetNewAppointment,
+    handleAddAppointment,
+    selectedDateAppointments,
+    getSortedAppointmentsForDate,
+  } = useAppointmentSchedule();
 
   const summaryTitle = `ข้อมูลเดือน ${formatThaiMonthYear(viewMonth)}`;
 
@@ -279,9 +113,8 @@ export default function UserAppointmentSchedulePage() {
   const appointmentListData = selectedDateAppointments;
 
   const dateCellRender = (value: Dayjs) => {
-    const items = appointmentsByDate[value.format(appointmentDateFormat)] ?? [];
-    if (!items.length) return null;
-    const sorted = sortAppointmentsByTime(items);
+    const sorted = getSortedAppointmentsForDate(value);
+    if (!sorted.length) return null;
     const firstItem = sorted[0];
 
     return (

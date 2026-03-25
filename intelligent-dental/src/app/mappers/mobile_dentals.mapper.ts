@@ -15,7 +15,10 @@ export const MobileDentalsMap = {
     toRespons(data : mobile_dental & { company: company  | null}): MobileDentalsResponse {
         return {
             mobile_dental_id:data.mobile_dental_id,
-            company_id:data.company?.company_id ?? 0,
+            company:{
+                id:data.company?.company_id ?? 0,
+                office_name:data.company?.office_name ?? ""
+            },
             date: data.date?.toISOString() ?? "",
             count: data.count ?? 0,
             status:data.status ?? "request",

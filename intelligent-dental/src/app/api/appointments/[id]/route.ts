@@ -10,7 +10,8 @@ export async function GET(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const appointmentId = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["staff", "dentist", "patient"])
         const data = await appointmentService.getAppointmentById(appointmentId);
 
@@ -24,7 +25,8 @@ export async function PUT(request: Request,{ params }: { params: Promise<{ id: s
     try {
         const { id } = await params;
         const appointmentId = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["patient","staff","dentist"])           
         const body = await request.json()
         const updatedAppointment = await appointmentService.updateAppointment(appointmentId, body, user)
@@ -38,7 +40,8 @@ export async function DELETE(request: Request,{ params }: { params: Promise<{ id
     try {
         const { id } = await params;
         const appointmentId = parseInt(id);
-        const user = getCurrentUser()
+        const user = getCurrentUser(request)
+        if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
         requireRole(user.role, ["staff", "dentist", "patient"])
         await appointmentService.deleteAppointment(appointmentId, user)
         return res.noContent()

@@ -1,44 +1,29 @@
-﻿'use client';
+﻿"use client";
 
-import { Button, Card, Space, Table, Typography, Breadcrumb, Tag, Select } from "antd";
-import { useEffect, useState, useMemo } from "react";
+import {
+  Button,
+  Card,
+  Space,
+  Table,
+  Typography,
+  Breadcrumb,
+  Tag,
+  Select,
+} from "antd";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { HomeOutlined, CalendarOutlined, PlusOutlined, ClockCircleOutlined, UserOutlined, IdcardOutlined, EditOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  HomeOutlined,
+  CalendarOutlined,
+  PlusOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+  IdcardOutlined,
+  EditOutlined,
+} from "@ant-design/icons";
+import { useWorkSchedule } from "@/hook/useWorkSchedule";
 
 const { Title, Text } = Typography;
-
-interface WorkScheduleType {
-  id: number;
-  staff_id: number;
-  date: string;
-  start_time: string;
-  end_time: string;
-  is_active: boolean;
-  staff?: {
-    first_name: string;
-    last_name: string;
-    roles?: {
-      role_name: string;
-    };
-  };
-}
-
-const mockApi = {
-  data: [
-    { 
-      id: 1, staff_id: 5, date: "Monday", start_time: "09:00:00", end_time: "10:00:00", is_active: true,
-      staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์" } }
-    },
-    { 
-      id: 2, staff_id: 5, date: "Tuesday", start_time: "10:00:00", end_time: "12:00:00", is_active: true,
-      staff: { first_name: "สมหญิง", last_name: "ใจดี", roles: { role_name: "ทันตแพทย์" } }
-    },
-    { 
-      id: 3, staff_id: 6, date: "Wednesday", start_time: "13:00:00", end_time: "14:00:00", is_active: false,
-      staff: { first_name: "มานะ", last_name: "อดทน", roles: { role_name: "ทันตแพทย์เฉพาะทาง" } }
-    },
-  ] as WorkScheduleType[]
-};
 
 const TIME_SLOTS = [
   { start: 8, end: 9, label: "08:00 - 09:00" },
@@ -56,215 +41,248 @@ const TIME_SLOTS = [
 ];
 
 const DAYS = [
-  { key: 'Monday', label: 'จันทร์' },
-  { key: 'Tuesday', label: 'อังคาร' },
-  { key: 'Wednesday', label: 'พุธ' },
-  { key: 'Thursday', label: 'พฤหัสบดี' },
-  { key: 'Friday', label: 'ศุกร์' },
-  { key: 'Saturday', label: 'เสาร์' },
-  { key: 'Sunday', label: 'อาทิตย์' }
+  { key: "Mon", label: "จันทร์" },
+  { key: "Tue", label: "อังคาร" },
+  { key: "Wed", label: "พุธ" },
+  { key: "Thu", label: "พฤหัสบดี" },
+  { key: "Fri", label: "ศุกร์" },
+  { key: "Sat", label: "เสาร์" },
+  { key: "Sun", label: "อาทิตย์" },
 ];
 
 export default function DentistWorkSchedulePage() {
   const router = useRouter();
-  const [allData, setAllData] = useState<WorkScheduleType[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const { data: allData, loading } = useWorkSchedule();
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      try {
-        const storedData = localStorage.getItem('work_schedules');
-        if (storedData) {
-          setAllData(JSON.parse(storedData));
-        } else {
-          setAllData(mockApi.data);
-          localStorage.setItem('work_schedules', JSON.stringify(mockApi.data));
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+  // 🔥 clean name
+  const cleanName = (name?: string) =>
+    name?.replace("null ", "") || "";
 
+  // =========================
+  // staff filter
+  // =========================
   const staffOptions = useMemo(() => {
-    const uniqueStaff = Array.from(new Set(allData.map(item => item.staff_id)));
-    return uniqueStaff.map(id => {
-      const staffInfo = allData.find(item => item.staff_id === id)?.staff;
-      return {
-        value: id,
-        label: staffInfo ? `ทพ. ${staffInfo.first_name} ${staffInfo.last_name}` : `รหัสแพทย์: ${id}`
-      };
+    const map = new Map();
+
+    allData.forEach((item) => {
+      const id = Number(item.staff?.id);
+      if (!map.has(id)) map.set(id, item);
     });
+
+    return Array.from(map.values()).map((item) => ({
+      value: Number(item.staff?.id),
+      label: cleanName(item.staff?.name)
+        ? `ทพ. ${cleanName(item.staff?.name)}`
+        : `แพทย์ ID: ${item.staff?.id}`,
+    }));
   }, [allData]);
 
   const filteredData = useMemo(() => {
     if (!selectedStaffId) return [];
-    return allData.filter(item => item.staff_id === selectedStaffId);
+    return allData.filter(
+      (item) => Number(item.staff?.id) === selectedStaffId
+    );
   }, [allData, selectedStaffId]);
 
+  // =========================
+  // matrix
+  // =========================
   const tableData = useMemo(() => {
     const matrix: Record<string, any[]> = {};
-    DAYS.forEach(d => {
-      matrix[d.key] = Array(TIME_SLOTS.length).fill(null).map(() => ({ type: 'empty', span: 1 }));
+
+    DAYS.forEach((d) => {
+      matrix[d.key] = Array(TIME_SLOTS.length)
+        .fill(null)
+        .map(() => ({ type: "empty", span: 1 }));
     });
 
-    filteredData.forEach(sched => {
-      const day = sched.date; 
-      if (!day || !matrix[day]) return;
+    filteredData.forEach((sched) => {
+      const day = sched.date;
 
-      const startHour = parseInt(sched.start_time.split(':')[0], 10);
-      const endHour = parseInt(sched.end_time.split(':')[0], 10);
+      const startHour = parseInt(sched.start_time.split(":")[0]);
+      const endHour = parseInt(sched.end_time.split(":")[0]);
 
-      const startIndex = TIME_SLOTS.findIndex(s => s.start === startHour);
-      const endIndex = TIME_SLOTS.findIndex(s => s.end === endHour);
+      const startIndex = TIME_SLOTS.findIndex((s) => s.start === startHour);
+      const endIndex = TIME_SLOTS.findIndex((s) => s.end === endHour);
 
       if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
         const span = endIndex - startIndex + 1;
-        matrix[day][startIndex] = { type: 'start', schedule: sched, span };
+
+        matrix[day][startIndex] = {
+          type: "start",
+          schedule: sched,
+          span,
+        };
+
         for (let i = startIndex + 1; i <= endIndex; i++) {
-          matrix[day][i] = { type: 'span', schedule: sched, span: 0 };
+          matrix[day][i] = { type: "span", span: 0 };
         }
       }
     });
 
     return TIME_SLOTS.map((slot, index) => {
       const row: any = { key: slot.label, time: slot.label };
-      DAYS.forEach(d => {
+      DAYS.forEach((d) => {
         row[d.key] = matrix[d.key][index];
       });
       return row;
     });
   }, [filteredData]);
 
-  const getStatusStyles = (isActive: boolean) => {
-    return isActive 
-      ? { bg: '#e6f7ff', border: '#1890ff', text: '#0050b3', label: 'ลงตรวจ', tagColor: 'blue' }
-      : { bg: '#fff2f0', border: '#ffccc7', text: '#cf1322', label: 'งดตรวจ', tagColor: 'error' };
-  };
+  // =========================
+  // style
+  // =========================
+  const getStatusStyles = (isActive: boolean) =>
+    isActive
+      ? {
+          bg: "#e6f7ff",
+          border: "#1890ff",
+          text: "#0050b3",
+          label: "ลงตรวจ",
+          tagColor: "blue",
+        }
+      : {
+          bg: "#fff2f0",
+          border: "#ff4d4f",
+          text: "#cf1322",
+          label: "งดตรวจ",
+          tagColor: "error",
+        };
 
+  // =========================
+  // columns
+  // =========================
   const columns: any = [
     {
       title: "เวลา",
       dataIndex: "time",
-      key: "time",
       width: 110,
-      align: 'center',
-      render: (text: string) => <div style={{ fontWeight: '600', color: '#555' }}>{text}</div>
+      align: "center",
+      render: (text: string) => (
+        <div style={{ fontWeight: 600 }}>{text}</div>
+      ),
     },
-    ...DAYS.map(day => ({
+
+    ...DAYS.map((day) => ({
       title: day.label,
       dataIndex: day.key,
-      key: day.key,
-      width: 160,
+
       render: (cellData: any) => {
-        if (!cellData || cellData.type === 'empty') return { children: null, props: { rowSpan: 1 } };
-        if (cellData.type === 'span') return { children: null, props: { rowSpan: 0 } };
-        
-        const sched: WorkScheduleType = cellData.schedule;
-        const styles = getStatusStyles(sched.is_active); 
-        
-        const doctorName = sched.staff ? `ทพ. ${sched.staff.first_name} ${sched.staff.last_name}` : `รหัสแพทย์: ${sched.staff_id}`;
-        const doctorRole = sched.staff?.roles?.role_name || 'ทันตแพทย์';
+        if (!cellData || cellData.type === "empty")
+          return { children: null, props: { rowSpan: 1 } };
 
-        const content = (
-          <div 
-            onClick={() => router.push(`/personnel/work-schedule/${sched.id}`)} 
-            style={{
-              backgroundColor: styles.bg,
-              borderLeft: `4px solid ${styles.border}`,
-              color: styles.text,
-              padding: '10px 12px',
-              borderRadius: '6px',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              height: '100%',
-              minHeight: `${(cellData.span * 65) - 8}px`, 
-              margin: '2px 0',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              overflow: 'hidden',
-              cursor: 'pointer',
-              position: 'relative', 
-              transition: 'all 0.2s ease-in-out', 
-            }}
-            onMouseEnter={(e) => { 
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
-            }}
-            onMouseLeave={(e) => { 
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.03)';
-            }}
-          >
-            <div style={{ position: 'absolute', top: '8px', right: '8px', opacity: 0.6 }}>
-              <EditOutlined />
-            </div>
+        if (cellData.type === "span")
+          return { children: null, props: { rowSpan: 0 } };
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', opacity: 0.85, paddingRight: '16px' }}>
-              <ClockCircleOutlined /> 
-              {sched.start_time.substring(0, 5)} - {sched.end_time.substring(0, 5)}
-            </div>
+        const sched = cellData.schedule;
+        const styles = getStatusStyles(sched.is_active ?? true);
 
-            <div style={{ fontSize: '13px', fontWeight: 'bold', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <UserOutlined />
-              <Text ellipsis style={{ color: 'inherit', margin: 0 }}>{doctorName}</Text>
-            </div>
+        const name = cleanName(sched.staff?.name);
 
-            <div style={{ fontSize: '12px', marginBottom: '8px', opacity: 0.9, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <IdcardOutlined />
-              <span>{doctorRole}</span>
-            </div>
+        return {
+          children: (
+            <div
+              onClick={() =>
+                router.push(`/personnel/work-schedule/${sched.id}`)
+              }
+              style={{
+                background: "linear-gradient(135deg,#e6f7ff,#fff)",
+                borderLeft: `4px solid ${styles.border}`,
+                borderRadius: 10,
+                padding: 12,
+                minHeight: `${cellData.span * 70}px`,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                cursor: "pointer",
+                transition: "0.2s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.boxShadow =
+                  "0 8px 20px rgba(0,0,0,0.12)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "none";
+                e.currentTarget.style.boxShadow =
+                  "0 2px 8px rgba(0,0,0,0.08)";
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 600 }}>
+                <ClockCircleOutlined />{" "}
+                {sched.start_time.slice(0, 5)} -{" "}
+                {sched.end_time.slice(0, 5)}
+              </div>
 
-            <div style={{ marginTop: 'auto' }}>
-              <Tag color={styles.tagColor} style={{ margin: 0, borderRadius: '4px' }}>
+              <div style={{ marginTop: 6, fontWeight: 600 }}>
+                <UserOutlined />{" "}
+                {name ? `ทพ. ${name}` : `ID: ${sched.staff?.id}`}
+              </div>
+
+              <div style={{ fontSize: 12, color: "#666" }}>
+                <IdcardOutlined /> {sched.staff?.role}
+              </div>
+
+              <Tag color={styles.tagColor} style={{ marginTop: 8 }}>
                 {styles.label}
               </Tag>
             </div>
-          </div>
-        );
-
-        return {
-          children: content,
-          props: { rowSpan: cellData.span } 
+          ),
+          props: { rowSpan: cellData.span },
         };
-      }
-    }))
+      },
+    })),
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div
+      style={{
+        padding: 24,
+        background: "#f5f7fb",
+        minHeight: "100vh",
+      }}
+    >
       <Breadcrumb
-        style={{ marginBottom: '24px', fontSize: '15px' }}
+        style={{ marginBottom: 16 }}
         items={[
-          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
-          { title: <span><CalendarOutlined /> ตารางการทำงาน</span> },
+          { title: <HomeOutlined /> },
+          { title: "ตารางการทำงาน" },
         ]}
       />
 
-      <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: '16px' }}>
-          <Title level={3} style={{ margin: 0 }}>ตารางการทำงาน</Title>
-          
-          <Space size="middle">
+      <Card
+        style={{
+          borderRadius: 16,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <Title level={3}>ตารางการทำงาน</Title>
+            <Text type="secondary">
+              ตารางเวลาการทำงานของทันตแพทย์
+            </Text>
+          </div>
+
+          <Space>
             <Select
               showSearch
-              placeholder="🔍 ค้นหารายชื่อทันตแพทย์..."
-              style={{ width: 300 }}
-              optionFilterProp="label"
-              onChange={(value) => setSelectedStaffId(value)}
+              placeholder="🔍 ค้นหาทันตแพทย์..."
+              style={{ width: 260 }}
+              onChange={(v) => setSelectedStaffId(v)}
               options={staffOptions}
               allowClear
-              size="large"
             />
-            
-            <Button 
-              type="primary" 
-              icon={<PlusOutlined />} 
+
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
               size="large"
-              onClick={() => router.push('/personnel/work-schedule/create')}
             >
               เพิ่มเวลาทำงาน
             </Button>
@@ -277,9 +295,7 @@ export default function DentistWorkSchedulePage() {
           pagination={false}
           dataSource={tableData}
           columns={columns}
-          bordered={true}
-          scroll={{ x: 1000 }}
-          locale={{ emptyText: selectedStaffId ? "ไม่มีตารางงานสำหรับแพทย์ท่านนี้" : "กรุณาเลือกรายชื่อทันตแพทย์เพื่อดูตารางงาน" }}
+          bordered
         />
       </Card>
     </div>

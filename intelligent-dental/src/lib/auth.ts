@@ -1,13 +1,24 @@
+import { decodeToken } from "@/lib/auth.server"
+
 export type User = {
   id: number
   role: "dentist" | "patient" | "staff" | "company"
 }
 
-export function getCurrentUser(): User {
+type Req = Request | { headers: Headers }
 
-  // จำลอง user ไปก่อน
+export function getCurrentUser(req: Req): User | null {
+  const authHeader = req.headers.get("authorization")
+
+  if (!authHeader) return null
+
+  const token = authHeader.replace("Bearer ", "")
+  const payload = decodeToken(token)
+
+  if (!payload) return null 
+
   return {
-    id: 1,
-    role: "staff"
+    id: payload.id,
+    role: payload.role
   }
 }
