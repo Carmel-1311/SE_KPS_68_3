@@ -43,9 +43,10 @@ export async function DELETE(
 
     requireRole(user.role, ["staff", "company"])
 
-    const id = Number(params.id)
+    const { id } = await params;
+    const pamobile_id = parseInt(id);
 
-    await paMo.deletePatients(user, id)
+    await paMo.deletePatients(user, pamobile_id)
 
     return res.noContent()
 
