@@ -1,4 +1,5 @@
 ﻿"use client";
+import { useMemo } from "react";
 
 import dayjs, { type Dayjs } from "dayjs";
 import {
@@ -18,7 +19,6 @@ import {
   Space,
   Statistic,
   Tag,
-  TimePicker,
   Typography,
 } from "antd";
 import {
@@ -73,6 +73,19 @@ const formatThaiDate = (dateValue: string) => {
 const formatThaiMonthYear = (value: Dayjs) =>
   `${thaiMonthsShort[value.month()]} ${value.format("YYYY")}`;
 
+const baseServiceOptions = [
+  { label: "อุดฟัน", value: "อุดฟัน" },
+  { label: "ขูดหินปูน", value: "ขูดหินปูน" },
+  { label: "รักษารากฟัน", value: "รักษารากฟัน" },
+  { label: "ครอบฟัน", value: "ครอบฟัน" },
+  { label: "ตรวจฟัน", value: "ตรวจฟัน" },
+  { label: "ถอนฟัน", value: "ถอนฟัน" },
+  { label: "ฟอกสีฟัน", value: "ฟอกสีฟัน" },
+  { label: "จัดฟัน", value: "จัดฟัน" },
+  { label: "ถอนฟันคุด", value: "ถอนฟันคุด" },
+  { label: "ตรวจสุขภาพช่องปาก", value: "ตรวจสุขภาพช่องปาก" },
+];
+
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
@@ -85,8 +98,8 @@ export default function UserAppointmentSchedulePage() {
     setNewAppointmentTime,
     newAppointmentService,
     setNewAppointmentService,
-    newAppointmentDentist,
-    setNewAppointmentDentist,
+    availableSlots,
+    loadingSlots,
     selectedDate,
     setSelectedDate,
     viewMonth,
@@ -103,6 +116,16 @@ export default function UserAppointmentSchedulePage() {
     selectedDateAppointments,
     getSortedAppointmentsForDate,
   } = useAppointmentSchedule();
+
+  const serviceOptions = useMemo(() => {
+    const merged = [...baseServiceOptions, ...uniqueOptions("service")];
+    const seen = new Set<string>();
+    return merged.filter((option) => {
+      if (seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    });
+  }, [uniqueOptions]);
 
   const summaryTitle = `ข้อมูลเดือน ${formatThaiMonthYear(viewMonth)}`;
 
@@ -213,29 +236,34 @@ export default function UserAppointmentSchedulePage() {
                 }
               />
               <Typography.Text>เลือกเวลา</Typography.Text>
-              <TimePicker
-                style={{ width: "100%" }}
-                value={newAppointmentTime}
-                onChange={(value) => setNewAppointmentTime(value)}
-                format="HH:mm"
+              <Select
+                showSearch
+                placeholder={
+                  !newAppointmentDate
+                    ? "กรุณาเลือกวันที่ก่อน"
+                    : availableSlots.length
+                      ? "เลือกเวลา"
+                      : "ไม่มีเวลาว่างในวันที่เลือก"
+                }
+                options={availableSlots.map((time) => ({
+                  label: `${time} น.`,
+                  value: time,
+                }))}
+                value={newAppointmentTime?.format("HH:mm")}
+                loading={loadingSlots}
+                disabled={!newAppointmentDate || !availableSlots.length}
+                onChange={(value) =>
+                  setNewAppointmentTime(value ? dayjs(value, "HH:mm") : null)
+                }
               />
               <Typography.Text>บริการ</Typography.Text>
               <Select
                 showSearch
                 placeholder="เลือกหรือพิมพ์บริการ"
-                options={uniqueOptions("service")}
+                options={serviceOptions}
                 value={newAppointmentService || undefined}
                 onChange={(value) => setNewAppointmentService(value)}
                 onSearch={(value) => setNewAppointmentService(value)}
-              />
-              <Typography.Text>ทันตแพทย์</Typography.Text>
-              <Select
-                showSearch
-                placeholder="เลือกหรือพิมพ์ชื่อทันตแพทย์"
-                options={uniqueOptions("dentist")}
-                value={newAppointmentDentist || undefined}
-                onChange={(value) => setNewAppointmentDentist(value)}
-                onSearch={(value) => setNewAppointmentDentist(value)}
               />
             </Space>
           </Modal>

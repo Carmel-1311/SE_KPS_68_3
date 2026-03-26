@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { message } from "antd";
-import { withAuthHeaders } from "@/app/utils/auth.client";
+import { getAuthToken, withAuthHeaders } from "@/app/utils/auth.client";
 import type { AppointmentResponseDTO } from "@/dtos/appointment.dto";
 import { Status } from "@/mock/mockAppointmentById";
 
@@ -24,8 +24,27 @@ type ApiListResponse<T> = {
   };
 };
 
+type ApiErrorShape = { error?: { message?: string }; message?: string };
+type AvailableSlotsResponse = {
+  available_slots: { time: string; available_dentist_ids: number[] }[];
+};
+
 const appointmentDateFormat = "YYYY-MM-DD";
 const storageKey = "userAppointments";
+
+const getPatientId = () => {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem("patient_id");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+};
+
+const readErrorMessage = (json: unknown, fallback: string) => {
+  const payload = json as ApiErrorShape | null;
+  return payload?.error?.message || payload?.message || fallback;
+};
 
 const toAppointmentId = (item: AppointmentResponseDTO) => {
   const dateKey = dayjs(item.appointment_date).format("YYYYMMDD");
@@ -108,7 +127,8 @@ export function useAppointmentSchedule() {
     null,
   );
   const [newAppointmentService, setNewAppointmentService] = useState("");
-  const [newAppointmentDentist, setNewAppointmentDentist] = useState("");
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [viewMonth, setViewMonth] = useState<Dayjs>(dayjs());
   const [statusFilter, setStatusFilter] = useState<Status | "all">("all");
@@ -193,7 +213,7 @@ export function useAppointmentSchedule() {
   const nextAppointment = upcomingAppointments[0];
 
   const uniqueOptions = useCallback(
-    (key: "service" | "dentist") => {
+    (key: "service") => {
       const values = new Set(
         appointments.map((item) => item[key]).filter(Boolean),
       );
@@ -207,62 +227,167 @@ export function useAppointmentSchedule() {
     [],
   );
 
-  const createAppointmentId = useCallback(
-    (dateValue: Dayjs) => {
-      const dateKey = dateValue.format("YYYYMMDD");
-      const existing = appointments
-        .filter((item) => item.id.startsWith(`AP-${dateKey}-`))
-        .map((item) => Number(item.id.split("-").pop()))
-        .filter((value) => Number.isFinite(value));
-      const nextNumber = String(
-        (existing.length ? Math.max(...existing) : 0) + 1,
-      ).padStart(3, "0");
-      return `AP-${dateKey}-${nextNumber}`;
-    },
-    [appointments],
-  );
-
   const resetNewAppointment = useCallback((dateValue: Dayjs) => {
     setNewAppointmentDate(dateValue);
     setNewAppointmentTime(null);
     setNewAppointmentService("");
-    setNewAppointmentDentist("");
   }, []);
 
-  const handleAddAppointment = useCallback(() => {
-    if (!newAppointmentDate || !newAppointmentTime) return;
-    if (!newAppointmentService.trim() || !newAppointmentDentist.trim()) {
-      message.error("Please complete all required fields.");
+  const fetchAvailableSlots = useCallback(async (dateValue: Dayjs) => {
+    try {
+      setLoadingSlots(true);
+      const response = await fetch(
+        `/api/appointments/available-slots?date=${dateValue.format("YYYY-MM-DD")}`,
+        {
+          cache: "no-store",
+          headers: withAuthHeaders(),
+        },
+      );
+
+      const result = (await response.json()) as
+        | { data?: AvailableSlotsResponse }
+        | ApiErrorShape;
+
+      if (!response.ok) {
+        const errorMessage = readErrorMessage(
+          result,
+          "Unable to load available slots.",
+        );
+        throw new Error(errorMessage);
+      }
+
+      const slots = "data" in result ? result.data?.available_slots ?? [] : [];
+      setAvailableSlots(
+        slots
+          .map((slot) => slot.time.slice(0, 5))
+          .filter((time) => time && time !== "Invalid"),
+      );
+    } catch (err) {
+      const messageValue =
+        err instanceof Error ? err.message : "Unable to load available slots.";
+      if (isMountedRef.current) {
+        setError(messageValue);
+      }
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!newAppointmentDate) {
+      setAvailableSlots([]);
       return;
     }
 
     if (isPastDate(newAppointmentDate)) {
-      message.error("Please select a future date.");
+      setAvailableSlots([]);
+      setNewAppointmentTime(null);
       return;
     }
 
-    const newAppointment: Appointment = {
-      id: createAppointmentId(newAppointmentDate),
-      date: newAppointmentDate.format("YYYY-MM-DD"),
-      time: newAppointmentTime.format("HH:mm"),
-      dentist: newAppointmentDentist.trim(),
-      service: newAppointmentService.trim(),
-      status: Status.Scheduled,
-    };
+    setNewAppointmentTime(null);
+    void fetchAvailableSlots(newAppointmentDate);
+  }, [fetchAvailableSlots, isPastDate, newAppointmentDate]);
 
-    const stored = readStoredAppointments();
-    writeStoredAppointments([...stored, newAppointment]);
-    setAppointments((prev) => [...prev, newAppointment]);
+  const createAppointment = useCallback(
+    async (input: {
+      date: Dayjs;
+      time: Dayjs;
+      service: string;
+    }) => {
+      if (!input.service.trim()) {
+        message.error("Please complete all required fields.");
+        return null;
+      }
+
+      if (isPastDate(input.date)) {
+        message.error("Please select a future date.");
+        return null;
+      }
+
+      const token = getAuthToken();
+      if (!token) {
+        message.error("Please log in to create appointments.");
+        return null;
+      }
+
+      const patientId = getPatientId();
+      if (!patientId) {
+        message.error("Patient id is required.");
+        return null;
+      }
+
+      try {
+        const payload = {
+          patient_id: patientId,
+          appointment_date: input.date.format("YYYY-MM-DD"),
+          appointment_time: input.time.format("HH:mm"),
+          type: input.service.trim(),
+        };
+
+        const response = await fetch("/api/appointments", {
+          method: "POST",
+          headers: withAuthHeaders({
+            "Content-Type": "application/json",
+          }),
+          body: JSON.stringify(payload),
+        });
+
+        const result = (await response.json()) as
+          | { data?: AppointmentResponseDTO }
+          | ApiErrorShape;
+
+        if (!response.ok) {
+          const errorMessage = readErrorMessage(
+            result,
+            "Unable to create appointment.",
+          );
+          throw new Error(errorMessage);
+        }
+
+        const created =
+          "data" in result && result.data
+            ? mapToAppointment(result.data)
+            : null;
+
+        if (created && isMountedRef.current) {
+          setAppointments((prev) => mergeAppointments(prev, [created]));
+          message.success("Appointment added successfully.");
+        }
+
+        return created;
+      } catch (err) {
+        const messageValue =
+          err instanceof Error ? err.message : "Unable to create appointment.";
+        if (isMountedRef.current) {
+          setError(messageValue);
+        }
+        message.error(messageValue);
+        return null;
+      }
+    },
+    [isPastDate],
+  );
+
+  const handleAddAppointment = useCallback(async () => {
+    if (!newAppointmentDate || !newAppointmentTime) return;
+
+    const created = await createAppointment({
+      date: newAppointmentDate,
+      time: newAppointmentTime,
+      service: newAppointmentService,
+    });
+
+    if (!created) return;
+
     setSelectedDate(newAppointmentDate);
     setViewMonth(newAppointmentDate);
-    message.success("Appointment added successfully.");
     setIsCreateOpen(false);
     resetNewAppointment(newAppointmentDate);
   }, [
-    createAppointmentId,
-    isPastDate,
+    createAppointment,
     newAppointmentDate,
-    newAppointmentDentist,
     newAppointmentService,
     newAppointmentTime,
     resetNewAppointment,
@@ -313,14 +438,14 @@ export function useAppointmentSchedule() {
     setNewAppointmentTime,
     newAppointmentService,
     setNewAppointmentService,
-    newAppointmentDentist,
-    setNewAppointmentDentist,
     selectedDate,
     setSelectedDate,
     viewMonth,
     setViewMonth,
     statusFilter,
     setStatusFilter,
+    availableSlots,
+    loadingSlots,
     appointmentsByDate,
     selectedDateAppointments,
     upcomingAppointments,
@@ -330,6 +455,7 @@ export function useAppointmentSchedule() {
     uniqueOptions,
     isPastDate,
     resetNewAppointment,
+    createAppointment,
     handleAddAppointment,
     getSortedAppointmentsForDate,
   };

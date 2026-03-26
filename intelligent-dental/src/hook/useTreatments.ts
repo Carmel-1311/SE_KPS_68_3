@@ -44,6 +44,11 @@ type ApiListResponse<T> = {
   };
 };
 
+type ApiErrorShape = { error?: { message?: string }; message?: string };
+const hasTreatmentData = (
+  value: { data?: TreatmentData } | ApiErrorShape,
+): value is { data: TreatmentData } => "data" in value && Boolean(value.data);
+
 const thaiMonthsShort = [
   "ม.ค.",
   "ก.พ.",
@@ -205,11 +210,13 @@ export function useTreatments() {
             headers: withAuthHeaders(),
           },
         );
-        const result = (await response.json()) as { data?: TreatmentData };
+        const result = (await response.json()) as
+          | { data?: TreatmentData }
+          | ApiErrorShape;
         if (!response.ok) {
           return;
         }
-        if (result?.data && isMountedRef.current) {
+        if (hasTreatmentData(result) && isMountedRef.current) {
           setDetailsById((prev) => ({
             ...prev,
             [activeTreatmentBase.id]: result.data!,
