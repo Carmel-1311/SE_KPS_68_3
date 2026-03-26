@@ -3,7 +3,7 @@ import { Prisma, patient_in_mobile, patient } from "@prisma/client";
 
 export type PaMobileResponse = paths["/api/mobile_dentals/{id}/patients"]["get"]["responses"]["200"]["content"]["application/json"]["data"];
 export type CreatePaMobileInput =  paths["/api/mobile_dentals/{id}/patients"]["post"]["requestBody"]["content"]["application/json"];
-export type UpdatePaMobileInput =  paths["/api/mobile_dentals/{mobile_id}/patients/{id}"]["put"]["requestBody"]["content"]["application/json"];
+export type UpdatePaMobileInput =  paths["/api/mobile_dentals/patients/{id}"]["put"]["requestBody"]["content"]["application/json"];
 
 export const PaMoMap = {
 
@@ -14,6 +14,7 @@ export const PaMoMap = {
         name:item.patient.first_name+" "+item.patient.last_name,
         status:item.patient.status??"",
         phone:item.patient.phone??"",
+        birthday:item.patient.birthday? item.patient.birthday.toISOString() : "",
         idcard:item.patient.id_card??"",
         inspection_id:item.inspection_record_id??0
 
