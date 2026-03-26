@@ -1,11 +1,14 @@
 import * as repo from "@/repositories/patientRepository"
 import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/patient.mapper"
+import { staffDetailQuery, staffMap } from "@/app/mappers/staff.mapper"
 import type { CreatePatientInput } from "@/app/mappers/patient.mapper"
 import type { UpdatePatientInput } from "@/app/mappers/patient.mapper"
-import { status_user } from "@prisma/client"
+import { prisma } from "@/utils/prisma"
+import { role_staff, status_user } from "@prisma/client"
 
 const validStatuses = new Set(Object.values(status_user))
+const validStaffRoles = new Set(Object.values(role_staff))
 
 function getDuplicatePatientMessage(
   duplicate: { email: string | null; phone: string | null },
@@ -81,4 +84,92 @@ export async function updatePatient(id: number, data: UpdatePatientInput) {
   )
 
   return map.patientMap.toResponse(updated)
+}
+
+type TransferPatientToStaffInput = {
+  role?: string
+  license_number?: string | null
+  prefix?: string | null
+}
+
+export async function transferPatientToStaff(
+  patientId: number,
+  data: TransferPatientToStaffInput
+) {
+  const requestedRole = data.role?.trim().toLowerCase() || "staff"
+  if (!validStaffRoles.has(requestedRole as role_staff)) {
+    throw new AppError(400, "STAFF-001", "Invalid role. Allowed values: staff, dentist", "VALIDATION")
+  }
+
+  const patient = await prisma.patient.findUnique({
+    where: { patient_id: patientId },
+    select: {
+      patient_id: true,
+      first_name: true,
+      last_name: true,
+      birthday: true,
+      email: true,
+      phone: true,
+      account_id: true
+    }
+  })
+
+  if (!patient) {
+    throw new AppError(404, "PAT-003", "Patient not found", "NOT_FOUND")
+  }
+
+  if (!patient.account_id) {
+    throw new AppError(409, "STAFF-004", "Patient is not linked to an account", "BUSINESS")
+  }
+
+  const existingStaffByAccount = await prisma.staff.findFirst({
+    where: { account_id: patient.account_id },
+    select: { staff_id: true }
+  })
+  if (existingStaffByAccount) {
+    throw new AppError(409, "STAFF-002", "This account is already linked to a staff profile", "CONFLICT")
+  }
+
+  const duplicateStaff = await prisma.staff.findFirst({
+    where: {
+      OR: [{ email: patient.email }, { phone: patient.phone }]
+    },
+    select: { staff_id: true }
+  })
+  if (duplicateStaff) {
+    throw new AppError(409, "STAFF-002", "Staff with this email or phone already exists", "CONFLICT")
+  }
+
+  const accountRole = requestedRole === "dentist" ? "doctor" : "staff"
+
+  const createdStaff = await prisma.$transaction(async (tx) => {
+    await tx.account.update({
+      where: { account_id: patient.account_id! },
+      data: { account_role: accountRole }
+    })
+
+    const staff = await tx.staff.create({
+      data: {
+        first_name: patient.first_name,
+        last_name: patient.last_name,
+        birthday: patient.birthday,
+        email: patient.email,
+        phone: patient.phone,
+        license_number: data.license_number?.trim() || null,
+        prefix: data.prefix?.trim() || null,
+        role: requestedRole as role_staff,
+        account_id: patient.account_id
+      },
+      ...staffDetailQuery
+    })
+
+    await tx.patient.update({
+      where: { patient_id: patientId },
+      data: { account_id: null }
+    })
+
+    return staff
+  })
+
+  return staffMap.toResponse(createdStaff)
 }
