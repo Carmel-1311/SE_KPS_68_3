@@ -22,7 +22,7 @@ const { Title, Text } = Typography;
 const STATUS_META: Record<MobileDentalStatus, { label: string; color: string }> = {
   request:        { label: 'รออนุมัติ',           color: 'blue'    },
   scheduled:      { label: 'อนุมัติแล้ว',          color: 'green'   },
-  completed:      { label: 'เสร็จสิ้น',            color: 'default' },
+  completed:      { label: 'เสร็จสิ้น',            color: 'cyan' },
   request_cancel: { label: 'คำขอยกเลิกจากผู้ใช้',  color: 'orange'  },
   cancel:         { label: 'ยกเลิกการออกหน่วย',    color: 'red'     },
 };
@@ -181,7 +181,7 @@ export default function MobileDentalDetailPage() {
                 <Select size="large">
                   <Select.Option value="request">รออนุมัติ (Request)</Select.Option>
                   <Select.Option value="scheduled">อนุมัติแล้ว (Scheduled)</Select.Option>
-                  <Select.Option value="cancel">ยกเลิก (Cancel)</Select.Option>
+                  
                 </Select>
               </Form.Item>
             ) : (

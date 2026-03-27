@@ -1,30 +1,20 @@
 'use client';
 
-import { useEffect } from 'react';
-import {
-  Card,
-  Typography,
-  Button,
-  Input,
-  Form,
-  Space,
-  Breadcrumb,
-  Select,
-} from 'antd';
-import {
-  SaveOutlined,
-  HomeOutlined,
-  CalendarOutlined,
-  FileAddOutlined,
-} from '@ant-design/icons';
+import React, { useEffect } from 'react';
+import { Card, Typography, Button, Input, Form, Space, Breadcrumb, Select } from 'antd';
+import { SaveOutlined, HomeOutlined, CalendarOutlined, FileAddOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { useCreateAppointment } from '@/hook/useCreateAppointment';
 
 const { Title, Text } = Typography;
 
+// ── Page ───────────────────────────────────────────────────────────────────────
+
 export default function CreateAppointmentPage() {
   const router = useRouter();
   const [form] = Form.useForm();
+
+  // ── Data ───────────────────────────────────────────────────────────────────
 
   const {
     createAppointment,
@@ -32,14 +22,16 @@ export default function CreateAppointmentPage() {
     availableSlots,
     loadingSlots,
     fetchAvailableSlots,
+    patients,
+    loadingPatients,
   } = useCreateAppointment();
 
   const selectedDate = Form.useWatch('appointment_date', form);
 
-  // ดึง available slots ใหม่ทุกครั้งที่เปลี่ยนวันที่
+  // ── Effects ────────────────────────────────────────────────────────────────
+
   useEffect(() => {
     if (selectedDate) {
-      // แปลง date input (YYYY-MM-DD) → ISO string ที่ API รับ
       fetchAvailableSlots(new Date(selectedDate).toISOString());
       form.setFieldValue('appointment_time', undefined);
     } else {
@@ -47,28 +39,26 @@ export default function CreateAppointmentPage() {
     }
   }, [selectedDate, fetchAvailableSlots, form]);
 
-  // ── ฟังก์ชันจัดการ ────────────────────────────────────────────────────────
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
   const handleCreate = async (values: {
-    patient_id: string;
+    patient_id: number;
     appointment_date: string;
     appointment_time: string;
     type: string;
   }) => {
     await createAppointment(
       {
-        patient_id: Number(values.patient_id),
+        patient_id:       values.patient_id,
         appointment_date: new Date(values.appointment_date).toISOString(),
         appointment_time: values.appointment_time,
-        type: values.type,
+        type:             values.type,
       },
-      () => {
-        router.push('/personnel/appointment-schedule');
-      }
+      () => router.push('/personnel/appointment-schedule')
     );
   };
 
-  // ── แสดงผล ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
@@ -82,21 +72,38 @@ export default function CreateAppointmentPage() {
         ]}
       />
 
-      <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      <Card
+        variant="borderless"
+        style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+      >
         <Title level={3} style={{ marginBottom: '4px' }}>เพิ่มการนัดหมายใหม่</Title>
         <Text type="secondary" style={{ display: 'block', marginBottom: '24px' }}>
           กรอกข้อมูลเพื่อสร้างคิวการนัดหมายใหม่เข้าระบบ
         </Text>
 
         <Form form={form} layout="vertical" onFinish={handleCreate}>
+
+          {/* Patient & Date */}
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <Form.Item
               name="patient_id"
-              label="รหัสคนไข้ (Patient ID)"
+              label="คนไข้"
               style={{ flex: 1, minWidth: '250px' }}
-              rules={[{ required: true, message: 'ระบุรหัสคนไข้' }]}
+              rules={[{ required: true, message: 'กรุณาเลือกคนไข้' }]}
             >
-              <Input type="number" placeholder="เช่น 6, 7, 8" size="large" />
+              <Select
+                size="large"
+                placeholder="เลือกคนไข้"
+                loading={loadingPatients}
+                showSearch
+                filterOption={(input, option) =>
+                  String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={patients.map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                }))}
+              />
             </Form.Item>
 
             <Form.Item
@@ -109,6 +116,7 @@ export default function CreateAppointmentPage() {
             </Form.Item>
           </div>
 
+          {/* Time & Type */}
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <Form.Item
               name="appointment_time"
@@ -144,6 +152,7 @@ export default function CreateAppointmentPage() {
             </Form.Item>
           </div>
 
+          {/* Actions */}
           <Form.Item style={{ marginTop: '32px', marginBottom: 0, textAlign: 'right' }}>
             <Space>
               <Button size="large" onClick={() => router.push('/personnel/appointment-schedule')}>
