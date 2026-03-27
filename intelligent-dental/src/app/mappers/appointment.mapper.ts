@@ -183,13 +183,27 @@ export function toCreateAppointmentInput(
 export function toUpdateAppointmentInput(
   data: UpdateAppointmentDTO
 ): Prisma.appointmentUpdateInput {
+  const normalizeAppointmentTime = (value: string | undefined) => {
+    if (!value) return undefined
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    if (trimmed.includes("T")) {
+      const parsed = new Date(trimmed)
+      return Number.isNaN(parsed.valueOf())
+        ? undefined
+        : parsed
+    }
+    const parsed = new Date(`1970-01-01T${trimmed}:00Z`)
+    return Number.isNaN(parsed.valueOf()) ? undefined : parsed
+  }
+
   return removeUndefined({
     patient_id: data.patient_id,
     staff_id: data.staff_id,
     appointment_date: data.appointment_date
       ? new Date(data.appointment_date)
       : undefined,
-    appointment_time: data.appointment_time,
+    appointment_time: normalizeAppointmentTime(data.appointment_time),
     type: data.type,
     status: data.status
   })
