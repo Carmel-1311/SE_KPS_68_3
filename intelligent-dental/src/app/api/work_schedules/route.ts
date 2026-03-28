@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION");
     requireRole(user.role, ["staff", "dentist"]);
     const body = await request.json();
-    const newSchedule = await workScheduleService.createWorkSchedule(body);
+    const newSchedule = await workScheduleService.createWorkSchedule(body, user);
     return res.created(newSchedule);
   } catch (err: unknown) {
     return handleError(err);

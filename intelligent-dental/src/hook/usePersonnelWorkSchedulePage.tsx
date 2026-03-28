@@ -15,13 +15,13 @@ const { Text } = Typography;
 
 const cleanStaffName = (name?: string) => name?.replace("null ", "") || "";
 
-const getRoleLabel = (role?: string) => {
+export const getRoleLabel = (role?: string) => {
   if (role === "dentist") return "ทันตแพทย์";
   if (role === "staff") return "บุคลากร";
   return role || "บุคลากร";
 };
 
-const getDisplayName = (
+export const getDisplayName = (
   staff?: WorkSchedule["staff"] | Pick<StaffListItem, "id" | "name" | "role">,
 ) => {
   const name = cleanStaffName(staff?.name);

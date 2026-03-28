@@ -1,161 +1,208 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { Avatar, Tag, Typography } from "antd";
+import { ClockCircleOutlined, UserOutlined } from "@ant-design/icons";
 import { useRouter } from "next/navigation";
-import dayjs, { type Dayjs } from "dayjs";
+import { getUserIdFromToken } from "@/app/utils/auth.client";
+import {
+  getDisplayName,
+  PERSONNEL_WORK_SCHEDULE_DAY_COLORS,
+  PERSONNEL_WORK_SCHEDULE_DAYS,
+  PERSONNEL_WORK_SCHEDULE_TIME_SLOTS,
+} from "@/hook/usePersonnelWorkSchedulePage";
+import { useWorkSchedule, type WorkSchedule } from "@/hook/useWorkSchedule";
 
-export interface DentistAppointment {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  patientName: string;
-  service: string;
-  status: "success" | "warning" | "error" | "processing";
-  note?: string;
-}
+const { Text } = Typography;
 
-export const DENTIST_WORK_SCHEDULE_STATUS_META: Record<
-  DentistAppointment["status"],
-  { color: string; label: string; border: string }
-> = {
-  success: { color: "green", label: "เสร็จสิ้น", border: "#52c41a" },
-  processing: { color: "blue", label: "รอนัดหมาย", border: "#1677ff" },
-  warning: { color: "orange", label: "รอยืนยัน", border: "#fa8c16" },
-  error: { color: "error", label: "ยกเลิก", border: "#ff4d4f" },
-};
+type ScheduleCell =
+  | { type: "empty"; span: number }
+  | { type: "span"; span: number }
+  | { type: "start"; span: number; schedule: WorkSchedule };
 
-const mockAppointments = (): DentistAppointment[] => [
-  {
-    id: "1",
-    date: dayjs().format("YYYY-MM-DD"),
-    startTime: "09:00",
-    endTime: "10:00",
-    patientName: "คุณสมชาย ใจดี",
-    service: "อุดฟัน",
-    status: "success",
-    note: "ฟันกรามบนซ้าย",
-  },
-  {
-    id: "2",
-    date: dayjs().format("YYYY-MM-DD"),
-    startTime: "10:30",
-    endTime: "11:30",
-    patientName: "คุณวิภาดา",
-    service: "ขูดหินปูน",
-    status: "processing",
-  },
-  {
-    id: "3",
-    date: dayjs().add(2, "day").format("YYYY-MM-DD"),
-    startTime: "13:00",
-    endTime: "14:00",
-    patientName: "คุณมานะ",
-    service: "ถอนฟัน",
-    status: "warning",
-  },
-  {
-    id: "4",
-    date: dayjs().add(5, "day").format("YYYY-MM-DD"),
-    startTime: "09:00",
-    endTime: "10:00",
-    patientName: "คุณจอนนี่",
-    service: "ตรวจฟัน",
-    status: "processing",
-  },
-];
+type ScheduleTableRow = {
+  key: string;
+  time: string;
+} & Record<string, string | ScheduleCell>;
 
 export function useDentistWorkSchedulePage() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [appointments, setAppointments] = useState<DentistAppointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  const { data, loading } = useWorkSchedule();
 
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const currentDentistId = useMemo(() => getUserIdFromToken(), []);
 
-    const fetchAppointments = async () => {
-      setLoading(true);
-      try {
-        const data = mockAppointments();
-        timeoutId = setTimeout(() => {
-          setAppointments(data);
-          setLoading(false);
-        }, 600);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        setLoading(false);
-      }
-    };
+  const filteredData = useMemo(() => {
+    if (!currentDentistId) return data;
+    return data.filter((item) => Number(item.staff?.id) === currentDentistId);
+  }, [currentDentistId, data]);
 
-    void fetchAppointments();
+  const profile = useMemo(() => {
+    return filteredData.find((item) => item.staff)?.staff ?? null;
+  }, [filteredData]);
 
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, []);
+  const activeCount = useMemo(
+    () => filteredData.filter((schedule) => schedule.is_active !== false).length,
+    [filteredData],
+  );
 
-  const dailyData = useMemo(() => {
-    return appointments
-      .filter((item) => item.date === selectedDate.format("YYYY-MM-DD"))
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
-  }, [appointments, selectedDate]);
+  const tableData = useMemo(() => {
+    const matrix: Record<string, ScheduleCell[]> = {};
 
-  const fullCellRender = useCallback(
-    (date: Dayjs) => {
-      const dateStr = date.format("YYYY-MM-DD");
-      const hasAppointment = appointments.some((app) => app.date === dateStr);
-      const isSelected = date.isSame(selectedDate, "day");
-      const isToday = date.isSame(dayjs(), "day");
+    PERSONNEL_WORK_SCHEDULE_DAYS.forEach((day) => {
+      matrix[day.key] = PERSONNEL_WORK_SCHEDULE_TIME_SLOTS.map(() => ({
+        type: "empty",
+        span: 1,
+      }));
+    });
 
-      return (
-        <div
-          style={{
-            position: "relative",
-            height: 38,
-            lineHeight: "38px",
-            textAlign: "center",
-            borderRadius: 8,
-            fontWeight: hasAppointment || isToday ? 700 : 400,
-            background: isSelected
-              ? "#1677ff"
-              : hasAppointment
-                ? "#fff1f0"
-                : "transparent",
-            color: isSelected ? "#fff" : hasAppointment ? "#ff4d4f" : undefined,
-            border: hasAppointment && !isSelected ? "1px solid #ffccc7" : "none",
-            cursor: "pointer",
-          }}
-        >
-          {date.date()}
-          {hasAppointment && !isSelected && (
-            <div
-              style={{
-                position: "absolute",
-                bottom: 3,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 4,
-                height: 4,
-                background: "#ff4d4f",
-                borderRadius: "50%",
-              }}
-            />
-          )}
-        </div>
+    filteredData.forEach((schedule) => {
+      const day = schedule.date;
+      const startHour = Number.parseInt(schedule.start_time.split(":")[0] ?? "", 10);
+      const endHour = Number.parseInt(schedule.end_time.split(":")[0] ?? "", 10);
+      const startIndex = PERSONNEL_WORK_SCHEDULE_TIME_SLOTS.findIndex(
+        (slot) => slot.start === startHour,
       );
-    },
-    [appointments, selectedDate],
+      const endIndex = PERSONNEL_WORK_SCHEDULE_TIME_SLOTS.findIndex(
+        (slot) => slot.end === endHour,
+      );
+
+      if (startIndex !== -1 && endIndex !== -1 && endIndex >= startIndex) {
+        const span = endIndex - startIndex + 1;
+        matrix[day][startIndex] = { type: "start", schedule, span };
+
+        for (let index = startIndex + 1; index <= endIndex; index += 1) {
+          matrix[day][index] = { type: "span", span: 0 };
+        }
+      }
+    });
+
+    return PERSONNEL_WORK_SCHEDULE_TIME_SLOTS.map((slot, index) => {
+      const row: ScheduleTableRow = {
+        key: slot.label,
+        time: slot.label,
+      };
+
+      PERSONNEL_WORK_SCHEDULE_DAYS.forEach((day) => {
+        row[day.key] = matrix[day.key][index];
+      });
+
+      return row;
+    });
+  }, [filteredData]);
+
+  const columns = useMemo(
+    () => [
+      {
+        title: (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            เวลา
+          </Text>
+        ),
+        dataIndex: "time",
+        width: 120,
+        align: "center" as const,
+        render: (text: string) => (
+          <Text style={{ fontSize: 12, fontWeight: 600, color: "#595959" }}>{text}</Text>
+        ),
+      },
+      ...PERSONNEL_WORK_SCHEDULE_DAYS.map((day) => ({
+        title: (
+          <div style={{ textAlign: "center" }}>
+            <Avatar
+              size={28}
+              style={{
+                background: PERSONNEL_WORK_SCHEDULE_DAY_COLORS[day.key],
+                fontSize: 11,
+                fontWeight: 700,
+                marginBottom: 4,
+                display: "block",
+                margin: "0 auto 4px",
+              }}
+            >
+              {day.short}
+            </Avatar>
+            <Text style={{ fontSize: 12, fontWeight: 600 }}>{day.label}</Text>
+          </div>
+        ),
+        dataIndex: day.key,
+        onCell: (record: ScheduleTableRow) => {
+          const cellData = record[day.key];
+
+          if (!cellData || typeof cellData === "string" || cellData.type === "empty") {
+            return { rowSpan: 1 };
+          }
+
+          if (cellData.type === "span") {
+            return { rowSpan: 0 };
+          }
+
+          return { rowSpan: cellData.span };
+        },
+        render: (cellData: ScheduleCell) => {
+          if (!cellData || cellData.type === "empty" || cellData.type === "span") {
+            return null;
+          }
+
+          const schedule = cellData.schedule;
+          const isActive = schedule.is_active !== false;
+          const color = PERSONNEL_WORK_SCHEDULE_DAY_COLORS[day.key];
+
+          return (
+            <div
+              onClick={() => router.push(`/dentist/work-schedule/${schedule.id}`)}
+              style={{
+                background: isActive ? `${color}10` : "#fff1f0",
+                borderLeft: `3px solid ${isActive ? color : "#ff4d4f"}`,
+                borderRadius: 8,
+                padding: "5px 8px",
+                minHeight: `${cellData.span * 40}px`,
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                gap: 2,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: isActive ? color : "#ff4d4f",
+                }}
+              >
+                <ClockCircleOutlined style={{ marginRight: 3 }} />
+                {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+              </Text>
+              <Text style={{ fontSize: 12, fontWeight: 600 }}>
+                <UserOutlined style={{ marginRight: 3, color: "#8c8c8c" }} />
+                {getDisplayName(schedule.staff)}
+              </Text>
+              <Tag
+                color={isActive ? "blue" : "error"}
+                style={{
+                  fontSize: 10,
+                  padding: "0 5px",
+                  marginTop: 2,
+                  alignSelf: "flex-start",
+                }}
+              >
+                {isActive ? "ลงตรวจ" : "งดตรวจ"}
+              </Tag>
+            </div>
+          );
+        },
+      })),
+    ],
+    [router],
   );
 
   return {
     loading,
-    selectedDate,
-    setSelectedDate,
-    dailyData,
-    fullCellRender,
-    goHome: () => router.push("/"),
+    profile,
+    filteredData,
+    activeCount,
+    tableData,
+    columns,
+    goHome: () => router.push("/dentist"),
+    goToCreatePage: () => router.push("/dentist/work-schedule/create"),
   };
 }

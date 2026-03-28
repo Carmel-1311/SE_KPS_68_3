@@ -111,7 +111,9 @@ export function useWorkSchedule() {
 
       await fetchSchedules();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      const message = err instanceof Error ? err.message : "Create failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
@@ -137,7 +139,9 @@ export function useWorkSchedule() {
 
       await fetchSchedules();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Update failed");
+      const message = err instanceof Error ? err.message : "Update failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
@@ -152,7 +156,9 @@ export function useWorkSchedule() {
 
       await fetchSchedules();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Delete failed");
+      const message = err instanceof Error ? err.message : "Delete failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
