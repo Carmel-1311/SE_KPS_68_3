@@ -10,8 +10,12 @@ export async function GET(request: Request) {
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION");
     requireRole(user.role, ["staff", "company"]);
-    const data = await staffService.listStaffs(10, 1);
-    return res.ok(data);
+    const { searchParams } = new URL(request.url);
+    const page = Number(searchParams.get("page")) || 1;
+    const limit = Number(searchParams.get("limit")) || 10;
+
+    const data = await staffService.listStaffs(limit, page);
+    return res.okList(data.data, { page, limit, total: data.total });
   } catch (err: unknown) {
     return handleError(err);
   }

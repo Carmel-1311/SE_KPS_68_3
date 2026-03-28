@@ -23,6 +23,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { MobileDental, MobileDentalStatus } from "@/hook/useMobileDentals";
 import { useAllMobileDentals } from "@/hook/useAllMobileDentals";
 import { useMobileDentalActions } from "@/hook/useMobileDentalActions";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const VALID_TABS = new Set(["1", "2", "3"]);
 const PAGE_SIZE = 10;
@@ -400,11 +401,10 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
+                                        ...createTablePagination(PAGE_SIZE),
                                         current: clientPage,
-                                        pageSize: PAGE_SIZE,
                                         total: pendingRequests.length,
                                         onChange: (p) => setClientPage(p),
-                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>
@@ -423,11 +423,10 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
+                                        ...createTablePagination(PAGE_SIZE),
                                         current: clientPage,
-                                        pageSize: PAGE_SIZE,
                                         total: scheduledRequests.length,
                                         onChange: (p) => setClientPage(p),
-                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>
@@ -446,11 +445,10 @@ function RequestsPageContent() {
                                     columns={columns}
                                     rowKey="mobile_dental_id"
                                     pagination={{
+                                        ...createTablePagination(PAGE_SIZE),
                                         current: clientPage,
-                                        pageSize: PAGE_SIZE,
                                         total: otherRequests.length,
                                         onChange: (p) => setClientPage(p),
-                                        showSizeChanger: false,
                                     }}
                                     sticky={{ offsetHeader: 1 }}
                                     rowClassName={(record) =>

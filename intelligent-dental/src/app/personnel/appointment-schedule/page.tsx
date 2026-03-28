@@ -32,6 +32,7 @@ import dayjs from 'dayjs';
 
 import { useAppointment, APPOINTMENT_STATUS_META } from '@/hook/useAppointment';
 import type { Appointment } from '@/hook/useAppointment';
+import { createTablePagination } from '@/app/utils/tablePagination';
 
 const { Title, Text } = Typography;
 
@@ -247,7 +248,7 @@ export default function AppointmentListPage() {
           columns={columns}
           dataSource={finalFilteredData}
           rowKey="appointment_id"
-          pagination={{ pageSize: 5 }}
+          pagination={createTablePagination(5)}
           loading={loading}
           locale={{ emptyText: 'ไม่พบข้อมูลในสถานะนี้' }}
         />

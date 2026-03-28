@@ -11,6 +11,10 @@ export async function findPatients(skip: number, take: number) {
   })
 }
 
+export async function countPatients() {
+  return prisma.patient.count()
+}
+
 export async function findPatientById(id: number) {
   return prisma.patient.findUnique({
     where: { patient_id: id },

@@ -40,6 +40,7 @@ import {
   type PatientDraftInput,
 } from "@/hook/usePatientsMobile";
 import type { paths } from "@/types/api";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const { Title, Text } = Typography;
 
@@ -734,10 +735,7 @@ export default function PatientsPage() {
                 columns={submittedColumns}
                 rowKey="id"
                 loading={loading}
-                pagination={{
-                  pageSize: 20,
-                  showSizeChanger: false,
-                }}
+                pagination={createTablePagination(20)}
                 sticky={{ offsetHeader: 1 }}
               />
             )}
@@ -767,10 +765,7 @@ export default function PatientsPage() {
                   columns={draftColumns}
                   rowKey="draft_id"
                   loading={loading}
-                  pagination={{
-                    pageSize: 20,
-                    showSizeChanger: false,
-                  }}
+                  pagination={createTablePagination(20)}
                   sticky={{ offsetHeader: 1 }}
                 />
                 

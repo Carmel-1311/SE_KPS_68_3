@@ -28,6 +28,7 @@ import type { ColumnsType } from "antd/es/table";
 
 import type { MobileDental, MobileDentalStatus } from "@/hook/useMobileDentals";
 import { useAllMobileDentals } from "@/hook/useAllMobileDentals";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const { Title, Text } = Typography;
 
@@ -290,7 +291,7 @@ export default function CompanyDashboard() {
                   columns={columns}
                   dataSource={recentRequests}
                   rowKey="mobile_dental_id"
-                  pagination={false}
+                  pagination={createTablePagination(5)}
                   loading={loading}
                   sticky={{ offsetHeader: 76 }}
                   onRow={(record) => ({

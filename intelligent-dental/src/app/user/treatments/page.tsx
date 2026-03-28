@@ -14,6 +14,7 @@ import type { ColumnsType } from "antd/es/table";
 import { Search } from "lucide-react";
 import { type Detail as TreatmentDetail } from "@/mock/mockTreatmentById";
 import { useTreatments } from "@/hook/useTreatments";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const { Text } = Typography;
 
@@ -201,7 +202,7 @@ export default function UserTreatmentsPage() {
         columns={columns}
         dataSource={filteredDetails}
         rowKey="id"
-        pagination={false}
+        pagination={createTablePagination(5)}
         locale={{ emptyText: "ไม่มีข้อมูลการตรวจ" }}
       />
 

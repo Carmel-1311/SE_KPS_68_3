@@ -33,6 +33,7 @@ import dayjs from "dayjs";
 
 import { useMission, STATUS_META, TAB_STATUS } from "@/hook/useMission";
 import type { MobileDental, MobileDentalStatus } from "@/hook/useMission";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const { Title, Text } = Typography;
 
@@ -305,7 +306,7 @@ export default function MissionPage() {
           columns={columns}
           dataSource={filteredData}
           rowKey="mobile_dental_id"
-          pagination={{ pageSize: 10 }}
+          pagination={createTablePagination(10)}
           loading={loading}
           locale={{ emptyText: "ไม่พบข้อมูลในสถานะนี้" }}
         />

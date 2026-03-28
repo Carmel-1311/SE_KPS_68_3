@@ -11,8 +11,6 @@ import {
   Col,
   Form,
   Input,
-  Pagination,
-  PaginationProps,
   Row,
   Space,
   Table,
@@ -28,6 +26,7 @@ import * as Icons from "lucide-react";
 import { Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 dayjs.locale("th");
 
@@ -203,10 +202,6 @@ export default function UserIndexPage() {
     },
   ];
 
-  const onPageChange: PaginationProps["onChange"] = (pageNumber) => {
-    setMeta({ ...meta, page: pageNumber });
-  };
-
   const onSearch = () => {
     setCurrentSearch({
       firstName: form.getFieldValue("firstName"),
@@ -298,19 +293,15 @@ export default function UserIndexPage() {
               columns={columns}
               rowKey="id"
               dataSource={filteredUsers}
-              pagination={false}
+              pagination={createTablePagination(meta.limit, {
+                current: meta.page,
+                total: filteredUsers.length,
+                onChange: (pageNumber) =>
+                  setMeta((prev) => ({ ...prev, page: pageNumber })),
+              })}
               bordered
               style={{ marginTop: 16 }}
             />
-
-            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-              <Pagination
-                current={meta.page}
-                total={meta.total}
-                pageSize={meta.limit}
-                onChange={onPageChange}
-              />
-            </div>
           </Space>
         </Card>
       </div>

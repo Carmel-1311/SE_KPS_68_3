@@ -1,8 +1,14 @@
-import { Prisma } from "@prisma/client"
 import { prisma } from "@/utils/prisma"
-import * as map from "@/app/mappers/types.mapper"
 
 
-export async function findAllTypes() {
-    return prisma.type.findMany()
+export async function findAllTypes(skip: number, take: number) {
+    return prisma.type.findMany({
+        skip,
+        take,
+        orderBy: { type_id: "asc" }
+    })
+}
+
+export async function countTypes() {
+    return prisma.type.count()
 }

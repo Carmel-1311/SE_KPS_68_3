@@ -16,6 +16,7 @@ import { useState } from "react";
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
+  const [form] = Form.useForm<{ username: string; password: string }>();
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const router = useRouter();
@@ -71,6 +72,9 @@ export default function LoginPage() {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "ไม่สามารถเข้าสู่ระบบได้";
+      if (errorMessage === "Invalid username or password") {
+        form.resetFields(["password"]);
+      }
       messageApi.error(errorMessage);
     } finally {
       setSubmitting(false);
@@ -171,17 +175,17 @@ export default function LoginPage() {
                 <Title level={3} style={{ margin: 0, color: "#0d3f56" }}>
                   Login
                 </Title>
-                <Text style={{ color: "#587284" }}>กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ</Text>
+                <Text style={{ color: "#587284" }}>กรอกอีเมลผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบ</Text>
 
-                <Form layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }} onFinish={onFinish}>
+                <Form form={form} layout="vertical" requiredMark={false} size="large" style={{ marginTop: 16 }} onFinish={onFinish}>
                   <Form.Item
                     name="username"
                     label={<Text strong style={{ color: "#16445f" }}>ชื่อผู้ใช้</Text>}
-                    rules={[{ required: true, message: "กรุณากรอกชื่อผู้ใช้" }]}
+                    rules={[{ required: true, message: "กรุณากรอกอีเมลผู้ใช้" }]}
                   >
                     <Input
                       prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
-                      placeholder="กรอกชื่อผู้ใช้งาน"
+                      placeholder="กรอกอีเมลผู้ใช้งาน"
                       style={{ height: 44, borderRadius: 10 }}
                     />
                   </Form.Item>

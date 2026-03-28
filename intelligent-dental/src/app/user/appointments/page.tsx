@@ -21,6 +21,7 @@ import {
   Status,
 } from "@/mock/mockAppointment";
 import { useAppointments } from "@/hook/useAppointments";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const statusMeta: Record<
   Status,
@@ -227,7 +228,7 @@ export default function UserAppointmentsPage() {
           columns={columns}
           dataSource={filteredAppointments}
           loading={loading}
-          pagination={{ pageSize: 8 }}
+          pagination={createTablePagination(8)}
           locale={{ emptyText: "ไม่พบนัดหมาย" }}
           scroll={{ x: 820 }}
         />

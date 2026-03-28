@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Table, Button, Modal, Input, Space, Popconfirm, Form, Row, Col, DatePicker, Select, message, Tag } from "antd";
 import { EditOutlined, DeleteOutlined, UserAddOutlined, IdcardOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 // --- ส่วนของ Mock Data ที่เพิ่มประเภทผู้ป่วย ---
 const MOCK_PATIENTS = [
@@ -121,7 +122,12 @@ export default function PatientsPage() {
         </Button>
       </div>
 
-      <Table columns={columns} dataSource={items} rowKey="id" />
+      <Table
+        columns={columns}
+        dataSource={items}
+        rowKey="id"
+        pagination={createTablePagination(10)}
+      />
 
       <Modal
         open={open}
