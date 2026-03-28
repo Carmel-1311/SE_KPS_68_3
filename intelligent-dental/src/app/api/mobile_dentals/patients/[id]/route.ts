@@ -15,7 +15,7 @@ export async function PUT(
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
 
-    requireRole(user.role, ["staff", "company"])
+    requireRole(user.role, ["staff","dentist", "company"])
 
     const body = await request.json()
 
@@ -41,7 +41,7 @@ export async function DELETE(
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
 
-    requireRole(user.role, ["staff", "company"])
+    requireRole(user.role, ["staff", "dentist","company"])
 
     const { id } = await params;
     const pamobile_id = parseInt(id);

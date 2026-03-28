@@ -10,7 +10,7 @@ export async function GET(request: Request,{ params }: { params: Promise<{ id: s
         const mobile_id = parseInt(id);
         const user = getCurrentUser(request)
         if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
-        requireRole(user.role, ["staff", "company"])
+        requireRole(user.role, ["staff","dentist", "company"])
         const data = await mobileService.getMobileDentalsById(mobile_id)
         return res.ok(data)
     } catch (err: any) {
@@ -24,7 +24,7 @@ export async function PUT(request: Request,{ params }: { params: Promise<{ id: s
         const mobile_id = parseInt(id);
         const user = getCurrentUser(request)
         if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
-        requireRole(user.role, ["staff", "company"])
+        requireRole(user.role, ["staff","dentist", "company"])
         const body = await request.json()
         const updatedSchedule = await mobileService.updateMobileDentals(mobile_id, body)
         return res.ok(updatedSchedule)
