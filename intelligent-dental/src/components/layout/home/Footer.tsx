@@ -5,17 +5,21 @@ import { Layout } from "antd";
 
 const { Footer } = Layout;
 
-export default function PersonnelFooter() {
+export default function HomeFooter() {
   return (
     <Footer
       style={{
-        textAlign: "center",
         background: ThemeWebColor.footer,
-        color: "#fff",
-        padding: "12px 20px",
+        color: "rgba(255,255,255,0.85)",
+        padding: "14px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        fontSize: 12,
       }}
     >
-      {"\u00A9"} {new Date().getFullYear()} Intelligent Dental
+      <span>ระบบบริหารจัดการคลินิกทันตกรรม</span>
+      <span>© {new Date().getFullYear()} Intelligent Dental</span>
     </Footer>
   );
 }

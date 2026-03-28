@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import { Button, Layout, Flex, Typography } from "antd";
@@ -8,8 +8,8 @@ import {
   FileText,
   House,
   LogOut,
+  Stethoscope,
   User,
-  UserCircle2,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -18,45 +18,20 @@ import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 const { Header } = Layout;
 const { Text } = Typography;
 
+const menuItems = [
+  { key: "home", icon: <House size={16} />, label: "Home", path: "/user/home" },
+  { key: "profile", icon: <User size={16} />, label: "Profile", path: "/user/profile" },
+  { key: "appointments", icon: <CalendarCheck size={16} />, label: "Appointments", path: "/user/appointments" },
+  { key: "treatments", icon: <FileText size={16} />, label: "Treatment History", path: "/user/treatments" },
+  { key: "appointment-schedule", icon: <CalendarDays size={16} />, label: "Schedule", path: "/user/appointment-schedule" },
+];
+
 export default function UserHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [accountName, setAccountName] = useState(
     () => getAccountName() || getAccountUsername() || "ผู้ใช้"
   );
-
-  const menuItems = [
-    {
-      key: "home",
-      icon: <House size={16} />,
-      label: "Home",
-      path: "/user/home",
-    },
-    {
-      key: "profile",
-      icon: <User size={16} />,
-      label: "Profile",
-      path: "/user/profile",
-    },
-    {
-      key: "appointments",
-      icon: <CalendarCheck size={16} />,
-      label: "Appointments",
-      path: "/user/appointments",
-    },
-    {
-      key: "treatments",
-      icon: <FileText size={16} />,
-      label: "Treatment History",
-      path: "/user/treatments",
-    },
-    {
-      key: "appointment-schedule",
-      icon: <CalendarDays size={16} />,
-      label: "Schedule",
-      path: "/user/appointment-schedule",
-    },
-  ];
 
   const selectedKey = pathname.split("/").filter(Boolean)[1] ?? "";
 
@@ -65,11 +40,19 @@ export default function UserHeader() {
     if (name) setAccountName(name);
   }, []);
 
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      ["auth_token", "account_role", "account_id", "patient_id", "account_name", "account_username"]
+        .forEach((k) => localStorage.removeItem(k));
+    }
+    router.push("/login");
+  };
+
   return (
     <Header
       style={{
         color: "#fff",
-        height: 76,
+        height: 64,
         paddingInline: 20,
         backgroundColor: ThemeWebColor.header,
         display: "flex",
@@ -78,27 +61,31 @@ export default function UserHeader() {
         gap: 20,
       }}
     >
-      <Flex align="center" gap={10}>
-        <UserCircle2 size={24} color="#fff" />
-        <Text style={{ color: "#fff", whiteSpace: "nowrap" }}>
+      {/* Logo */}
+      <Flex align="center" gap={10} style={{ flexShrink: 0 }}>
+        <Stethoscope size={22} color="#27EEEE" />
+        <Text style={{ color: "#fff", whiteSpace: "nowrap", fontWeight: 600 }}>
           Intelligent Dental
         </Text>
       </Flex>
 
-      <Flex align="center" gap={6} style={{ flex: 1, minWidth: 0 }}>
+      {/* Nav */}
+      <Flex align="center" gap={4} style={{ flex: 1, minWidth: 0 }}>
         {menuItems.map((item) => {
           const isActive = selectedKey === item.key;
           return (
             <Button
               key={item.key}
-              type={isActive ? "primary" : "text"}
+              type="text"
               icon={item.icon}
               onClick={() => router.push(item.path)}
               style={{
-                color: isActive ? "#fff" : "#d9ffff",
-                borderColor: isActive ? "#3a9bff" : "transparent",
-                background: isActive ? "#1677ff" : "transparent",
-                fontWeight: 500,
+                color: isActive ? "#27EEEE" : "rgba(255,255,255,0.75)",
+                fontWeight: isActive ? 600 : 400,
+                borderRadius: 6,
+                borderBottom: isActive ? "2px solid #27EEEE" : "2px solid transparent",
+                paddingBottom: 0,
+                height: 64,
               }}
             >
               {item.label}
@@ -107,22 +94,33 @@ export default function UserHeader() {
         })}
       </Flex>
 
-      <Flex justify="flex-end" align="center" gap={10}>
-        <span style={{ whiteSpace: "nowrap" }}>{accountName}</span>
+      {/* User + Logout */}
+      <Flex align="center" gap={8} style={{ flexShrink: 0 }}>
         <div
-          onClick={() => router.push("/")}
           style={{
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            background: "rgba(255,255,255,0.15)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            cursor: "pointer",
-            borderRadius: 8,
+            fontWeight: 700,
+            color: "#fff",
+            fontSize: 13,
+            flexShrink: 0,
           }}
         >
-          <LogOut size={18} color="#fff" />
+          {accountName.charAt(0).toUpperCase()}
         </div>
+        <span style={{ color: "#fff", whiteSpace: "nowrap", fontSize: 13 }}>{accountName}</span>
+        <Button
+          type="text"
+          icon={<LogOut size={16} />}
+          onClick={handleLogout}
+          style={{ color: "rgba(255,255,255,0.7)", padding: "4px 8px" }}
+          title="ออกจากระบบ"
+        />
       </Flex>
     </Header>
   );
