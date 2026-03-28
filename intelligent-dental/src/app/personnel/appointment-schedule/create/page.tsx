@@ -99,7 +99,7 @@ export default function CreateAppointmentPage() {
                 filterOption={(input, option) =>
                   String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
-                options={patients.map((p) => ({
+                options={(patients ?? []).map((p) => ({
                   value: p.id,
                   label: p.name,
                 }))}
@@ -112,7 +112,11 @@ export default function CreateAppointmentPage() {
               style={{ flex: 1, minWidth: '250px' }}
               rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
             >
-              <Input type="date" size="large" />
+              <Input 
+                type="date" 
+                size="large"
+                min={new Date().toISOString().split('T')[0]}
+/>
             </Form.Item>
           </div>
 
