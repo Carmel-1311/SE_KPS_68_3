@@ -1,201 +1,217 @@
-﻿"use client";
+"use client";
 
-import React, { useState, useEffect } from "react";
-import { 
-  Calendar, Card, Typography, Spin, 
-  Row, Col, List, Tag, Space, Button 
+import React from "react";
+import {
+  Calendar,
+  Card,
+  Typography,
+  Spin,
+  Row,
+  Col,
+  List,
+  Tag,
+  Space,
+  Breadcrumb,
+  Empty,
 } from "antd";
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import "dayjs/locale/th";
-import { 
-  ClockCircleOutlined, 
-  UserOutlined, 
+import {
+  ClockCircleOutlined,
+  UserOutlined,
   CalendarOutlined,
-  InfoCircleOutlined
+  HomeOutlined,
 } from "@ant-design/icons";
+import {
+  DENTIST_WORK_SCHEDULE_STATUS_META,
+  useDentistWorkSchedulePage,
+} from "@/hook/useDentistWorkSchedulePage";
 
 dayjs.locale("th");
 const { Title, Text } = Typography;
 
-// --- 1. Interface ข้อมูลนัดหมาย ---
-interface Appointment {
-  id: string;
-  date: string; // รูปแบบ "YYYY-MM-DD"
-  startTime: string;
-  endTime: string;
-  patientName: string;
-  service: string;
-  status: "success" | "warning" | "error" | "processing";
-  note?: string;
-}
-
 export default function WorkScheduleDashboard() {
-  const [loading, setLoading] = useState<boolean>(true);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
-
-  // --- 2. ดึงข้อมูลจาก Database (จำลอง) ---
-  useEffect(() => {
-    const fetchAppointments = async () => {
-      setLoading(true);
-      try {
-        // ตัวอย่างข้อมูลนัดหมายในระบบ
-        const mockData: Appointment[] = [
-          { id: "1", date: dayjs().format("YYYY-MM-DD"), startTime: "09:00", endTime: "10:00", patientName: "คุณสมชาย ใจดี", service: "อุดฟัน", status: "success", note: "ฟันกรามบนซ้าย" },
-          { id: "2", date: dayjs().format("YYYY-MM-DD"), startTime: "10:30", endTime: "11:30", patientName: "คุณวิภาดา", service: "ขูดหินปูน", status: "processing" },
-          { id: "3", date: dayjs().add(2, 'day').format("YYYY-MM-DD"), startTime: "13:00", endTime: "14:00", patientName: "คุณมานะ", service: "ถอนฟัน", status: "warning" },
-          { id: "4", date: dayjs().add(5, 'day').format("YYYY-MM-DD"), startTime: "09:00", endTime: "10:00", patientName: "คุณจอนนี่", service: "ตรวจฟัน", status: "processing" },
-        ];
-        
-        setTimeout(() => {
-          setAppointments(mockData);
-          setLoading(false);
-        }, 600);
-      } catch (error) {
-        console.error("Fetch error:", error);
-        setLoading(false);
-      }
-    };
-    fetchAppointments();
-  }, []);
-
-  // --- 3. ฟังก์ชันสำหรับ Highlight วันที่มีนัดหมาย (สีแดง) ---
-  const fullCellRender = (date: Dayjs) => {
-    const dateString = date.format("YYYY-MM-DD");
-    // ตรวจสอบว่าวันนี้มีนัดหมายหรือไม่
-    const hasAppointment = appointments.some(app => app.date === dateString);
-    const isSelected = date.isSame(selectedDate, 'day');
-
-    return (
-      <div 
-        className={`ant-picker-cell-inner ant-picker-calendar-date ${hasAppointment ? 'has-event-bg' : ''} ${isSelected ? 'ant-picker-calendar-date-selected' : ''}`}
-        style={{ 
-          position: 'relative',
-          border: hasAppointment ? '1px solid #ff4d4f' : 'none', // ขอบแดงถ้ามีงาน
-          backgroundColor: hasAppointment ? '#fff1f0' : 'transparent', // พื้นหลังแดงอ่อนถ้ามีงาน
-          borderRadius: 0
-        }}
-      >
-        <div className="ant-picker-calendar-date-value">{date.date()}</div>
-        {hasAppointment && (
-          <div style={{ 
-            position: 'absolute', 
-            bottom: 2, 
-            left: '50%', 
-            transform: 'translateX(-50%)',
-            width: 4, 
-            height: 4, 
-            backgroundColor: '#ff4d4f', 
-            borderRadius: '50%' 
-          }} />
-        )}
-      </div>
-    );
-  };
-
-  // กรองข้อมูลเฉพาะวันที่เลือกมาแสดงฝั่งขวา
-  const dailyData = appointments.filter(
-    (item) => item.date === selectedDate.format("YYYY-MM-DD")
-  ).sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const { loading, selectedDate, setSelectedDate, dailyData, fullCellRender, goHome } =
+    useDentistWorkSchedulePage();
 
   return (
-    <div style={{ width: "100%" }}>
+    <div style={{ padding: 24 }}>
+      <Breadcrumb
+        style={{ marginBottom: 24, fontSize: 15 }}
+        items={[
+          {
+            title: (
+              <a onClick={goHome}>
+                <HomeOutlined /> หน้าหลัก
+              </a>
+            ),
+          },
+          {
+            title: (
+              <span>
+                <CalendarOutlined /> ตารางการทำงาน
+              </span>
+            ),
+          },
+        ]}
+      />
+
       <Row gutter={[16, 16]}>
-        
-        {/* --- ฝั่งซ้าย: ปฏิทิน Highlight วันที่มีนัด --- */}
         <Col xs={24} lg={9}>
-          <Card bordered={true} style={{ borderRadius: 0 }}>
-            <Title level={4}><CalendarOutlined /> ปฏิทินงาน</Title>
-            <div className="mini-calendar-container">
-              <Calendar 
-                fullscreen={false} 
-                onSelect={(date) => setSelectedDate(date)} 
-                value={selectedDate}
-                fullCellRender={fullCellRender} // ใช้ฟังก์ชัน Highlight
-              />
+          <Card
+            variant="borderless"
+            style={{ borderRadius: 12, boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}
+          >
+            <div style={{ marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0 }}>
+                <CalendarOutlined style={{ marginRight: 8, color: "#1677ff" }} />
+                ปฏิทินงาน
+              </Title>
+              <Text type="secondary">เลือกวันเพื่อดูตารางนัดหมาย</Text>
             </div>
-            <div style={{ marginTop: 16 }}>
-              <Space>
-                <div style={{ width: 12, height: 12, backgroundColor: '#fff1f0', border: '1px solid #ff4d4f' }}></div>
-                <Text type="secondary" style={{ fontSize: '12px' }}>วันที่มีนัดหมายทำงาน</Text>
+
+            <Calendar
+              fullscreen={false}
+              onSelect={(date) => setSelectedDate(date)}
+              value={selectedDate}
+              fullCellRender={fullCellRender}
+              style={{ borderRadius: 8 }}
+            />
+
+            <div
+              style={{
+                marginTop: 12,
+                padding: "8px 12px",
+                background: "#fafafa",
+                borderRadius: 8,
+              }}
+            >
+              <Space size={8}>
+                <div
+                  style={{
+                    width: 12,
+                    height: 12,
+                    background: "#fff1f0",
+                    border: "1px solid #ffccc7",
+                    borderRadius: 3,
+                  }}
+                />
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  วันที่มีนัดหมาย
+                </Text>
               </Space>
             </div>
           </Card>
         </Col>
 
-        {/* --- ฝั่งขวา: รายละเอียดนัดหมาย (Work Schedule) --- */}
         <Col xs={24} lg={15}>
-          <Card 
-            bordered={true} 
-            style={{ borderRadius: 0, minHeight: '550px' }}
-            title={
-              <Space orientation="vertical" size={0}>
-                <Title level={4} style={{ margin: 0 }}>
-                  รายการวันที่: {selectedDate.format("D MMMM YYYY")}
-                </Title>
-              </Space>
-            }
+          <Card
+            variant="borderless"
+            style={{
+              borderRadius: 12,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+              minHeight: 550,
+            }}
           >
+            <div style={{ marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0 }}>
+                รายการวันที่{" "}
+                <span style={{ color: "#1677ff" }}>{selectedDate.format("D MMMM YYYY")}</span>
+              </Title>
+              <Text type="secondary">
+                {dailyData.length > 0
+                  ? `พบ ${dailyData.length} รายการนัดหมาย`
+                  : "ไม่มีนัดหมายสำหรับวันที่เลือก"}
+              </Text>
+            </div>
+
             {loading ? (
-              <div style={{ textAlign: "center", padding: "100px" }}><Spin tip="กำลังดึงข้อมูล..." /></div>
+              <div style={{ textAlign: "center", padding: 80 }}>
+                <div>
+                  <Spin size="large" />
+                  <div style={{ marginTop: 12, color: "#8c8c8c" }}>กำลังดึงข้อมูล...</div>
+                </div>
+              </div>
+            ) : dailyData.length === 0 ? (
+              <Empty
+                image={<CalendarOutlined style={{ fontSize: 56, color: "#d9d9d9" }} />}
+                styles={{ image: { height: 64 } }}
+                description={<Text type="secondary">ไม่มีนัดหมายสำหรับวันนี้</Text>}
+                style={{ padding: "60px 0" }}
+              />
             ) : (
               <List
                 itemLayout="horizontal"
                 dataSource={dailyData}
-                locale={{ emptyText: <div style={{ padding: 40 }}><InfoCircleOutlined /> ไม่มีนัดหมายสำหรับวันนี้</div> }}
-                renderItem={(item) => (
-                  <List.Item style={{ padding: "0 0 12px 0", borderBottom: "none" }}>
-                    <Card 
-                      size="small" 
-                      style={{ 
-                        width: '100%',
-                        borderRadius: 0, 
-                        borderLeft: `5px solid ${item.status === 'success' ? '#52c41a' : '#1890ff'}`,
-                      }}
-                    >
-                      <Row align="middle">
-                        <Col span={5} style={{ borderRight: "1px solid #f0f0f0", textAlign: "center" }}>
-                          <Text strong style={{ fontSize: "15px" }}>{item.startTime}</Text>
-                          <br />
-                          <Text type="secondary" style={{ fontSize: "11px" }}>ถึง {item.endTime}</Text>
-                        </Col>
-                        <Col span={13} style={{ paddingLeft: "15px" }}>
-                          <Text strong><UserOutlined /> {item.patientName}</Text>
-                          <div style={{ fontSize: "13px", color: "#666" }}>{item.service}</div>
-                        </Col>
-                        <Col span={6} style={{ textAlign: "right" }}>
-                          <Tag color={item.status === 'success' ? 'green' : 'blue'} style={{ borderRadius: 0 }}>
-                            {item.status === 'success' ? 'เสร็จสิ้น' : 'รอนัดหมาย'}
-                          </Tag>
-                        </Col>
-                      </Row>
-                    </Card>
-                  </List.Item>
-                )}
+                renderItem={(item) => {
+                  const meta =
+                    DENTIST_WORK_SCHEDULE_STATUS_META[item.status] ??
+                    DENTIST_WORK_SCHEDULE_STATUS_META.processing;
+
+                  return (
+                    <List.Item style={{ padding: "0 0 12px 0", borderBottom: "none" }}>
+                      <Card
+                        size="small"
+                        style={{
+                          width: "100%",
+                          borderRadius: 10,
+                          borderLeft: `4px solid ${meta.border}`,
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                        }}
+                      >
+                        <Row align="middle" gutter={8}>
+                          <Col
+                            span={5}
+                            style={{
+                              borderRight: "1px solid #f0f0f0",
+                              textAlign: "center",
+                              paddingRight: 12,
+                            }}
+                          >
+                            <div>
+                              <ClockCircleOutlined
+                                style={{ color: meta.border, marginBottom: 2 }}
+                              />
+                            </div>
+                            <Text strong style={{ fontSize: 15 }}>
+                              {item.startTime}
+                            </Text>
+                            <br />
+                            <Text type="secondary" style={{ fontSize: 11 }}>
+                              ถึง {item.endTime}
+                            </Text>
+                          </Col>
+
+                          <Col span={13} style={{ paddingLeft: 14 }}>
+                            <Text strong>
+                              <UserOutlined style={{ marginRight: 4, color: "#8c8c8c" }} />
+                              {item.patientName}
+                            </Text>
+                            <div style={{ fontSize: 13, color: "#595959", marginTop: 2 }}>
+                              {item.service}
+                            </div>
+                            {item.note && (
+                              <Text type="secondary" style={{ fontSize: 11 }}>
+                                {item.note}
+                              </Text>
+                            )}
+                          </Col>
+
+                          <Col span={6} style={{ textAlign: "right" }}>
+                            <Tag color={meta.color} style={{ borderRadius: 6 }}>
+                              {meta.label}
+                            </Tag>
+                          </Col>
+                        </Row>
+                      </Card>
+                    </List.Item>
+                  );
+                }}
               />
             )}
           </Card>
         </Col>
-
       </Row>
-
-      <style jsx global>{`
-        /* ปรับแต่งปฏิทินให้ดูเหลี่ยมและสะอาด */
-        .mini-calendar-container .ant-picker-calendar-header { padding: 10px 0 !important; }
-        .ant-picker-calendar-date { margin: 0 !important; padding: 0 !important; height: 40px !important; line-height: 40px !important; }
-        .ant-picker-cell-inner { border-radius: 0 !important; width: 100% !important; }
-        
-        /* Highlight สีแดงสำหรับวันที่มีนัดหมาย */
-        .has-event-bg {
-          color: #ff4d4f !important;
-          font-weight: bold;
-        }
-        .ant-picker-calendar-date-selected {
-          background-color: #1890ff !important;
-          color: white !important;
-          border: none !important;
-        }
-      `}</style>
     </div>
   );
 }
