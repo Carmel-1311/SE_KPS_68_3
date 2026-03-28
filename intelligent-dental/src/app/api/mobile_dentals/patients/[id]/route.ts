@@ -9,18 +9,19 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params;
+    const pamobile_id = parseInt(id);
     const user = getCurrentUser(request)
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
 
     requireRole(user.role, ["staff", "company"])
 
-    const id = Number(params.id)
     const body = await request.json()
 
     const updated = await paMo.updatePatients(
       user,
-      id,
+      pamobile_id,
       body
     )
 
@@ -42,9 +43,10 @@ export async function DELETE(
 
     requireRole(user.role, ["staff", "company"])
 
-    const id = Number(params.id)
+    const { id } = await params;
+    const pamobile_id = parseInt(id);
 
-    await paMo.deletePatients(user, id)
+    await paMo.deletePatients(user, pamobile_id)
 
     return res.noContent()
 

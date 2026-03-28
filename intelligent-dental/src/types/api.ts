@@ -959,6 +959,7 @@ export interface paths {
                 content: {
                     /**
                      * @example {
+                     *       "prefix": "Miss",
                      *       "first_name": "Suda",
                      *       "last_name": "dee",
                      *       "birthday": "1995-08-20",
@@ -969,6 +970,7 @@ export interface paths {
                      *     }
                      */
                     "application/json": {
+                        prefix: string;
                         first_name: string;
                         last_name: string;
                         /** Format: date */
@@ -1038,6 +1040,7 @@ export interface paths {
             requestBody: {
                 content: {
                     "application/json": {
+                        prefix: string;
                         first_name: string;
                         last_name: string;
                         /** Format: date */
@@ -2304,6 +2307,8 @@ export interface paths {
                                 name: string;
                                 status: string;
                                 phone: string;
+                                /** Format: date */
+                                birthday: string;
                                 inspection_id: number;
                                 idcard: string;
                             }[];
@@ -2364,6 +2369,8 @@ export interface paths {
                                 name: string;
                                 status: string;
                                 phone: string;
+                                /** Format: date */
+                                birthday: string;
                                 inspection_id: number;
                                 idcard: string;
                             }[];
@@ -2389,7 +2396,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/mobile_dentals/{mobile_id}/patients/{id}": {
+    "/api/mobile_dentals/patients/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -2403,13 +2410,20 @@ export interface paths {
                 query?: never;
                 header?: never;
                 path: {
-                    mobile_id: number;
+                    /** @example 6 */
                     id: number;
                 };
                 cookie?: never;
             };
             requestBody: {
                 content: {
+                    /**
+                     * @example {
+                     *         "patients_id": "1",
+                     *         "first_name": "Pearline",
+                     *         "last_name": "Reichel",
+                     *     }
+                     */
                     "application/json": {
                         patients_id: string;
                         first_name?: string;
@@ -2434,6 +2448,8 @@ export interface paths {
                                 name: string;
                                 status: string;
                                 phone: string;
+                                /** Format: date */
+                                birthday: string;
                                 inspection_id: number;
                                 idcard: string;
                             }[];
@@ -2453,6 +2469,22 @@ export interface paths {
                 500: components["responses"]["500 Internal Server Error"];
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile_dentals/{mobile_id}/patients/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
         post?: never;
         /** patient_in_mobile */
         delete: {
