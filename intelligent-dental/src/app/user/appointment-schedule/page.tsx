@@ -89,6 +89,9 @@ const baseServiceOptions = [
 export default function UserAppointmentSchedulePage() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const maxAppointmentDate = dayjs().add(3, "month").endOf("day");
+  const isBeyondMaxAppointmentDate = (value: Dayjs) =>
+    value.isAfter(maxAppointmentDate, "day");
   const {
     isCreateOpen,
     setIsCreateOpen,
@@ -220,7 +223,8 @@ export default function UserAppointmentSchedulePage() {
               disabled:
                 !newAppointmentDate ||
                 !newAppointmentTime ||
-                isPastDate(newAppointmentDate),
+                isPastDate(newAppointmentDate) ||
+                isBeyondMaxAppointmentDate(newAppointmentDate),
             }}
             destroyOnHidden
           >
@@ -232,7 +236,10 @@ export default function UserAppointmentSchedulePage() {
                 onChange={(value) => setNewAppointmentDate(value)}
                 format={(value) => (value ? formatThaiDateValue(value) : "")}
                 disabledDate={(current) =>
-                  current ? current.isBefore(dayjs(), "day") : false
+                  current
+                    ? current.isBefore(dayjs(), "day") ||
+                      current.isAfter(maxAppointmentDate, "day")
+                    : false
                 }
               />
               <Typography.Text>เลือกเวลา</Typography.Text>
