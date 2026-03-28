@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   Button,
@@ -6,15 +6,36 @@ import {
   Table,
   Typography,
   Breadcrumb,
-  Select,
   Empty,
   Avatar,
   Space,
 } from "antd";
 import { HomeOutlined, CalendarOutlined, PlusOutlined } from "@ant-design/icons";
 import { usePersonnelWorkSchedulePage } from "@/hook/usePersonnelWorkSchedulePage";
+import dynamic from "next/dynamic";
 
 const { Title, Text } = Typography;
+const ClientSelect = dynamic(() => import("antd").then((mod) => mod.Select), {
+  ssr: false,
+  loading: () => (
+    <div
+      aria-hidden="true"
+      style={{
+        width: 280,
+        height: 40,
+        borderRadius: 8,
+        border: "1px solid #d9d9d9",
+        background: "#ffffff",
+      }}
+    />
+  ),
+});
+
+type StaffSelectValue = number | undefined;
+
+function toStaffSelectValue(value: unknown): StaffSelectValue {
+  return typeof value === "number" ? value : undefined;
+}
 
 export default function PersonnelWorkSchedulePage() {
   const {
@@ -93,12 +114,12 @@ export default function PersonnelWorkSchedulePage() {
             flexWrap: "wrap",
           }}
         >
-          <Select
+          <ClientSelect
             showSearch
             placeholder="ค้นหาหรือเลือกบุคลากร..."
             style={{ width: 280 }}
             value={selectedStaffId ?? undefined}
-            onChange={(value) => setSelectedStaffId(value ?? null)}
+            onChange={(value) => setSelectedStaffId(toStaffSelectValue(value) ?? null)}
             options={staffOptions}
             filterOption={(input, option) =>
               String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())
