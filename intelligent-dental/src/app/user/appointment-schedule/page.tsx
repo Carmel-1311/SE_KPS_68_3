@@ -260,6 +260,8 @@ export default function UserAppointmentSchedulePage() {
               <Select
                 showSearch
                 placeholder="เลือกหรือพิมพ์บริการ"
+                popupMatchSelectWidth={175}
+                dropdownStyle={{ width: 320 }}
                 options={serviceOptions}
                 value={newAppointmentService || undefined}
                 onChange={(value) => setNewAppointmentService(value)}

@@ -87,6 +87,11 @@ export default function UserTreatmentsPage() {
     hasActiveTreatment,
   } = useTreatments();
 
+  const inspection = activeTreatment?.inspection_record;
+  const hasInspectionRecord =
+    !!inspection &&
+    (inspection.date || inspection.history || inspection.status);
+
   const columns: ColumnsType<TreatmentDetail> = [
     {
       title: "ประเภทการรักษา",
@@ -180,18 +185,21 @@ export default function UserTreatmentsPage() {
 
           <Divider className="divider" />
 
-          <div className="record">
-            <Text className="section-title">บันทึกการตรวจ</Text>
-            <Text className="record-line">
-              วันที่ตรวจ: {formatThaiDate(activeTreatment.inspection_record.date)}
-            </Text>
-            <Text className="record-line">
-              ประวัติ: {activeTreatment.inspection_record.history}
-            </Text>
-            <Text className="record-line">
-              สถานะ: {formatStatusLabel(activeTreatment.inspection_record.status)}
-            </Text>
-          </div>
+          {hasInspectionRecord ? (
+            <div className="record">
+              <Text className="section-title">บันทึกการตรวจ</Text>
+              <Text className="record-line">
+                วันที่ตรวจ:{" "}
+                {formatThaiDate(inspection!.date)}
+              </Text>
+              <Text className="record-line">
+                ประวัติ: {inspection!.history}
+              </Text>
+              <Text className="record-line">
+                สถานะ: {formatStatusLabel(inspection!.status)}
+              </Text>
+            </div>
+          ) : null}
         </>
       ) : (
         <Text className="record-line">ไม่พบวันที่นัดหมาย</Text>
