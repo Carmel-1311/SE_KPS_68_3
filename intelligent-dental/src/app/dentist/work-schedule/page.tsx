@@ -129,7 +129,7 @@ export default function WorkScheduleDashboard() {
             bordered={true} 
             style={{ borderRadius: 0, minHeight: '550px' }}
             title={
-              <Space direction="vertical" size={0}>
+              <Space orientation="vertical" size={0}>
                 <Title level={4} style={{ margin: 0 }}>
                   รายการวันที่: {selectedDate.format("D MMMM YYYY")}
                 </Title>

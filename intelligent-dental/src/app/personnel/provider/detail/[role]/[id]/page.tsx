@@ -112,7 +112,7 @@ export default function ProviderDetailPage() {
                     boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
                 }}
             >
-                <Space direction="vertical" style={{ width: "100%" }} size={24}>
+                <Space orientation="vertical" style={{ width: "100%" }} size={24}>
                     {/* HEADER */}
 
                     <Space
