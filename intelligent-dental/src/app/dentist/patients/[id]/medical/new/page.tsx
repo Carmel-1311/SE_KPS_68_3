@@ -118,7 +118,7 @@ export default function NewMedicalRecordPage() {
       }
 
       message.success({ content: 'เพิ่มประวัติการรักษาสำเร็จ', key: 'save_md' });
-      router.push(`/dentist/appointment?examination_id=${examinationId}`);
+      router.push(`/dentist/patients`);
     } catch (err) {
       console.error('Save error', err);
       message.error({ content: 'ไม่สามารถบันทึกข้อมูลได้', key: 'save_md' });

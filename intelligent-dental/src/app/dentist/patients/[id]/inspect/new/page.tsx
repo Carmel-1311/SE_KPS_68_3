@@ -66,7 +66,7 @@ export default function NewInspectionPage() {
       }
 
       message.success({ content: 'เพิ่มบันทึกการตรวจสำเร็จ', key: 'save_inspect' });
-      router.push(`/dentist/appointment?inspection_record_id=${inspectionId}`);
+      router.push(`/dentist/patients`);
     } catch (err) {
       console.error('Save error', err);
       message.error({ content: 'ไม่สามารถบันทึกข้อมูลได้', key: 'save_inspect' });
