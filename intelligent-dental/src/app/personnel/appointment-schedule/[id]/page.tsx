@@ -57,16 +57,10 @@ export default function EditAppointmentPage() {
 
     form.setFieldsValue({
       appointment_date: dateOnly,
-<<<<<<< HEAD
-      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7, 'hour').format('HH:mm'),
-      type:             appointment.type,
-      status:           appointment.status,
-=======
       // ✅ เดิมพอ ไม่ต้องแก้
       appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(0, 'hour').format('HH:mm'),
       type: appointment.type,
       status: appointment.status,
->>>>>>> origin/api
     });
 
     fetchAvailableSlots(appointment.appointment_date);
@@ -91,15 +85,9 @@ export default function EditAppointmentPage() {
       {
         appointment_date: values.appointment_date,
         appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(),
-<<<<<<< HEAD
-        type:             values.type,
-        status:           values.status,
-        staff_id:         appointment.staff.id,
-=======
         type: values.type,
         status: values.status,
         staff_id: appointment.staff.id,
->>>>>>> origin/api
       },
       () => router.push('/personnel/appointment-schedule')
     );
@@ -214,28 +202,6 @@ export default function EditAppointmentPage() {
           <Divider />
 
           <Form.Item label="สถานะ">
-<<<<<<< HEAD
-            {isRequestCancel ? (
-              <div>
-                <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>
-                  คำขอยกเลิกจากผู้ใช้
-                </Tag>
-                <Text type="warning" style={{ marginLeft: '12px' }}>
-                  * ผู้ป่วยส่งคำขอยกเลิกมา กรุณากดปุ่ม "ยกเลิกการนัดหมาย" เพื่อยืนยัน
-                </Text>
-              </div>
-            ) : isCompleted ? (
-              <Tag color="green" style={{ fontSize: '14px', padding: '4px 12px' }}>
-                เสร็จสิ้น
-              </Tag>
-            ) : (
-              <Form.Item name="status" noStyle>
-                <Select size="large">
-                  <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
-                  <Select.Option value="completed">เสร็จสิ้น</Select.Option>
-                </Select>
-              </Form.Item>
-=======
             <Form.Item name="status" noStyle>
               <Select size="large">
                 <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
@@ -251,7 +217,6 @@ export default function EditAppointmentPage() {
               <Text type="warning" style={{ marginTop: '8px', display: 'block' }}>
                 * ผู้ป่วยส่งคำขอยกเลิกมา กรุณาเปลี่ยนสถานะเป็น "ยกเลิกการนัดหมาย" เพื่อยืนยัน
               </Text>
->>>>>>> origin/api
             )}
           </Form.Item>
 
