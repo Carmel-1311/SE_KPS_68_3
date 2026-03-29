@@ -11,7 +11,7 @@ export function createTablePagination(
     showSizeChanger: false,
     hideOnSinglePage: true,
     responsive: true,
-    position: ["bottomCenter"],
+    placement: ["bottomCenter"],
     showTotal: (total, range) => `${range[0]}-${range[1]} จาก ${total} รายการ`,
     ...overrides,
   };

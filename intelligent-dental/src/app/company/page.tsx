@@ -42,10 +42,11 @@ const statusConfig: Record<MobileDentalStatus, { color: string; label: string }>
 
 export default function CompanyDashboard() {
   const { data, loading, error, isTruncated } = useAllMobileDentals();
-  const [currentTime, setCurrentTime] = useState<Date | null>(() => new Date());
+  const [currentTime, setCurrentTime] = useState<Date | null>(null);
   const router = useRouter();
 
   useEffect(() => {
+    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
