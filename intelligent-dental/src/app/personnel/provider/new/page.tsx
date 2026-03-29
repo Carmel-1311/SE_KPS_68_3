@@ -100,10 +100,10 @@ export default function CreateUserPage() {
           <Row justify="space-between" align="middle">
             <Col>
               <Title level={4} style={{ marginBottom: 4 }}>
-                เพิ่มผู้ให้บริการใหม่
+                เพิ่มผู้ป่วย
               </Title>
               <Text type="secondary">
-                กรอกข้อมูลผู้ใช้งานใหม่เข้าสู่ระบบ
+                กรอกข้อมูลผู้ป่วยเข้าสู่ระบบ
               </Text>
             </Col>
 

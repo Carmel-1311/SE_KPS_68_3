@@ -281,7 +281,7 @@ const loading =
                     icon={<Icons.Plus size={16} />}
                     onClick={() => router.push(`/personnel/provider/new`)}
                   >
-                    เพิ่มข้อมูลผู้ใช้
+                    เพิ่มข้อมูลผู้ป่วย
                   </Button>
                 </Col>
               )}
