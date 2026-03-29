@@ -252,6 +252,7 @@ export default function PatientsPage() {
                               type={isSelected ? "primary" : "default"}
                               icon={<TeamOutlined />}
                               onClick={async () => {
+                                router.push(`/dentist/patients/mobile_dental/${record.mobile_dental_id}/patients`);
                                 // if (isSelected) {
                                 //   // -- LOGIC TOGGLE OFF: ถ้ากดซ้ำตัวเดิม ให้ปิด (เคลียร์ค่า) --
                                 //   setSelectedMobile(null);

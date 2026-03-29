@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAppointments } from "@/hook/useAppointments2";
-import { useMedicalRecord } from "@/hook/useMedicalRecord"; 
-import { useInspectionRecord } from "@/hook/useInspectionRecord"; 
+import { useMedicalRecord } from "@/hook/useMedicalRecord";
+import { useInspectionRecord } from "@/hook/useInspectionRecord";
 
 import {
   Table,
@@ -18,9 +18,13 @@ import {
   Card,
   Breadcrumb,
   Tabs,
+  DatePicker,
+  Select,
+  Row,
+  Col,
 } from "antd";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   SearchOutlined,
   ReadOutlined,
@@ -34,6 +38,7 @@ import "dayjs/locale/th";
 dayjs.locale("th");
 
 const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
 
 interface Appointment {
   appointment_id: number;
@@ -49,9 +54,12 @@ interface Appointment {
 
 export default function AppointmentPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("all");
+
   const [selectedAppointment, setSelectedAppointment] =
     useState<Appointment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,61 +67,68 @@ export default function AppointmentPage() {
   const [medicalRecord, setMedicalRecord] = useState<any>(null);
   const [inspectionRecord, setInspectionRecord] = useState<any>(null);
 
-  const {
-    filteredAppointments,
-    appointments,
-    loading,
-    setSearch,
-    refresh,
-  } = useAppointments();
-
-  // ✅ hook จริง
+  const { appointments, loading } = useAppointments();
   const { getMedicalById } = useMedicalRecord();
   const { getInspectionById } = useInspectionRecord();
 
-  // 🔹 sync query params
-  useEffect(() => {
-    if (!selectedAppointment) return;
+  // =========================
+  // FILTER
+  // =========================
+  const filteredData = useMemo(() => {
+    let data = appointments || [];
 
-    const medId =
-      searchParams.get("examination_id") ||
-      searchParams.get("medical_record_id");
-    const inspId = searchParams.get("inspection_record_id");
+    // ❌ ตัด cancel
+    data = data.filter(
+      (a) => a.status !== "cancelled" && a.status !== "request_cancel"
+    );
 
-    let changed = false;
-    let updated = { ...selectedAppointment };
-
-    if (medId && !selectedAppointment.medical_record_id) {
-      updated.medical_record_id = Number(medId);
-      changed = true;
+    if (searchText) {
+      data = data.filter(
+        (a) =>
+          a.patient.name.toLowerCase().includes(searchText.toLowerCase()) ||
+          a.appointment_id.toString().includes(searchText)
+      );
     }
 
-    if (inspId && !selectedAppointment.inspection_record_id) {
-      updated.inspection_record_id = Number(inspId);
-      changed = true;
+    if (dateRange) {
+      const [start, end] = dateRange;
+      data = data.filter((a) => {
+        const d = dayjs(a.appointment_date);
+        return d.isAfter(start.startOf("day")) && d.isBefore(end.endOf("day"));
+      });
     }
 
-    if (changed) {
-      setSelectedAppointment(updated);
-
-      const url = new URL(window.location.href);
-      url.searchParams.delete("examination_id");
-      url.searchParams.delete("medical_record_id");
-      url.searchParams.delete("inspection_record_id");
-      window.history.replaceState({}, document.title, url.pathname);
-
-      refresh();
+    if (statusFilter) {
+      data = data.filter((a) => a.status === statusFilter);
     }
-  }, [searchParams, selectedAppointment, refresh]);
 
-  // 🔥 fetch data จาก hook จริง
+    if (activeTab === "today") {
+      data = data.filter((a) =>
+        dayjs(a.appointment_date).isSame(dayjs(), "day")
+      );
+    }
+
+    if (activeTab === "scheduled") {
+      data = data.filter((a) => a.status === "scheduled");
+    }
+
+    if (activeTab === "completed") {
+      data = data.filter((a) => a.status === "completed");
+    }
+
+    return data;
+  }, [appointments, searchText, statusFilter, dateRange, activeTab]);
+
+  // =========================
+  // LOAD DATA 
+  // =========================
   useEffect(() => {
     if (!selectedAppointment) return;
 
     setMedicalRecord(null);
     setInspectionRecord(null);
 
-    const loadData = async () => {
+    const load = async () => {
       if (selectedAppointment.medical_record_id) {
         const med = await getMedicalById(
           selectedAppointment.medical_record_id
@@ -129,34 +144,28 @@ export default function AppointmentPage() {
       }
     };
 
-    loadData();
+    load();
   }, [selectedAppointment]);
 
-  // 🔹 search
-  const onSearchChange = (val: string) => {
-    setSearchText(val);
-    setSearch(val);
-  };
-
-  const filteredData = filteredAppointments || appointments || [];
-
-  // 🔹 table columns
+  // =========================
+  // TABLE
+  // =========================
   const columns = [
     { title: "ID", dataIndex: "appointment_id", width: 70 },
     {
-      title: "ชื่อ-นามสกุล",
+      title: "ชื่อ",
       dataIndex: ["patient", "name"],
-      render: (text: string) => <Text strong>{text}</Text>,
+      render: (t: string) => <Text strong>{t}</Text>,
     },
     {
       title: "วันที่",
       dataIndex: "appointment_date",
-      render: (date: string) => dayjs(date).format("DD/MM/YYYY"),
+      render: (d: string) => dayjs(d).format("DD/MM/YYYY"),
     },
     {
       title: "เวลา",
       dataIndex: "appointment_time",
-      render: (time: string) => time.substring(0, 5),
+      render: (t: string) => t.substring(0, 5),
     },
     { title: "ประเภท", dataIndex: "type" },
     {
@@ -166,16 +175,13 @@ export default function AppointmentPage() {
         const map: any = {
           scheduled: { color: "blue", text: "Scheduled" },
           completed: { color: "green", text: "Completed" },
-          cancelled: { color: "red", text: "Cancelled" },
-          request_cancel: { color: "orange", text: "Req. Cancel" },
         };
-        const s = map[status] || { color: "default", text: status };
-        return <Tag color={s.color}>{s.text.toUpperCase()}</Tag>;
+        const s = map[status];
+        return <Tag color={s.color}>{s.text}</Tag>;
       },
     },
     {
-      title: "จัดการ",
-      align: "center" as const,
+      title: "",
       render: (_: any, record: Appointment) => (
         <Tooltip title="รายละเอียด">
           <Button
@@ -191,7 +197,9 @@ export default function AppointmentPage() {
     },
   ];
 
-  // 🔥 medical tab
+  // =========================
+  // MEDICAL
+  // =========================
   const renderMedical = () => {
     const hasData = !!selectedAppointment?.medical_record_id;
 
@@ -199,7 +207,7 @@ export default function AppointmentPage() {
       <>
         <Button
           type="primary"
-          style={{ marginBottom: 16, background: hasData ? undefined : "#52c41a" }}
+          style={{ marginBottom: 16 }}
           onClick={() =>
             router.push(
               hasData
@@ -211,10 +219,10 @@ export default function AppointmentPage() {
           {hasData ? "✏️ แก้ไขประวัติการรักษา" : "➕ เพิ่มประวัติการรักษา"}
         </Button>
 
-        {!hasData && <Text type="secondary">ยังไม่มีข้อมูล</Text>}
+        {!hasData && <Text type="secondary"> ยังไม่พบข้อมูล</Text>}
 
         {hasData && !medicalRecord && (
-          <Text type="secondary">กำลังโหลด...</Text>
+          <Text type="secondary"> กำลังโหลด...</Text>
         )}
 
         {hasData && medicalRecord && (
@@ -256,7 +264,9 @@ export default function AppointmentPage() {
     );
   };
 
-  // 🔥 inspection tab
+  // =========================
+  // INSPECTION
+  // =========================
   const renderInspection = () => {
     const hasData = !!selectedAppointment?.inspection_record_id;
 
@@ -276,10 +286,10 @@ export default function AppointmentPage() {
           {hasData ? "✏️ แก้ไขประวัติการตรวจ" : "➕ เพิ่มประวัติการตรวจ"}
         </Button>
 
-        {!hasData && <Text type="secondary">ยังไม่มีข้อมูล</Text>}
+        {!hasData && <Text type="secondary"> ยังไม่พบข้อมูล</Text>}
 
         {hasData && !inspectionRecord && (
-          <Text type="secondary">กำลังโหลด...</Text>
+          <Text type="secondary"> กำลังโหลด...</Text>
         )}
 
         {hasData && inspectionRecord && (
@@ -302,6 +312,9 @@ export default function AppointmentPage() {
     );
   };
 
+  // =========================
+  // UI
+  // =========================
   return (
     <div style={{ padding: 24 }}>
       <Breadcrumb
@@ -316,7 +329,7 @@ export default function AppointmentPage() {
           {
             title: (
               <span>
-                <CalendarOutlined /> ตารางการทำงาน
+                <CalendarOutlined /> ตารางนัดหมาย
               </span>
             ),
           },
@@ -324,26 +337,55 @@ export default function AppointmentPage() {
       />
 
       <Card style={{ marginTop: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <Title level={3}>📅 ตารางการนัดหมาย</Title>
+        <Title level={3}>📅 ตารางการนัดหมาย</Title>
 
-          <Space size="middle">
+        {/* FILTER */}
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col>
             <Input
-              placeholder="ค้นหาชื่อ หรือ ID..."
-              prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
-              style={{ width: 350 }}
-              onChange={e => setSearchText(e.target.value)}
+              placeholder="ค้นหา..."
+              prefix={<SearchOutlined />}
+              style={{ width: 250 }}
+              onChange={(e) => setSearchText(e.target.value)}
               allowClear
             />
-          </Space>
-        </div>
+          </Col>
+
+          <Col>
+            <Select
+              placeholder="สถานะ"
+              allowClear
+              style={{ width: 150 }}
+              onChange={(v) => setStatusFilter(v)}
+              options={[
+                { label: "Scheduled", value: "scheduled" },
+                { label: "Completed", value: "completed" },
+              ]}
+            />
+          </Col>
+
+          <Col>
+            <DatePicker.RangePicker onChange={(v) => setDateRange(v)} />
+          </Col>
+        </Row>
+
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          items={[
+            { key: "today", label: "วันนี้" },
+            { key: "all", label: "ทั้งหมด" },
+            { key: "scheduled", label: "Scheduled" },
+            { key: "completed", label: "Completed" },
+          ]}
+        />
 
         <Table
           columns={columns}
           dataSource={filteredData}
           rowKey="appointment_id"
           loading={loading}
-          pagination={{ pageSize: 15 }}
+          pagination={{ pageSize: 10 }}
         />
       </Card>
 
@@ -361,33 +403,58 @@ export default function AppointmentPage() {
                 key: "1",
                 label: "ข้อมูลการนัดหมาย",
                 children: (
-                  <Descriptions bordered>
-                    <Descriptions.Item label="ชื่อ">
+                  <Descriptions bordered size="small" column={2}>
+                    <Descriptions.Item label="Appointment ID">
+                      {selectedAppointment.appointment_id}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="สถานะ">
+                      {(() => {
+                        const map: any = {
+                          scheduled: { color: "blue", text: "Scheduled" },
+                          completed: { color: "green", text: "Completed" },
+                          cancelled: { color: "red", text: "Cancelled" },
+                          request_cancel: { color: "orange", text: "Req. Cancel" },
+                        };
+                        const s = map[selectedAppointment.status];
+                        return <Tag color={s.color}>{s.text}</Tag>;
+                      })()}
+                    </Descriptions.Item>
+
+                    <Descriptions.Item label="ชื่อผู้ป่วย">
                       {selectedAppointment.patient.name}
                     </Descriptions.Item>
-                    <Descriptions.Item label="หมอ">
+
+
+                    <Descriptions.Item label="แพทย์">
                       {selectedAppointment.staff.name}
                     </Descriptions.Item>
+
                     <Descriptions.Item label="วันที่">
-                      {dayjs(
-                        selectedAppointment.appointment_date
-                      ).format("DD/MM/YYYY")}
+                      {dayjs(selectedAppointment.appointment_date).format(
+                        "DD MMMM YYYY"
+                      )}
                     </Descriptions.Item>
+
                     <Descriptions.Item label="เวลา">
                       {selectedAppointment.appointment_time.substring(0, 5)}
                     </Descriptions.Item>
+
+                    <Descriptions.Item label="ประเภท" span={2}>
+                      <Tag color="purple">{selectedAppointment.type}</Tag>
+                    </Descriptions.Item>
+
                   </Descriptions>
                 ),
-              },
-              {
-                key: "2",
-                label: "ประวัติการรักษา",
-                children: renderMedical(),
               },
               {
                 key: "3",
                 label: "ประวัติการตรวจ",
                 children: renderInspection(),
+              },{
+                key: "2",
+                label: "ประวัติการรักษา",
+                children: renderMedical(),
               },
             ]}
           />

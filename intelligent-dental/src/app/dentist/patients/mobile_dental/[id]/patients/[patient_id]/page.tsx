@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
     Form,
     DatePicker,
@@ -14,7 +14,6 @@ import {
     Col,
     message,
     Divider,
-    Spin,
 } from "antd";
 
 import {
@@ -23,107 +22,70 @@ import {
     HistoryOutlined,
 } from "@ant-design/icons";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { withAuthHeaders } from "@/app/utils/auth.client";
 import dayjs from "dayjs";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export default function NewInspectionPage() {
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const params = useParams();
 
-    const appointmentId = searchParams.get("appointment_id");
+    const paMoId = params.id; // mobile dental id
+    const patientId = params.patient_id;
 
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
-    const [loadingAppointment, setLoadingAppointment] = useState(true);
-    const [appointment, setAppointment] = useState<any>(null);
 
-    // 🔥 โหลด appointment (เพื่อเอา patient_id)
-    useEffect(() => {
-        const loadAppointment = async () => {
-            if (!appointmentId) {
-                setLoadingAppointment(false);
-                return;
-            }
-
-            try {
-                const res = await fetch(`/api/appointments/${appointmentId}`, {
-                    headers: withAuthHeaders(),
-                });
-
-                if (!res.ok) throw new Error("โหลด appointment ไม่ได้");
-
-                const j = await res.json();
-                const data = j.data || j;
-                
-                setAppointment(data);
-            } catch (err) {
-                console.error(err);
-                message.error("โหลดข้อมูลนัดหมายไม่สำเร็จ");
-            } finally {
-                setLoadingAppointment(false);
-            }
-        };
-
-        loadAppointment();
-    }, [appointmentId]);
-
-    // 🔥 submit
     const onFinish = async (values: any) => {
-        if (!appointment) {
-            message.error("ไม่พบข้อมูล appointment");
-            return;
-        }
-
         setLoading(true);
-
-        const payload = {
-            ...values,
-            date: values.date.format("YYYY-MM-DD"),
-            patient_id: appointment.patient.id, // ✅ ดึงจาก appointment
-        };
 
         try {
             message.loading({ content: "กำลังบันทึก...", key: "save" });
 
-            // ✅ 1. create inspection
-            const res = await fetch("/api/inspection_records", {
+            // ✅ 1. สร้าง inspection ก่อน
+            const inspectionPayload = {
+                ...values,
+                date: values.date.format("YYYY-MM-DD"),
+                patient_id: Number(patientId),
+            };
+
+            const res1 = await fetch("/api/inspection_records", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     ...withAuthHeaders(),
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(inspectionPayload),
             });
 
-            if (!res.ok) throw new Error("Create inspection failed");
+            if (!res1.ok) throw new Error("Create inspection failed");
 
-            const json = await res.json();
-            const newInspection = json.data || json;
+            const json1 = await res1.json();
+            const newInspection = json1.data || json1;
 
-            console.log("Created inspection record:", newInspection);
+            // ✅ 2. เอา inspection_id ไป update mobile dental
+            const payload = {
+                patients_id: patientId, // 🔥 required
+                inspection_id: newInspection.id,
+            };
 
-            if (appointmentId) {
-                console.log("Updating appointment with new inspection_record_id:", newInspection.id);
-                const res2 = await fetch(`/api/appointments/${appointmentId}`, {
+            const res2 = await fetch(
+                `/api/mobile_dentals/patients/${paMoId}`,
+                {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         ...withAuthHeaders(),
                     },
-                    body: JSON.stringify({
-                        inspection_record:
-                            newInspection.id,
-                    }),
-                });
+                    body: JSON.stringify(payload),
+                }
+            );
 
-                if (!res2.ok) throw new Error("Update appointment failed");
-            }
+            if (!res2.ok) throw new Error("Update mobile dental failed");
 
-            message.success({ content: "สร้างบันทึกสำเร็จ", key: "save" });
-
+            message.success({ content: "บันทึกสำเร็จ", key: "save" });
             router.back();
         } catch (err) {
             console.error(err);
@@ -132,11 +94,6 @@ export default function NewInspectionPage() {
             setLoading(false);
         }
     };
-
-    // 🔄 loading appointment
-    if (loadingAppointment) {
-        return <Spin style={{ display: "block", margin: "100px auto" }} />;
-    }
 
     return (
         <div style={{ padding: "24px", maxWidth: "800px", margin: "0 auto" }}>
@@ -161,26 +118,6 @@ export default function NewInspectionPage() {
                     />
                     เพิ่มบันทึกการตรวจ
                 </Title>
-
-                {/* 🔥 แสดงข้อมูล appointment */}
-                {appointment && (
-                    <Card style={{ marginBottom: 16, background: "#fafafa" }}>
-                        <Text strong>ข้อมูลการนัด</Text>
-                        <br />
-                        <Text> วันที่: {dayjs(appointment.appointment_date).format("YYYY-MM-DD")}</Text>
-                        <br />
-                        <Text>
-                            เวลา:{" "}
-                            {appointment?.appointment_time
-                                ? dayjs(appointment.appointment_time).isValid()
-                                    ? dayjs(appointment.appointment_time).format("HH:mm")
-                                    : dayjs(`1970-01-01T${appointment.appointment_time}`).format("HH:mm")
-                                : "-"}
-                        </Text>
-                        <br />
-                        <Text>ประเภท: {appointment.type}</Text>
-                    </Card>
-                )}
 
                 <Form
                     form={form}
@@ -240,7 +177,9 @@ export default function NewInspectionPage() {
                     {/* 🔘 */}
                     <div style={{ marginTop: 40, textAlign: "right" }}>
                         <Space>
-                            <Button onClick={() => router.back()}>ยกเลิก</Button>
+                            <Button onClick={() => router.back()}>
+                                ยกเลิก
+                            </Button>
 
                             <Button
                                 type="primary"

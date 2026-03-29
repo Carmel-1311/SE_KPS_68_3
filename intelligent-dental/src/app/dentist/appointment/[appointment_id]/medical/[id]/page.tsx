@@ -8,7 +8,6 @@ import {
   Button,
   Card,
   Typography,
-  Space,
   Divider,
   Row,
   Col,
@@ -38,7 +37,6 @@ interface ExaminationType {
 export default function EditMedicalRecordPage() {
   const router = useRouter();
   const params = useParams();
-
   const recordId = params?.id as string;
 
   const [form] = Form.useForm();
@@ -47,46 +45,70 @@ export default function EditMedicalRecordPage() {
   const [loading, setLoading] = useState(false);
   const [loadingPage, setLoadingPage] = useState(true);
 
-  // 🔥 LOAD DATA (record + types + inspections)
+  // =========================
+  // 🔥 LOAD DATA
+  // =========================
   useEffect(() => {
     if (!recordId) return;
 
     const load = async () => {
       try {
-        // types
+        // โหลด type ก่อน
         const t = await fetch("/api/types", {
           headers: withAuthHeaders(),
         });
         const tJson = await t.json();
-        setExamTypes(Array.isArray(tJson) ? tJson : tJson.data || []);
+        const types = Array.isArray(tJson) ? tJson : tJson.data || [];
+        setExamTypes(types);
 
-        // medical record
+        // โหลด medical record
         const r = await fetch(`/api/medical_records/${recordId}`, {
           headers: withAuthHeaders(),
         });
         const rJson = await r.json();
         const data = rJson.data || rJson;
 
-        // inspections ของ patient
-        const i = await fetch(
-          `/api/patients/${data.patient_id}/inspection_records`,
-          { headers: withAuthHeaders() }
-        );
-        const iJson = await i.json();
-        const list = Array.isArray(iJson.data)
-          ? iJson.data
-          : iJson.data?.data || [];
-        setInspectionRecords(list);
+        // โหลด inspection
+        let inspectionList: any[] = [];
+        let preview = null;
 
-        // 🔥 map detail เข้า form
+        const inspectionId =
+          data.inspection_record_id ||
+          data.inspection_record?.id;
+
+        if (inspectionId) {
+          const iRes = await fetch(
+            `/api/inspection_records/${inspectionId}`,
+            { headers: withAuthHeaders() }
+          );
+
+          if (iRes.ok) {
+            const iJson = await iRes.json();
+            const record = iJson?.data || iJson;
+
+            if (record) {
+              inspectionList = [record];
+              preview = record;
+            }
+          }
+        }
+
+        setInspectionRecords(inspectionList);
+
+        // 🔥 FIX: cast type_id เป็น number
+        const mappedDetail =
+          data.detail?.map((d: any) => ({
+            type_id: Number(d.examination_type.id),
+            diagnosis: d.diagnosis,
+          })) || [];
+
+        // set form
         form.setFieldsValue({
           date: data.date ? dayjs(data.date) : null,
           history: data.history,
-          inspection_record_id: data.inspection_record_id,
-          detail: data.detail?.map((d: any) => ({
-            type_id: d.type_id,
-            diagnosis: d.diagnosis,
-          })),
+          inspection_record_id: inspectionId,
+          preview: preview,
+          detail: mappedDetail,
         });
 
       } catch (err) {
@@ -100,8 +122,15 @@ export default function EditMedicalRecordPage() {
     load();
   }, [recordId, form]);
 
-  // 🔥 SUBMIT (UPDATE)
+  // =========================
+  // 🔥 SUBMIT
+  // =========================
   const onFinish = async (values: any) => {
+    if (!values.detail?.length) {
+      message.error("กรุณาเพิ่ม Diagnosis");
+      return;
+    }
+
     setLoading(true);
 
     const payload = {
@@ -115,24 +144,32 @@ export default function EditMedicalRecordPage() {
     };
 
     try {
+      const uniqueTypes = new Set();
+
+      for (const d of values.detail) {
+        if (uniqueTypes.has(d.type_id)) {
+          message.error("ห้ามเลือกประเภทซ้ำ");
+          return;
+        }
+        uniqueTypes.add(d.type_id);
+      }
+
       message.loading({ content: "กำลังบันทึก...", key: "save" });
 
-      const res = await fetch(
-        `/api/medical_records/${recordId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            ...withAuthHeaders(),
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`/api/medical_records/${recordId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...withAuthHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
 
       if (!res.ok) throw new Error("Update failed");
 
       message.success({ content: "แก้ไขสำเร็จ", key: "save" });
       router.back();
+
     } catch (err) {
       console.error(err);
       message.error({ content: "เกิดข้อผิดพลาด", key: "save" });
@@ -143,7 +180,6 @@ export default function EditMedicalRecordPage() {
 
   return (
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
-      {/* ✅ FIX: ไม่ return Spin แล้ว */}
       <Spin spinning={loadingPage}>
         <Button
           icon={<ArrowLeftOutlined />}
@@ -155,29 +191,18 @@ export default function EditMedicalRecordPage() {
 
         <Card>
           <Title level={3}>
-            <MedicineBoxOutlined style={{ color: "#faad14" }} /> แก้ไขประวัติการรักษา
+            <MedicineBoxOutlined style={{ color: "#faad14" }} />
+            {" "}แก้ไขประวัติการรักษา
           </Title>
 
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-          >
-            {/* 🔥 inspection select */}
+          <Form form={form} layout="vertical" onFinish={onFinish}>
+            {/* inspection */}
             <Form.Item
               name="inspection_record_id"
-              label="เลือกประวัติการตรวจ"
+              label="ประวัติการตรวจ"
               rules={[{ required: true }]}
             >
-              <Select
-                placeholder="เลือก"
-                onChange={(id) => {
-                  const selected = inspectionRecords.find(
-                    (r) => r.id === id
-                  );
-                  form.setFieldsValue({ preview: selected });
-                }}
-              >
+              <Select disabled={inspectionRecords.length <= 1}>
                 {inspectionRecords.map((rec) => (
                   <Select.Option key={rec.id} value={rec.id}>
                     {dayjs(rec.date).format("YYYY-MM-DD")} - {rec.status}
@@ -186,7 +211,7 @@ export default function EditMedicalRecordPage() {
               </Select>
             </Form.Item>
 
-            {/* 🔥 preview */}
+            {/* preview */}
             <Form.Item shouldUpdate>
               {() => {
                 const preview = form.getFieldValue("preview");
