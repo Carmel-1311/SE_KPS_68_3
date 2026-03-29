@@ -184,7 +184,7 @@ export default function EditMedicalPage() {
                     key={key} 
                     type="inner" 
                     style={{ marginBottom: 16, background: '#fafafa' }}
-                    bodyStyle={{ padding: '16px' }}
+                    styles={{ body: { padding: '16px' } }}
                   >
                     <Row gutter={16} align="middle">
                       <Col xs={24} sm={10}>
