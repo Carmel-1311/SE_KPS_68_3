@@ -97,7 +97,7 @@ export default function AppointmentListPage() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Text>{dayjs(record.appointment_date).format('DD/MM/YYYY')}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-             {dayjs(`2000-01-01 ${record.appointment_time}`).subtract(7, 'hour').format('HH:mm')}
+             {record.appointment_time}
           </Text>
         </div>
       ),

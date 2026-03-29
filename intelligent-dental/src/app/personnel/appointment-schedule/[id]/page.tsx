@@ -57,7 +57,7 @@ export default function EditAppointmentPage() {
 
     form.setFieldsValue({
       appointment_date: dateOnly,
-      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7, 'hour').format('HH:mm'),
+      appointment_time: appointment.appointment_time,
       type:             appointment.type,
       status:           appointment.status,
     });
@@ -83,7 +83,7 @@ export default function EditAppointmentPage() {
     await updateAppointment(
       {
         appointment_date: values.appointment_date,
-        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(),
+        appointment_time: `2026-01-01T${values.appointment_time}:00.000Z`,
         type:             values.type,
         status:           values.status,
         staff_id:         appointment.staff.id,
@@ -174,14 +174,13 @@ export default function EditAppointmentPage() {
               rules={[{ required: true, message: 'กรุณาเลือกเวลา' }]}
             >
               <Select size="large" placeholder="เลือกเวลา" loading={loadingSlots} disabled={isReadOnly || loadingSlots}>
-                {availableSlots.map((slot) => {
-                  const displayTime = dayjs(`2000-01-01 ${slot.time}`).subtract(7, 'hour').format('HH:mm');
-                  return (
-                    <Select.Option key={slot.time} value={displayTime}>
-                      {displayTime} น.
-                    </Select.Option>
-                  );
-                })}
+               {availableSlots
+                  .filter(slot => slot.available_dentist_ids.includes(appointment.staff.id))
+                    .map((slot) => (
+                   <Select.Option key={slot.time} value={slot.time}>
+                    {slot.time} น.
+                     </Select.Option>
+              ))}
               </Select>
             </Form.Item>
           </div>
