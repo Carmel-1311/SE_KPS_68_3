@@ -2,10 +2,17 @@
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import { Layout } from "antd";
+import { useEffect, useState } from "react";
 
 const { Footer } = Layout;
 
 export default function UserFooter() {
+  const [year, setYear] = useState<string | null>(null);
+
+  useEffect(() => {
+    setYear(String(new Date().getFullYear()));
+  }, []);
+
   return (
     <Footer
       style={{
@@ -18,8 +25,7 @@ export default function UserFooter() {
         fontSize: 12,
       }}
     >
-      <span>ระบบบริหารจัดการคลินิกทันตกรรม</span>
-      <span>© {new Date().getFullYear()} Intelligent Dental</span>
+      © {year ?? ""} Intelligent Dental
     </Footer>
   );
 }

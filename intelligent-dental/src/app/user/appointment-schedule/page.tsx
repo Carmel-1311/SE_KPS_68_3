@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import dayjs, { type Dayjs } from "dayjs";
 import {
@@ -87,8 +87,17 @@ const baseServiceOptions = [
 ];
 
 export default function UserAppointmentSchedulePage() {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
+  const maxAppointmentDate = dayjs().add(3, "month").endOf("day");
+  const isBeyondMaxAppointmentDate = (value: Dayjs) =>
+    value.isAfter(maxAppointmentDate, "day");
   const {
     isCreateOpen,
     setIsCreateOpen,
@@ -220,7 +229,8 @@ export default function UserAppointmentSchedulePage() {
               disabled:
                 !newAppointmentDate ||
                 !newAppointmentTime ||
-                isPastDate(newAppointmentDate),
+                isPastDate(newAppointmentDate) ||
+                isBeyondMaxAppointmentDate(newAppointmentDate),
             }}
             destroyOnHidden
           >
@@ -232,7 +242,10 @@ export default function UserAppointmentSchedulePage() {
                 onChange={(value) => setNewAppointmentDate(value)}
                 format={(value) => (value ? formatThaiDateValue(value) : "")}
                 disabledDate={(current) =>
-                  current ? current.isBefore(dayjs(), "day") : false
+                  current
+                    ? current.isBefore(dayjs(), "day") ||
+                      current.isAfter(maxAppointmentDate, "day")
+                    : false
                 }
               />
               <Typography.Text>เลือกเวลา</Typography.Text>
@@ -260,6 +273,8 @@ export default function UserAppointmentSchedulePage() {
               <Select
                 showSearch
                 placeholder="เลือกหรือพิมพ์บริการ"
+                popupMatchSelectWidth={175}
+                styles={{ popup: { root: { width: 320 } } }}
                 options={serviceOptions}
                 value={newAppointmentService || undefined}
                 onChange={(value) => setNewAppointmentService(value)}

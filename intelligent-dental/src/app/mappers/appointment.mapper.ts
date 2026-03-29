@@ -56,6 +56,7 @@ export type AppointmentWithRelations =
 export function toAppointmentResponse(
   a: AppointmentWithRelations
 ): AppointmentResponseDTO {
+  const formatTime = (value: Date) => value.toISOString().slice(11, 16)
   return {
     appointment_id: a.appointment_id,
     patient: {
@@ -69,7 +70,7 @@ export function toAppointmentResponse(
       }
       : undefined,
     appointment_date: a.appointment_date.toISOString(),
-    appointment_time: a.appointment_time.toTimeString().slice(0, 5),
+    appointment_time: formatTime(a.appointment_time),
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
     medical_record: a.medical_records
@@ -152,7 +153,7 @@ export function toAppointmentResponseList(
       : undefined,
 
     appointment_date: a.appointment_date.toISOString(),
-    appointment_time: a.appointment_time.toTimeString().slice(0, 5),
+    appointment_time: a.appointment_time.toISOString().slice(11, 16),
 
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",

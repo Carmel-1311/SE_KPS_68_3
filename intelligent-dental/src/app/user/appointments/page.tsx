@@ -55,6 +55,15 @@ const formatThaiDate = (dateValue: string) => {
   )}`;
 };
 
+const formatAppointmentTime = (timeValue: string) => {
+  const trimmed = timeValue.trim();
+  if (!trimmed) return timeValue;
+  if (!trimmed.includes("T")) return trimmed;
+  const timePart = trimmed.split("T")[1];
+  if (!timePart) return timeValue;
+  return timePart.replace("Z", "").slice(0, 5);
+};
+
 export default function UserAppointmentsPage() {
   const {
     filteredAppointments,
@@ -75,7 +84,7 @@ export default function UserAppointmentsPage() {
       title: "ขอยกเลิกนัดหมาย",
       content: `ต้องการขอยกเลิกนัดหมาย ${formatThaiDate(
         record.appointment_date,
-      )} เวลา ${record.appointment_time} ใช่หรือไม่?`,
+      )} เวลา ${formatAppointmentTime(record.appointment_time)} ใช่หรือไม่?`,
       okText: "ยืนยัน",
       cancelText: "ปิด",
       okButtonProps: { danger: true },
@@ -94,7 +103,7 @@ export default function UserAppointmentsPage() {
         <div>
           <div>{formatThaiDate(record.appointment_date)}</div>
           <Typography.Text type="secondary">
-            {record.appointment_time} น.
+            {formatAppointmentTime(record.appointment_time)} น.
           </Typography.Text>
         </div>
       ),
