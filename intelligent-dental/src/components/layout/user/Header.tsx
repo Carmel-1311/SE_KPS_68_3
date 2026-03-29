@@ -1,22 +1,23 @@
 "use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
-import { Button, Layout, Flex, Typography } from "antd";
+import { Button, Flex, Layout, Typography } from "antd";
 import {
   CalendarCheck,
   CalendarDays,
   FileText,
-  House,
   LogOut,
   Stethoscope,
   User,
 } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 
 const { Header } = Layout;
 const { Text } = Typography;
+
+const FALLBACK_ACCOUNT_NAME = "ผู้ใช้";
 
 const menuItems = [
   { key: "profile", icon: <User size={16} />, label: "Profile", path: "/user/profile" },
@@ -28,21 +29,27 @@ const menuItems = [
 export default function UserHeader() {
   const router = useRouter();
   const pathname = usePathname();
-  const [accountName, setAccountName] = useState(
-    () => getAccountName() || getAccountUsername() || "ผู้ใช้"
+  const accountName = useSyncExternalStore(
+    (callback) => {
+      if (typeof window === "undefined") {
+        return () => undefined;
+      }
+
+      const handleStorageChange = () => callback();
+      window.addEventListener("storage", handleStorageChange);
+
+      return () => window.removeEventListener("storage", handleStorageChange);
+    },
+    () => getAccountName() || getAccountUsername() || FALLBACK_ACCOUNT_NAME,
+    () => FALLBACK_ACCOUNT_NAME
   );
 
   const selectedKey = pathname.split("/").filter(Boolean)[1] ?? "";
 
-  useEffect(() => {
-    const name = getAccountName() || getAccountUsername();
-    if (name) setAccountName(name);
-  }, []);
-
   const handleLogout = () => {
     if (typeof window !== "undefined") {
       ["auth_token", "account_role", "account_id", "patient_id", "account_name", "account_username"]
-        .forEach((k) => localStorage.removeItem(k));
+        .forEach((key) => localStorage.removeItem(key));
     }
     router.push("/login");
   };
@@ -60,7 +67,6 @@ export default function UserHeader() {
         gap: 20,
       }}
     >
-      {/* Logo */}
       <Flex align="center" gap={10} style={{ flexShrink: 0 }}>
         <Stethoscope size={22} color="#27EEEE" />
         <Text style={{ color: "#fff", whiteSpace: "nowrap", fontWeight: 600 }}>
@@ -68,10 +74,10 @@ export default function UserHeader() {
         </Text>
       </Flex>
 
-      {/* Nav */}
       <Flex align="center" gap={4} style={{ flex: 1, minWidth: 0 }}>
         {menuItems.map((item) => {
           const isActive = selectedKey === item.key;
+
           return (
             <Button
               key={item.key}
@@ -93,7 +99,6 @@ export default function UserHeader() {
         })}
       </Flex>
 
-      {/* User + Logout */}
       <Flex align="center" gap={8} style={{ flexShrink: 0 }}>
         <div
           style={{

@@ -54,7 +54,16 @@ const formatThaiDate = (dateValue?: string) => {
   if (!dateValue) return "-";
   const date = dayjs(dateValue);
   if (!date.isValid()) return dateValue;
-  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format("YYYY")}`;
+  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.year() + 543}`;
+};
+
+const formatPhoneNumber = (phone?: string) => {
+  if (!phone) return "-";
+
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length !== 10) return phone;
+
+  return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
 };
 
 const getInitials = (name: string) => {
@@ -77,24 +86,28 @@ function ProfileLoadingState() {
   );
 }
 
-function ProfileContent() {
+type ProfileDetailsProps = {
+  user: NonNullable<ReturnType<typeof useUser>["user"]>;
+  error: string | null;
+  updateProfile: ReturnType<typeof useUser>["updateProfile"];
+};
+
+function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
   const [form] = Form.useForm<{ allergy: string }>();
-  const { user, loading, error, updateProfile } = useUser();
-  const [draftAllergy, setDraftAllergy] = useState("");
+  const [draftAllergy, setDraftAllergy] = useState(user.allergy ?? "");
   const [isEditing, setIsEditing] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [messageApi, messageContextHolder] = message.useMessage();
 
   useEffect(() => {
-    form.setFieldsValue({ allergy: user?.allergy ?? "" });
-    setDraftAllergy(user?.allergy ?? "");
+    const allergy = user.allergy ?? "";
+    form.setFieldsValue({ allergy });
+    setDraftAllergy(allergy);
   }, [form, user]);
 
-  const stats = useMemo(() => {
-    if (!user) return null;
-
-    return [
+  const stats = useMemo(
+    () => [
       {
         key: "birthday",
         title: "วันเกิด",
@@ -104,7 +117,7 @@ function ProfileContent() {
       {
         key: "phone",
         title: "เบอร์โทรศัพท์",
-        value: user.phone || "-",
+        value: formatPhoneNumber(user.phone),
         prefix: <PhoneOutlined style={{ color: "#13a8a8" }} />,
       },
       {
@@ -113,24 +126,25 @@ function ProfileContent() {
         value: user.allergy?.trim() ? "มีข้อมูล" : "ยังไม่ระบุ",
         prefix: <SafetyCertificateOutlined style={{ color: "#fa8c16" }} />,
       },
-    ];
-  }, [user]);
+    ],
+    [user]
+  );
 
   const handleStartEdit = () => {
-    setDraftAllergy(user?.allergy ?? "");
-    form.setFieldsValue({ allergy: user?.allergy ?? "" });
+    const allergy = user.allergy ?? "";
+    setDraftAllergy(allergy);
+    form.setFieldsValue({ allergy });
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
-    setDraftAllergy(user?.allergy ?? "");
-    form.setFieldsValue({ allergy: user?.allergy ?? "" });
+    const allergy = user.allergy ?? "";
+    setDraftAllergy(allergy);
+    form.setFieldsValue({ allergy });
     setIsEditing(false);
   };
 
   const handleSubmitEdit = async () => {
-    if (!user) return;
-
     try {
       const values = await form.validateFields();
       setDraftAllergy(values.allergy ?? "");
@@ -141,18 +155,15 @@ function ProfileContent() {
   };
 
   const handleConfirmSave = async () => {
-    if (!user) return;
-
     setShowConfirm(false);
     setIsSaving(true);
 
     try {
-      const allergy = draftAllergy.trim();
       await updateProfile({
         id: user.id,
         name: user.name,
         birthday: user.birthday,
-        allergy,
+        allergy: draftAllergy.trim(),
         email: user.email,
         phone: user.phone,
       });
@@ -166,31 +177,6 @@ function ProfileContent() {
       setIsSaving(false);
     }
   };
-
-  if (loading && !user) {
-    return (
-      <>
-        {messageContextHolder}
-        <ProfileLoadingState />
-      </>
-    );
-  }
-
-  if (!user) {
-    return (
-      <>
-        {messageContextHolder}
-        <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-          <Alert
-            type="warning"
-            showIcon
-            message="ไม่พบข้อมูลผู้ใช้งาน"
-            description={error ?? "ระบบไม่สามารถโหลดข้อมูลโปรไฟล์ได้"}
-          />
-        </div>
-      </>
-    );
-  }
 
   return (
     <>
@@ -209,7 +195,7 @@ function ProfileContent() {
       </Modal>
 
       <div style={{ maxWidth: 1080, margin: "0 auto" }}>
-        <Space direction="vertical" size={24} style={{ width: "100%" }}>
+        <Space orientation="vertical" size={24} style={{ width: "100%" }}>
           <div>
             <Space size={8} style={{ marginBottom: 16, color: "#8c8c8c" }} wrap>
               <Link
@@ -238,7 +224,12 @@ function ProfileContent() {
                   }}
                   styles={{ body: { padding: 28 } }}
                 >
-                  <Space align="start" size={20} style={{ width: "100%", justifyContent: "space-between" }} wrap>
+                  <Space
+                    align="start"
+                    size={20}
+                    style={{ width: "100%", justifyContent: "space-between" }}
+                    wrap
+                  >
                     <Space size={16} align="start">
                       <Avatar
                         size={72}
@@ -252,7 +243,7 @@ function ProfileContent() {
                         {getInitials(user.name)}
                       </Avatar>
 
-                      <Space direction="vertical" size={4}>
+                      <Space orientation="vertical" size={4}>
                         <Tag color="blue" style={{ width: "fit-content", borderRadius: 999 }}>
                           ข้อมูลผู้ใช้
                         </Tag>
@@ -266,7 +257,7 @@ function ProfileContent() {
                           </Space>
                           <Space size={6}>
                             <PhoneOutlined style={{ color: "#8c8c8c" }} />
-                            <Text type="secondary">{user.phone || "-"}</Text>
+                            <Text type="secondary">{formatPhoneNumber(user.phone)}</Text>
                           </Space>
                         </Space>
                       </Space>
@@ -309,13 +300,14 @@ function ProfileContent() {
                   styles={{ body: { padding: 24 } }}
                 >
                   <Row gutter={[16, 16]}>
-                    {stats?.map((item) => (
+                    {stats.map((item) => (
                       <Col xs={24} sm={8} lg={24} key={item.key}>
                         <Statistic
                           title={<Text type="secondary">{item.title}</Text>}
                           value={item.value}
                           prefix={item.prefix}
-                          valueStyle={{ fontSize: 18, fontWeight: 600 }}
+                          formatter={(value) => String(value)}
+                          styles={{ content: { fontSize: 18, fontWeight: 600 } }}
                         />
                       </Col>
                     ))}
@@ -344,13 +336,21 @@ function ProfileContent() {
                   </Space>
                 }
                 variant="borderless"
-                style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)", height: "100%" }}
+                style={{
+                  borderRadius: 16,
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.04)",
+                  height: "100%",
+                }}
                 styles={{ body: { padding: 24 } }}
               >
-                <Descriptions column={1} size="middle" labelStyle={{ width: 140, fontWeight: 600 }}>
+                <Descriptions
+                  column={1}
+                  size="middle"
+                  styles={{ label: { width: 140, fontWeight: 600 } }}
+                >
                   <Descriptions.Item label="ชื่อ - นามสกุล">{user.name}</Descriptions.Item>
                   <Descriptions.Item label="อีเมล">{user.email || "-"}</Descriptions.Item>
-                  <Descriptions.Item label="เบอร์โทรศัพท์">{user.phone || "-"}</Descriptions.Item>
+                  <Descriptions.Item label="เบอร์โทรศัพท์">{formatPhoneNumber(user.phone)}</Descriptions.Item>
                   <Descriptions.Item label="วันเกิด">{formatThaiDate(user.birthday)}</Descriptions.Item>
                 </Descriptions>
               </Card>
@@ -370,7 +370,11 @@ function ProfileContent() {
                   </Tag>
                 }
                 variant="borderless"
-                style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)", height: "100%" }}
+                style={{
+                  borderRadius: 16,
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.04)",
+                  height: "100%",
+                }}
                 styles={{ body: { padding: 24 } }}
               >
                 <Form form={form} layout="vertical">
@@ -402,7 +406,7 @@ function ProfileContent() {
                   <Alert
                     type="info"
                     showIcon
-                    message="โหมดแก้ไขข้อมูล"
+                    title="โหมดแก้ไขข้อมูล"
                     description="ตรวจสอบรายละเอียดให้ถูกต้องก่อนกดบันทึก เพื่อให้ข้อมูลสุขภาพของคุณเป็นปัจจุบัน"
                     style={{ borderRadius: 12 }}
                   />
@@ -414,6 +418,29 @@ function ProfileContent() {
       </div>
     </>
   );
+}
+
+function ProfileContent() {
+  const { user, loading, error, updateProfile } = useUser();
+
+  if (loading && !user) {
+    return <ProfileLoadingState />;
+  }
+
+  if (!user) {
+    return (
+      <div style={{ maxWidth: 1080, margin: "0 auto" }}>
+        <Alert
+          type="warning"
+          showIcon
+          message="ไม่พบข้อมูลผู้ใช้งาน"
+          description={error ?? "ระบบไม่สามารถโหลดข้อมูลโปรไฟล์ได้"}
+        />
+      </div>
+    );
+  }
+
+  return <ProfileDetails user={user} error={error} updateProfile={updateProfile} />;
 }
 
 export default function UserProfilePage() {
