@@ -13,8 +13,8 @@ export const useDentist = () => {
   const fetchPatients = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/patients", {
-        headers: withAuthHeaders()  // ✅ เพิ่ม header สำหรับ auth
+      const response = await fetch("/api/patients?limit=200", {
+        headers: withAuthHeaders()  
       });
       const result = await response.json();
       setPatients(result.data || []);

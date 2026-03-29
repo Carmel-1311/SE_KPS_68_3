@@ -11,7 +11,9 @@ const { Sider } = Layout;
 
 const menuItems = [
   { key: "work-schedule", icon: <CalendarDays size={18} />, label: "ตารางการทำงาน", path: "/dentist/work-schedule" },
+  { key: "appointment", icon: <NotebookText size={18} />, label: "ตารางการนัดหมาย", path: "/dentist/appointment" },
   { key: "patients", icon: <NotebookText size={18} />, label: "ตารางผู้ป่วย", path: "/dentist/patients" },
+
 ];
 
 export default function DentistSidebar() {

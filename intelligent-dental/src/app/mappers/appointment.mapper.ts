@@ -201,11 +201,14 @@ export function toUpdateAppointmentInput(
   return removeUndefined({
     patient_id: data.patient_id,
     staff_id: data.staff_id,
+    inspection_record_id: data.inspection_record_id,
+    medical_record_id: data.medical_record_id,
     appointment_date: data.appointment_date
       ? new Date(data.appointment_date)
       : undefined,
     appointment_time: normalizeAppointmentTime(data.appointment_time),
     type: data.type,
-    status: data.status
+    status: data.status,
+    
   })
 }

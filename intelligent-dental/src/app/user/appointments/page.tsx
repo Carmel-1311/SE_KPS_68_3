@@ -20,7 +20,7 @@ import {
   type Datum,
   Status,
 } from "@/mock/mockAppointment";
-import { useAppointments } from "@/hook/useAppointments";
+import { useAppointments } from "@/hook/useAppointments2";
 import { createTablePagination } from "@/app/utils/tablePagination";
 
 const statusMeta: Record<

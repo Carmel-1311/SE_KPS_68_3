@@ -4,16 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDentist } from "@/hook/useDentist";
 import { withAuthHeaders } from "@/app/utils/auth.client";
-import { 
-  Table, Button, Modal, Input, Space, Row, Col, 
-  Tag, Tooltip, Tabs, Timeline, Card, Typography, Spin 
+import {
+  Table, Button, Modal, Input, Space, Row, Col,
+  Tag, Tooltip, Tabs, Timeline, Card, Typography, Spin,Breadcrumb
 } from "antd";
-import { 
-  ReadOutlined, SearchOutlined, MedicineBoxOutlined, 
+import {
+  ReadOutlined, SearchOutlined, MedicineBoxOutlined,
   HistoryOutlined, UserOutlined, PlusOutlined, EditOutlined,
   TeamOutlined, CarOutlined
 } from "@ant-design/icons";
-
+import { CalendarOutlined, HomeOutlined } from "@ant-design/icons";
 const { Title, Text } = Typography;
 
 const statusColor = (s?: string) => {
@@ -44,7 +44,7 @@ export default function PatientsPage() {
 
   // Logic การกรองข้อมูล: ค้นหาชื่อ/ID และแยกประเภทตาม Tab
   const filteredItems = patients.filter((item) => {
-    const matchesSearch = item.name?.toLowerCase().includes(searchText.toLowerCase()) || 
+    const matchesSearch = item.name?.toLowerCase().includes(searchText.toLowerCase()) ||
       item.id?.toString().includes(searchText);
     return matchesSearch;
   });
@@ -112,18 +112,18 @@ export default function PatientsPage() {
 
   const columns = [
     { title: "ID", dataIndex: "id", key: "id", width: 80 },
-    { 
-        title: "ชื่อ-นามสกุล", 
-        dataIndex: "name", 
-        key: "name", 
-        render: (text: string, record: any) => (
-            <Space>
-                <b>{text}</b>
-                {(record.type === "mobile_dental" || record.is_mobile) && (
-                    <Tag icon={<CarOutlined />} color="cyan">Mobile</Tag>
-                )}
-            </Space>
-        ) 
+    {
+      title: "ชื่อ-นามสกุล",
+      dataIndex: "name",
+      key: "name",
+      render: (text: string, record: any) => (
+        <Space>
+          <b>{text}</b>
+          {(record.type === "mobile_dental" || record.is_mobile) && (
+            <Tag icon={<CarOutlined />} color="cyan">Mobile</Tag>
+          )}
+        </Space>
+      )
     },
     { title: "อีเมล", dataIndex: "email", key: "email" },
     {
@@ -133,10 +133,10 @@ export default function PatientsPage() {
       align: 'center' as const,
       render: (_: any, record: any) => (
         <Tooltip title="รายละเอียด">
-          <Button 
-            type="text" 
-            icon={<ReadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />} 
-            onClick={() => showDetail(record)} 
+          <Button
+            type="text"
+            icon={<ReadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />}
+            onClick={() => showDetail(record)}
           />
         </Tooltip>
       ),
@@ -167,7 +167,28 @@ export default function PatientsPage() {
   ];
 
   return (
-    <div style={{ padding: '0' }}>
+
+      <div style={{ padding: 24 }}>
+      <Breadcrumb
+        style={{ marginBottom: 24, fontSize: 15 }}
+        items={[
+          {
+            title: (
+              <a onClick={() => router.push('/work-schedule')}>
+                <HomeOutlined /> หน้าหลัก
+              </a>
+            ),
+          },
+          {
+            title: (
+              <span>
+                <CalendarOutlined /> ตารางการผู้ป่วย
+              </span>
+            ),
+          },
+        ]}
+      />
+      
       <Card variant={"outlined"} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div>
@@ -175,10 +196,10 @@ export default function PatientsPage() {
             <Text type="secondary">ข้อมูลอัปเดตจากระบบฐานข้อมูล</Text>
           </div>
           <Space size="middle">
-            <Input 
-              placeholder="ค้นหาชื่อ หรือ ID..." 
-              prefix={<SearchOutlined style={{ color: '#1890ff' }} />} 
-              style={{ width: 350 }} 
+            <Input
+              placeholder="ค้นหาชื่อ หรือ ID..."
+              prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+              style={{ width: 350 }}
               onChange={e => setSearchText(e.target.value)}
               allowClear
             />
@@ -221,37 +242,37 @@ export default function PatientsPage() {
                       { title: "จำนวนคน", dataIndex: "count", key: "count" },
                       {
                         title: "ดูรายชื่อผู้ป่วย",
-  key: "action",
-  render: (_: any, record: any) => {
-    // ตรวจสอบว่าเป็นรายการที่กำลังเปิดอยู่หรือไม่
-    const isSelected = selectedMobile?.mobile_dental_id === record.mobile_dental_id;
-    
-    return (
-      <Button
-        type={isSelected ? "primary" : "default"}
-        icon={<TeamOutlined />}
-        onClick={async () => {
-          if (isSelected) {
-            // -- LOGIC TOGGLE OFF: ถ้ากดซ้ำตัวเดิม ให้ปิด (เคลียร์ค่า) --
-            setSelectedMobile(null);
-          } else {
-            // -- LOGIC TOGGLE ON: ถ้ากดตัวอื่น หรือยังไม่ได้เลือก ให้เปิด --
-            setSelectedMobile(record);
-            await fetchMobilePatients(record.mobile_dental_id);
-          }
-        }}
-      >
-        {isSelected ? "ดูรายชื่อ" : "ดูรายชื่อ"}
-      </Button>
-    );
-  }
+                        key: "action",
+                        render: (_: any, record: any) => {
+                          // ตรวจสอบว่าเป็นรายการที่กำลังเปิดอยู่หรือไม่
+                          const isSelected = selectedMobile?.mobile_dental_id === record.mobile_dental_id;
+
+                          return (
+                            <Button
+                              type={isSelected ? "primary" : "default"}
+                              icon={<TeamOutlined />}
+                              onClick={async () => {
+                                // if (isSelected) {
+                                //   // -- LOGIC TOGGLE OFF: ถ้ากดซ้ำตัวเดิม ให้ปิด (เคลียร์ค่า) --
+                                //   setSelectedMobile(null);
+                                // } else {
+                                //   // -- LOGIC TOGGLE ON: ถ้ากดตัวอื่น หรือยังไม่ได้เลือก ให้เปิด --
+                                //   setSelectedMobile(record);
+                                //   await fetchMobilePatients(record.mobile_dental_id);
+                                // }
+                              }}
+                            >
+                              {isSelected ? "ดูรายชื่อ" : "ดูรายชื่อ"}
+                            </Button>
+                          );
+                        }
                       }
                     ]}
                     dataSource={mobileDentals}
                     rowKey="mobile_dental_id"
                     pagination={false}
                   />
-                  {selectedMobile && (
+                  {/* {selectedMobile && (
                     <div style={{ marginTop: 24 }}>
                       <Title level={5}>
                         รายชื่อผู้ป่วยในหน่วย: {selectedMobile.address} ({selectedMobile.date})
@@ -264,18 +285,18 @@ export default function PatientsPage() {
                         pagination={{ pageSize: 10 }}
                       />
                     </div>
-                  )}
+                  )} */}
                 </div>
               )
             },
           ]}
         />
 
-        <Modal 
-          open={isDetailOpen} 
-          title={`แฟ้มประวัติ: ${selectedPatient?.name || 'กำลังโหลด...'}`} 
-          onCancel={() => setIsDetailOpen(false)} 
-          width={850} 
+        <Modal
+          open={isDetailOpen}
+          title={`แฟ้มประวัติ: ${selectedPatient?.name || 'กำลังโหลด...'}`}
+          onCancel={() => setIsDetailOpen(false)}
+          width={850}
           footer={[<Button key="close" onClick={() => setIsDetailOpen(false)}>ปิดหน้าต่าง</Button>]}
         >
           <Spin spinning={modalLoading}>
@@ -291,10 +312,10 @@ export default function PatientsPage() {
                       <Col span={12}><strong>อีเมล:</strong> {selectedPatient?.email}</Col>
                       <Col span={12}><strong>วันเกิด:</strong> {selectedPatient?.birthday || "-"}</Col>
                       <Col span={12}>
-                          <strong>สถานะ:</strong> 
-                          <Tag color={selectedPatient?.status === 'active' ? 'green' : 'default'}>
-                              {selectedPatient?.status === 'active' ? 'ปกติ' : 'ปิดการใช้งาน'}
-                          </Tag>
+                        <strong>สถานะ:</strong>
+                        <Tag color={selectedPatient?.status === 'active' ? 'green' : 'default'}>
+                          {selectedPatient?.status === 'active' ? 'ปกติ' : 'ปิดการใช้งาน'}
+                        </Tag>
                       </Col>
                       <Col span={24}><strong>ประวัติการแพ้ยา:</strong> <Tag color="red">{selectedPatient?.allergy || "ไม่มีข้อมูล"}</Tag></Col>
                     </Row>
