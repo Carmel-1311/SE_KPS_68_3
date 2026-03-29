@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { type Datum, Status } from "@/mock/mockAppointment";
-import { getAuthToken, withAuthHeaders } from "@/app/utils/auth.client";
+
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 type StatusFilter = "all" | Status;
 type ApiErrorShape = { error?: { message?: string }; message?: string };
@@ -19,6 +20,9 @@ type AppointmentUpdateInput = {
   type: string;
   status: Status;
   staff_id: number;
+  inspection_record_id?: number;
+  medical_record_id?: number;
+
 };
 
 const readErrorMessage = (json: unknown, fallback: string) => {
@@ -51,19 +55,11 @@ export function useAppointments() {
       setLoading(true);
       setError(null);
 
-      const token = getAuthToken();
-      if (!token) {
-        if (isMountedRef.current) {
-          setAppointments([]);
-          setError("Please log in to view appointments.");
-          setLoading(false);
-        }
-        return;
-      }
 
       const res = await fetch("/api/appointments?limit=200", {
         cache: "no-store",
-        headers: withAuthHeaders(),
+        headers: await withAuthHeaders(),
+
       });
 
       const json = (await res.json()) as { data?: Datum[] } | ApiErrorShape;
@@ -98,13 +94,8 @@ export function useAppointments() {
     try {
       setError(null);
 
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("Please log in to view appointments.");
-      }
 
       const res = await fetch(`/api/appointments/${appointmentId}`, {
-        cache: "no-store",
         headers: withAuthHeaders(),
       });
 
@@ -183,6 +174,7 @@ export function useAppointments() {
         item.appointment_date,
         item.appointment_time,
         item.staff?.name,
+        item.patient?.name,
         item.type,
       ]
         .join(" ")
@@ -198,10 +190,6 @@ export function useAppointments() {
       try {
         setError(null);
 
-        const token = getAuthToken();
-        if (!token) {
-          throw new Error("Please log in to create appointments.");
-        }
 
         const normalizedPayload: AppointmentCreateInput = {
           ...payload,
@@ -252,11 +240,6 @@ export function useAppointments() {
     async (appointmentId: number, payload: AppointmentUpdateInput) => {
       try {
         setError(null);
-
-        const token = getAuthToken();
-        if (!token) {
-          throw new Error("Please log in to update appointments.");
-        }
 
         if (!Number.isFinite(payload.staff_id) || payload.staff_id <= 0) {
           throw new Error("Staff id is required.");
@@ -320,11 +303,6 @@ export function useAppointments() {
   const deleteAppointment = useCallback(async (appointmentId: number) => {
     try {
       setError(null);
-
-      const token = getAuthToken();
-      if (!token) {
-        throw new Error("Please log in to delete appointments.");
-      }
 
       const res = await fetch(`/api/appointments/${appointmentId}`, {
         method: "DELETE",

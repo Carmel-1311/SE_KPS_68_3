@@ -74,7 +74,7 @@ export const medicalRecordMap = {
     }
         */
     toCreateInput(data: CreateMedicalRecordInput): Prisma.medical_recordsCreateInput {
-        return {
+        const base: Prisma.medical_recordsCreateInput = {
             patient: {
                 connect: {
                     patient_id: data.patient_id
@@ -92,15 +92,14 @@ export const medicalRecordMap = {
                     },
                     diagnosis_: d.diagnosis
                 }))
-            },
-            inspection_record: {
-                create: {
-                    inspection_record_id: data.inspection_record_id,
-                    patient_id: data.patient_id,
-                }
-            },  
-
+            }
         };
+        if (data.inspection_record_id) {
+            base.inspection_record = {
+                connect: { inspection_record_id: data.inspection_record_id }
+            };
+        }
+        return base;
     },
         toUpdateInput(data: UpdateMedicalRecordInput): Prisma.medical_recordsUpdateInput{
             return {

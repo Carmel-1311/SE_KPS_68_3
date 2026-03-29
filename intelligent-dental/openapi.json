@@ -1474,6 +1474,14 @@
                   },
                   "staff_id": {
                     "type": "integer"
+                  },
+                  "medical_record_id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "inspection_record_id": {
+                    "type": "string",
+                    "nullable": true
                   }
                 },
                 "required": [
