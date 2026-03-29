@@ -85,9 +85,8 @@ export default function NewInspectionPage() {
         <div style={{ marginBottom: 32 }}>
           <Title level={3}>
             <HistoryOutlined style={{ color: '#1890ff', marginRight: 10 }} />
-            เพิ่มบันทึกการตรวจ (Inspection)
+            เพิ่มบันทึกการตรวจ
           </Title>
-          <Text type="secondary">บันทึกข้อมูลการคัดกรอง หรือผลการตรวจร่างกายเบื้องต้นของคนไข้</Text>
         </div>
 
         <Form 
@@ -139,11 +138,10 @@ export default function NewInspectionPage() {
             name="history" 
             label="รายละเอียด/ผลการตรวจร่างกาย" 
             rules={[{ required: true, message: 'กรุณาระบุรายละเอียดการตรวจ' }]}
-            extra="ตัวอย่าง: ตรวจสุขภาพประจำปี ความดันปกติ, มีไข้สูง 38 องศา"
           >
             <Input.TextArea 
               rows={6} 
-              placeholder="กรอกข้อมูลที่ได้จากการซักประวัติหรือการตรวจร่างกาย..." 
+              placeholder="กรอกข้อมูลที่ได้จากการซักประวัติหรือการตรวจ..." 
               style={{ borderRadius: '8px' }}
             />
           </Form.Item>
@@ -157,10 +155,10 @@ export default function NewInspectionPage() {
                 type="primary" 
                 size="large" 
                 htmlType="submit" 
-                icon={<CheckCircleOutlined />}
+                icon={<SaveOutlined />}
                 style={{ minWidth: '150px', borderRadius: '8px' }}
               >
-                บันทึกข้อมูล
+                บันทึกประวัติการตรวจ
               </Button>
             </Space>
           </div>

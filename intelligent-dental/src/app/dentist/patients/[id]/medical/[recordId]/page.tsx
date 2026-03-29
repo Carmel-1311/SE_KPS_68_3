@@ -1,32 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Form, DatePicker, Input, Select, Button, Card, Typography, Space, Row, Col, Divider, message } from "antd";
-import { ArrowLeftOutlined, SaveOutlined, MedicineBoxOutlined, PlusOutlined, MinusCircleOutlined } from "@ant-design/icons";
+import { 
+  Form, DatePicker, Input, Select, Button, Card, 
+  Typography, Space, Row, Col, Divider, message 
+} from "antd";
+import { 
+  ArrowLeftOutlined, SaveOutlined, MedicineBoxOutlined, 
+  PlusOutlined, MinusCircleOutlined 
+} from "@ant-design/icons";
 import { useRouter, useParams } from "next/navigation";
 import dayjs from "dayjs";
 import { withAuthHeaders } from "@/app/utils/auth.client";
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 export default function EditMedicalPage() {
   const router = useRouter();
   const params = useParams();
   const [form] = Form.useForm();
-  // 1. เพิ่ม state สำหรับเก็บรายการประเภทการตรวจ
+  
   const [examTypes, setExamTypes] = useState<{ id: number; name: string }[]>([]);
   const [inspectionRecords, setInspectionRecords] = useState<any[]>([]);
   const [loadingInspections, setLoadingInspections] = useState(false);
+  const [loadingTypes, setLoadingTypes] = useState(false);
 
   useEffect(() => {
-    // 2. ดึงข้อมูลรายการประเภทการตรวจเพื่อใช้ใน Dropdown
     const fetchExamTypes = async () => {
+      setLoadingTypes(true);
       try {
         const res = await fetch("/api/types", { headers: withAuthHeaders() });
         const j = await res.json();
-        setExamTypes(j.data || []);
+        setExamTypes(Array.isArray(j.data) ? j.data : j.data?.data || j || []);
       } catch (err) {
         console.error("Failed to fetch exam types", err);
+      } finally {
+        setLoadingTypes(false);
       }
     };
 
@@ -56,7 +65,7 @@ export default function EditMedicalPage() {
           status: data.status,
           history: data.history,
           detail: (data.detail || []).map((d: any) => ({ 
-            type_id: d.examination_type?.id || d.type_id || '', 
+            type_id: d.examination_type?.id || d.type_id || undefined, 
             diagnosis: d.diagnosis || d.diagnosis_ 
           })),
           inspection_record_id: data.inspection_record?.id || undefined
@@ -69,7 +78,7 @@ export default function EditMedicalPage() {
     fetchExamTypes();
     fetchInspectionRecords();
     fetchRecord();
-  }, [params.recordId, form]);
+  }, [params.recordId, params.id, form]);
 
   const onFinish = (values: any) => {
     const payload: any = {
@@ -84,6 +93,7 @@ export default function EditMedicalPage() {
     if (values.inspection_record_id) {
       payload.inspection_record_id = Number(values.inspection_record_id);
     }
+
     message.loading({ content: 'กำลังอัปเดต...', key: 'update_med' });
     fetch(`/api/medical_records/${params.recordId}`, {
       method: 'PUT',
@@ -91,7 +101,6 @@ export default function EditMedicalPage() {
       body: JSON.stringify(payload)
     }).then(async (res) => {
       if (!res.ok) throw new Error('Update failed')
-      await res.json();
       message.success({ content: 'อัปเดตสำเร็จ', key: 'update_med' });
       router.back();
     }).catch(err => {
@@ -101,10 +110,23 @@ export default function EditMedicalPage() {
   }
 
   return (
-    <div style={{ padding: '24px', maxWidth: '850px', margin: '0 auto' }}>
-      <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16 }}>ย้อนกลับ</Button>
-      <Card variant={"outlined"} style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.1)', borderRadius: '12px' }}>
-        <Title level={3}><MedicineBoxOutlined style={{ color: '#52c41a' }} /> แก้ไขบันทึกการรักษา</Title>
+    <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
+      <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16 }}>
+        ย้อนกลับ
+      </Button>
+
+      <Card 
+        variant={"outlined"} 
+        style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)', borderRadius: '12px' }}
+      >
+        <div style={{ marginBottom: 24 }}>
+          <Title level={3}>
+            <MedicineBoxOutlined style={{ color: '#52c41a', marginRight: 8 }} /> 
+            แก้ไขบันทึกการรักษา
+          </Title>
+          <Text type="secondary">แก้ไขรายละเอียดการวินิจฉัยและข้อมูลการรักษา</Text>
+        </div>
+
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Form.Item
             name="inspection_record_id"
@@ -124,11 +146,17 @@ export default function EditMedicalPage() {
               ))}
             </Select>
           </Form.Item>
+
           <Row gutter={16}>
-            <Col span={12}><Form.Item name="date" label="วันที่รักษา" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item></Col>
-            <Col span={12}>
-              <Form.Item name="status" label="สถานะ" rules={[{ required: true }]}> 
+            <Col xs={24} sm={12}>
+              <Form.Item name="date" label="วันที่รับการรักษา" rules={[{ required: true }]}>
+                <DatePicker style={{ width: '100%' }} size="large" format="YYYY-MM-DD" />
+              </Form.Item>
+            </Col>
+            <Col xs={24} sm={12}>
+              <Form.Item name="status" label="สถานะการรักษา" rules={[{ required: true }]}> 
                 <Select
+                  size="large"
                   options={[
                     { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
                     { value: 'done', label: 'เสร็จสิ้น (Done)' },
@@ -139,45 +167,99 @@ export default function EditMedicalPage() {
               </Form.Item>
             </Col>
           </Row>
-          <Form.Item name="history" label="ประวัติ/อาการ" rules={[{ required: true }]}><Input.TextArea rows={3} /></Form.Item>
+
+          <Form.Item name="history" label="ประวัติ/อาการ" rules={[{ required: true }]}>
+            <Input.TextArea rows={4} placeholder="ระบุอาการของผู้ป่วยและการรักษา..." />
+          </Form.Item>
           
-          <Divider orientation="horizontal">รายละเอียดวินิจฉัย</Divider>
+          <Divider orientation="horizontal">
+            <Text strong>รายละเอียดการวินิจฉัย (Diagnosis Details)</Text>
+          </Divider>
+
           <Form.List name="detail">
             {(fields, { add, remove }) => (
               <>
                 {fields.map(({ key, name, ...restField }) => (
-                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                    {/* 3. เปลี่ยนจาก Input เป็น Select สำหรับเลือกประเภทการตรวจ */}
-                    <Form.Item 
-                      {...restField} 
-                      name={[name, 'type_id']} 
-                      rules={[{ required: true, message: 'กรุณาเลือกประเภท' }]}
-                    >
-                      <Select 
-                        placeholder="เลือกประเภท" 
-                        style={{ width: 180 }}
-                        options={examTypes.map(t => ({ value: t.id, label: t.name }))}
-                        showSearch
-                        filterOption={(input, option) =>
-                          (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                        }
-                      />
-                    </Form.Item>
-                    <Form.Item {...restField} name={[name, 'diagnosis']} rules={[{ required: true, message: 'กรุณากรอกผลวินิจฉัย' }]}><Input placeholder="วินิจฉัย" style={{ width: 300 }} /></Form.Item>
-                    {fields.length > 1 && <MinusCircleOutlined onClick={() => remove(name)} style={{ color: 'red' }} />}
-                  </Space>
+                  <Card 
+                    key={key} 
+                    type="inner" 
+                    style={{ marginBottom: 16, background: '#fafafa' }}
+                    bodyStyle={{ padding: '16px' }}
+                  >
+                    <Row gutter={16} align="middle">
+                      <Col xs={24} sm={10}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'type_id']}
+                          label="ประเภทการตรวจ"
+                          rules={[{ required: true, message: 'กรุณาเลือกประเภท' }]}
+                        >
+                          <Select 
+                            placeholder="เลือกประเภท" 
+                            loading={loadingTypes}
+                            showSearch
+                            optionFilterProp="label"
+                          >
+                            {examTypes.map(type => (
+                              <Select.Option key={type.id} value={type.id} label={type.name}>
+                                {type.name}
+                              </Select.Option>
+                            ))}
+                          </Select>
+                        </Form.Item>
+                      </Col>
+                      <Col xs={20} sm={11}>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'diagnosis']}
+                          label="ผลวินิจฉัย"
+                          rules={[{ required: true, message: 'กรุณากรอกผลวินิจฉัย' }]}
+                        >
+                          <Input placeholder="ระบุชื่อโรคหรือผลการวินิจฉัย" />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={4} sm={3} style={{ textAlign: 'center', marginTop: 8 }}>
+                        {fields.length > 1 && (
+                          <Button 
+                            type="text" 
+                            danger 
+                            icon={<MinusCircleOutlined />} 
+                            onClick={() => remove(name)} 
+                          />
+                        )}
+                      </Col>
+                    </Row>
+                  </Card>
                 ))}
-                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>เพิ่มรายการวินิจฉัย</Button>
+                <Button 
+                  type="dashed" 
+                  onClick={() => add()} 
+                  block 
+                  icon={<PlusOutlined />}
+                  style={{ height: '45px' }}
+                >
+                  เพิ่มรายการวินิจฉัย
+                </Button>
               </>
             )}
           </Form.List>
 
           <Divider />
-          <Row justify="end">
-            <Space>
-              <Button onClick={() => router.back()}>ยกเลิก</Button>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} style={{ background: '#52c41a', borderColor: '#52c41a' }}>บันทึกการแก้ไข</Button>
-            </Space>
+          <Row justify="end" gutter={12}>
+            <Col>
+              <Button size="large" onClick={() => router.back()}>ยกเลิก</Button>
+            </Col>
+            <Col>
+              <Button 
+                type="primary" 
+                size="large"
+                htmlType="submit" 
+                icon={<SaveOutlined />} 
+                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+              >
+                บันทึกการแก้ไข
+              </Button>
+            </Col>
           </Row>
         </Form>
       </Card>
