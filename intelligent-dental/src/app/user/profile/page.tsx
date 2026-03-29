@@ -8,26 +8,22 @@ import {
   Button,
   Card,
   Col,
-  Descriptions,
   Form,
   Input,
   Modal,
   Row,
   Skeleton,
   Space,
-  Statistic,
   Tag,
   Typography,
   message,
 } from "antd";
 import {
-  CalendarOutlined,
   EditOutlined,
   MailOutlined,
   PhoneOutlined,
   SafetyCertificateOutlined,
   SaveOutlined,
-  UserOutlined,
 } from "@ant-design/icons";
 import { House, UserRound } from "lucide-react";
 import Link from "next/link";
@@ -110,21 +106,25 @@ function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
     () => [
       {
         key: "birthday",
-        title: "วันเกิด",
+        label: "วันเกิด",
         value: formatThaiDate(user.birthday),
-        prefix: <CalendarOutlined style={{ color: "#1677ff" }} />,
-      },
-      {
-        key: "phone",
-        title: "เบอร์โทรศัพท์",
-        value: formatPhoneNumber(user.phone),
-        prefix: <PhoneOutlined style={{ color: "#13a8a8" }} />,
+        accent: "#1677ff",
+        background: "rgba(22, 119, 255, 0.08)",
       },
       {
         key: "allergy",
-        title: "ข้อมูลแพ้ยา",
-        value: user.allergy?.trim() ? "มีข้อมูล" : "ยังไม่ระบุ",
-        prefix: <SafetyCertificateOutlined style={{ color: "#fa8c16" }} />,
+        label: "ข้อมูลแพ้ยา",
+        value: user.allergy?.trim() ? "อัปเดตแล้ว" : "ยังไม่ระบุ",
+        accent: user.allergy?.trim() ? "#fa8c16" : "#8c8c8c",
+        background: user.allergy?.trim() ? "rgba(250, 140, 22, 0.10)" : "rgba(0, 0, 0, 0.04)",
+      },
+      {
+        key: "contact",
+        label: "ช่องทางติดต่อ",
+        value: user.phone?.trim() && user.email?.trim() ? "ครบถ้วน" : "ควรตรวจสอบ",
+        accent: user.phone?.trim() && user.email?.trim() ? "#13a8a8" : "#d46b08",
+        background:
+          user.phone?.trim() && user.email?.trim() ? "rgba(19, 168, 168, 0.10)" : "rgba(212, 107, 8, 0.10)",
       },
     ],
     [user]
@@ -213,7 +213,7 @@ function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
             </Space>
 
             <Row gutter={[24, 24]}>
-              <Col xs={24} lg={15}>
+              <Col xs={24}>
                 <Card
                   variant="borderless"
                   style={{
@@ -260,6 +260,32 @@ function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
                             <Text type="secondary">{formatPhoneNumber(user.phone)}</Text>
                           </Space>
                         </Space>
+
+                        <Row gutter={[12, 12]} style={{ marginTop: 8 }}>
+                          {stats.map((item) => (
+                            <Col xs={24} sm={12} xl={8} key={item.key}>
+                              <div
+                                style={{
+                                  minWidth: 140,
+                                  borderRadius: 14,
+                                  padding: "12px 14px",
+                                  background: item.background,
+                                  border: "1px solid rgba(0, 0, 0, 0.05)",
+                                }}
+                              >
+                                <Text
+                                  type="secondary"
+                                  style={{ display: "block", fontSize: 12, marginBottom: 4 }}
+                                >
+                                  {item.label}
+                                </Text>
+                                <Text strong style={{ color: item.accent, fontSize: 15 }}>
+                                  {item.value}
+                                </Text>
+                              </div>
+                            </Col>
+                          ))}
+                        </Row>
                       </Space>
                     </Space>
 
@@ -291,29 +317,6 @@ function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
                   </Space>
                 </Card>
               </Col>
-
-              <Col xs={24} lg={9}>
-                <Card
-                  title={<Text strong>สรุปข้อมูลส่วนตัว</Text>}
-                  variant="borderless"
-                  style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
-                  styles={{ body: { padding: 24 } }}
-                >
-                  <Row gutter={[16, 16]}>
-                    {stats.map((item) => (
-                      <Col xs={24} sm={8} lg={24} key={item.key}>
-                        <Statistic
-                          title={<Text type="secondary">{item.title}</Text>}
-                          value={item.value}
-                          prefix={item.prefix}
-                          formatter={(value) => String(value)}
-                          styles={{ content: { fontSize: 18, fontWeight: 600 } }}
-                        />
-                      </Col>
-                    ))}
-                  </Row>
-                </Card>
-              </Col>
             </Row>
           </div>
 
@@ -327,36 +330,7 @@ function ProfileDetails({ user, error, updateProfile }: ProfileDetailsProps) {
           )}
 
           <Row gutter={[24, 24]}>
-            <Col xs={24} xl={11}>
-              <Card
-                title={
-                  <Space size={8}>
-                    <UserOutlined />
-                    <span>ข้อมูลทั่วไป</span>
-                  </Space>
-                }
-                variant="borderless"
-                style={{
-                  borderRadius: 16,
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.04)",
-                  height: "100%",
-                }}
-                styles={{ body: { padding: 24 } }}
-              >
-                <Descriptions
-                  column={1}
-                  size="middle"
-                  styles={{ label: { width: 140, fontWeight: 600 } }}
-                >
-                  <Descriptions.Item label="ชื่อ - นามสกุล">{user.name}</Descriptions.Item>
-                  <Descriptions.Item label="อีเมล">{user.email || "-"}</Descriptions.Item>
-                  <Descriptions.Item label="เบอร์โทรศัพท์">{formatPhoneNumber(user.phone)}</Descriptions.Item>
-                  <Descriptions.Item label="วันเกิด">{formatThaiDate(user.birthday)}</Descriptions.Item>
-                </Descriptions>
-              </Card>
-            </Col>
-
-            <Col xs={24} xl={13}>
+            <Col xs={24}>
               <Card
                 title={
                   <Space size={8}>
