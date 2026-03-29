@@ -158,8 +158,8 @@ export default function CreateWorkSchedulePage() {
 
       message.success('เพิ่มตารางการทำงานสำเร็จ');
       router.push('/personnel/work-schedule');
-    } catch {
-      message.error('บันทึกไม่สำเร็จ');
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'บันทึกไม่สำเร็จ');
     } finally {
       setSubmitting(false);
     }

@@ -64,3 +64,26 @@ export async function findWorkScheduleById(id: number) {
         ...map.workScheduleQuery
     })  
 }
+
+export async function findDuplicateWorkSchedule(
+  staff_id: number,
+  date: Prisma.work_scheduleWhereInput["date"],
+  start_time: Date,
+  end_time: Date,
+  excludeId?: number
+) {
+  return prisma.work_schedule.findFirst({
+    where: {
+      staff_id,
+      date,
+      start_time: {
+        lt: end_time
+      },
+      end_time: {
+        gt: start_time
+      },
+      ...(excludeId ? { schedule_id: { not: excludeId } } : {})
+    },
+    ...map.workScheduleQuery
+  })
+}

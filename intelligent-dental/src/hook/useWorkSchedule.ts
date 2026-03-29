@@ -107,7 +107,11 @@ export function useWorkSchedule() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Create failed");
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(readErrorMessage(json, "Create failed"));
+      }
 
       await fetchSchedules();
     } catch (err: unknown) {
@@ -135,7 +139,11 @@ export function useWorkSchedule() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Update failed");
+      const json = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(readErrorMessage(json, "Update failed"));
+      }
 
       await fetchSchedules();
     } catch (err: unknown) {
@@ -152,7 +160,11 @@ export function useWorkSchedule() {
         headers: withAuthHeaders(),
       });
 
-      if (!res.ok) throw new Error("Delete failed");
+      const json = res.status === 204 ? null : await res.json().catch(() => null);
+
+      if (!res.ok) {
+        throw new Error(readErrorMessage(json, "Delete failed"));
+      }
 
       await fetchSchedules();
     } catch (err: unknown) {
