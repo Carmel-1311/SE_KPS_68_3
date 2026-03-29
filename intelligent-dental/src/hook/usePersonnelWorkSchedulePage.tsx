@@ -78,7 +78,7 @@ type ScheduleTableRow = {
 export function usePersonnelWorkSchedulePage() {
   const router = useRouter();
   const { data: allData, loading } = useWorkSchedule();
-  const { data: staffData, loading: staffsLoading } = useStaffs();
+  const { staff: staffData, loading: staffsLoading } = useStaffs();
   const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
 
   const staffOptions = useMemo(() => {

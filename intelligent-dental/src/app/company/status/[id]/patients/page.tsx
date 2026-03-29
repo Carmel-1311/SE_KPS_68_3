@@ -17,6 +17,7 @@ import {
   Tooltip,
   Alert,
   Empty,
+  Descriptions,
 } from "antd";
 import { 
   TeamOutlined, 
@@ -26,6 +27,7 @@ import {
   CheckCircleOutlined,
   DeleteOutlined,
   CheckOutlined,
+  SearchOutlined,
 } from "@ant-design/icons";
 import { BookOpenText, Pencil, Trash2, SearchCheck, House } from "lucide-react";
 import Link from "next/link";
@@ -88,6 +90,31 @@ function formatThaiDate(value?: string) {
     day: "numeric",
   });
 }
+
+const ActionBtn = React.forwardRef<HTMLDivElement, { children: React.ReactNode; bg?: string; disabled?: boolean; onClick?: (e?: React.MouseEvent<HTMLDivElement>) => void; tooltip: string }>(
+  ({ children, bg, disabled, onClick, tooltip, ...props }, ref) => (
+  <Tooltip title={tooltip}>
+    <div 
+        ref={ref}
+        {...props}
+        onClick={(e) => {
+          if (disabled) return;
+          if (onClick) onClick(e);
+          const injectedOnClick = (props as { onClick?: (e: React.MouseEvent<HTMLDivElement>) => void }).onClick;
+          if (injectedOnClick) injectedOnClick(e);
+        }}
+        style={{
+        width: 34, height: 34, borderRadius: 10,
+        background: disabled ? "#f5f5f5" : (bg || "#f0f5ff"),
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "background 0.15s, transform 0.15s",
+    }}>
+        {children}
+    </div>
+  </Tooltip>
+));
+ActionBtn.displayName = "ActionBtn";
 
 export default function PatientsPage() {
   const params = useParams();
@@ -270,9 +297,9 @@ export default function PatientsPage() {
         return;
       }
 
-      // Respect mission target (currentCount may be submitted or draft count)
-      const allowed = targetCount > 0 ? Math.max(0, targetCount - currentCount) : Number.POSITIVE_INFINITY;
-      if (targetCount > 0 && deduped.length > allowed) {
+      const existingCount = patients.length;
+
+      if (targetCount > 0 && existingCount + deduped.length > targetCount) {
         message.error(`ไม่สามารถส่งได้ เนื่องจากเกินจำนวนเป้าหมาย (${targetCount} คน)`);
         return;
       }
@@ -431,42 +458,19 @@ export default function PatientsPage() {
       {
         title: "การจัดการ",
         key: "action",
-        width: 190,
+        width: 140,
         render: (_, record) => (
-          <Space size="middle">
-            <Tooltip title="ดูข้อมูล">
-              <BookOpenText
-                size={18}
-                style={{ cursor: "pointer", color: "#1890ff" }}
-                onClick={() =>
-                  setViewPatient({
-                    name: `${record.first_name} ${record.last_name}`,
-                    birthday: record.birthday,
-                    phone: record.phone,
-                    idcard: record.idcard,
-                  })
-                }
-              />
-            </Tooltip>
-
-            <Tooltip title="แก้ไข">
-              <Pencil
-                size={18}
-                style={{ cursor: "pointer", color: "#faad14" }}
-                onClick={() => openDraftEditModal(record)}
-              />
-            </Tooltip>
-
-            <Popconfirm
-              title="ยืนยันการลบ"
-              description="ต้องการลบรายการนี้จากลิสต์หรือไม่?"
-              okText="ยืนยัน"
-              cancelText="ยกเลิก"
-              onConfirm={() => handleDeleteDraft(record.draft_id)}
-            >
-              <Tooltip title="ลบ">
-                <Trash2 size={18} style={{ cursor: "pointer", color: "#ff4d4f" }} />
-              </Tooltip>
+          <Space size={6}>
+            <ActionBtn tooltip="ดูข้อมูล" bg="#e6f4ff" onClick={() => setViewPatient({ name: `${record.first_name} ${record.last_name}`, birthday: record.birthday, phone: record.phone, idcard: record.idcard })}>
+              <BookOpenText size={16} style={{ color: "#1677ff" }} />
+            </ActionBtn>
+            <ActionBtn tooltip="แก้ไข" bg="#f5f5f5" onClick={() => openDraftEditModal(record)}>
+              <Pencil size={16} style={{ color: "#faad14" }} />
+            </ActionBtn>
+            <Popconfirm title="ยืนยันการลบ" description="ต้องการลบรายการนี้จากลิสต์หรือไม่?" okText="ยืนยัน" cancelText="ยกเลิก" onConfirm={() => handleDeleteDraft(record.draft_id)}>
+              <ActionBtn tooltip="ลบ" bg="#f5f5f5">
+                <Trash2 size={16} style={{ color: "#ff4d4f" }} />
+              </ActionBtn>
             </Popconfirm>
           </Space>
         ),
@@ -521,64 +525,23 @@ export default function PatientsPage() {
       {
         title: "การจัดการ",
         key: "action",
-        width: 190,
+        width: 140,
         render: (_, record) => {
           const disabled = processingIds.includes(record.id);
           return (
-            <Space size="middle">
-              <Tooltip title="ดูข้อมูล">
-                <BookOpenText
-                  size={18}
-                  style={{
-                    cursor: "pointer",
-                    color: "#1890ff",
-                    opacity: disabled ? 0.5 : 1,
-                  }}
-                  onClick={() =>
-                    setViewPatient({
-                      name: record.name,
-                      birthday: record.birthday,
-                      phone: record.phone,
-                      idcard: record.idcard,
-                    })
-                  }
-                />
-              </Tooltip>
+            <Space size={6}>
+              <ActionBtn tooltip="ดูข้อมูล" bg="#e6f4ff" disabled={disabled} onClick={() => setViewPatient({ name: record.name, birthday: (record as unknown as { birthday?: string }).birthday, phone: record.phone, idcard: record.idcard })}>
+                <BookOpenText size={16} style={{ color: disabled ? "#ccc" : "#1677ff" }} />
+              </ActionBtn>
 
-              <Tooltip title="แก้ไข">
-                <Pencil
-                  size={18}
-                  style={{
-                    cursor: disabled ? "not-allowed" : "pointer",
-                    color: "#faad14",
-                    opacity: disabled ? 0.5 : 1,
-                  }}
-                  onClick={() => {
-                    if (!disabled) {
-                      openSubmittedEditModal(record);
-                    }
-                  }}
-                />
-              </Tooltip>
+              <ActionBtn tooltip="แก้ไข" bg="#f5f5f5" disabled={disabled} onClick={() => { if (!disabled) openSubmittedEditModal(record); }}>
+                <Pencil size={16} style={{ color: disabled ? "#ccc" : "#faad14" }} />
+              </ActionBtn>
 
-              <Popconfirm
-                title="ยืนยันการลบ"
-                description="ต้องการลบผู้รับบริการรายนี้ใช่หรือไม่?"
-                okText="ยืนยัน"
-                cancelText="ยกเลิก"
-                disabled={disabled}
-                onConfirm={() => handleDeleteSubmitted(record.id)}
-              >
-                <Tooltip title="ลบ">
-                  <Trash2
-                    size={18}
-                    style={{
-                      cursor: disabled ? "not-allowed" : "pointer",
-                      color: "#ff4d4f",
-                      opacity: disabled ? 0.5 : 1,
-                    }}
-                  />
-                </Tooltip>
+              <Popconfirm title="ยืนยันการลบ" description="ต้องการลบผู้รับบริการรายนี้ใช่หรือไม่?" okText="ยืนยัน" cancelText="ยกเลิก" disabled={disabled} onConfirm={() => handleDeleteSubmitted(record.id)}>
+                <ActionBtn tooltip="ลบ" bg="#f5f5f5" disabled={disabled}>
+                  <Trash2 size={16} style={{ color: disabled ? "#ccc" : "#ff4d4f" }} />
+                </ActionBtn>
               </Popconfirm>
             </Space>
           );
@@ -591,7 +554,7 @@ export default function PatientsPage() {
   return (
     <div style={{ padding: 24 }}>
       <Breadcrumb
-        style={{ marginBottom: 16 }}
+        style={{ marginBottom: 24 }}
         items={[
           {
             title: (
@@ -626,6 +589,9 @@ export default function PatientsPage() {
       />
 
       <Card
+        variant="borderless"
+        style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+        styles={{ body: { padding: '24px 32px' }, header: { padding: '24px 32px', borderBottom: '1px solid #f0f0f0' } }}
         title={
           <Space orientation="vertical" size={2}>
             <Title level={3} style={{ margin: 0 }}>
@@ -649,18 +615,17 @@ export default function PatientsPage() {
             </Text>
           </Space>
         }
-        variant="borderless"
-        style={{ borderRadius: 12 }}
         extra={
           <Space>
             <Input
               placeholder="ค้นหาชื่อ / เบอร์ / เลขบัตร"
               allowClear
-              style={{ width: 260 }}
+              prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+              style={{ width: 260, borderRadius: 10 }}
               onChange={(e) => setSearchText(e.target.value)}
             />
 
-            <Button type="primary" icon={<UserAddOutlined />} onClick={openAddModal}>
+            <Button type="primary" icon={<UserAddOutlined />} onClick={openAddModal} style={{ borderRadius: 10 }}>
               {isSubmittedMode ? "เพิ่มรายบุคคล" : "เพิ่มรายชื่อ"}
             </Button>
           </Space>
@@ -685,7 +650,7 @@ export default function PatientsPage() {
             }
             showIcon
             icon={<ClockCircleOutlined />}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: 16, borderRadius: 8 }}
           />
         ) : (
           <Alert
@@ -707,7 +672,7 @@ export default function PatientsPage() {
             }
             showIcon
             icon={<CheckCircleOutlined />}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: 16, borderRadius: 8 }}
           />
         )}
 
@@ -737,6 +702,13 @@ export default function PatientsPage() {
                 loading={loading}
                 pagination={createTablePagination(20)}
                 sticky={{ offsetHeader: 1 }}
+                style={{ borderRadius: 12, overflow: 'hidden' }}
+                components={{
+                  header: {
+                    cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                  }
+                }}
+                rowClassName={() => "hover:bg-gray-50 transition-colors"}
               />
             )}
           </>
@@ -767,6 +739,13 @@ export default function PatientsPage() {
                   loading={loading}
                   pagination={createTablePagination(20)}
                   sticky={{ offsetHeader: 1 }}
+                  style={{ borderRadius: 12, overflow: 'hidden' }}
+                  components={{
+                    header: {
+                      cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                    }
+                  }}
+                  rowClassName={() => "hover:bg-gray-50 transition-colors"}
                 />
                 
                 <Space style={{ marginTop: 16, width: '100%', justifyContent: 'flex-end' }}>
@@ -781,7 +760,7 @@ export default function PatientsPage() {
                       message.success("ล้างรายชื่อทั้งหมดแล้ว");
                     }}
                   >
-                    <Button danger icon={<DeleteOutlined />}>
+                    <Button danger icon={<DeleteOutlined />} style={{ borderRadius: 10 }}>
                       ล้างทั้งหมด
                     </Button>
                   </Popconfirm>
@@ -792,6 +771,7 @@ export default function PatientsPage() {
                     icon={<CheckOutlined />}
                     loading={submittingDraft}
                     onClick={() => void handleBulkSubmit()}
+                    style={{ borderRadius: 10 }}
                   >
                     ยืนยันส่งรายชื่อ ({draftRows.length} คน)
                   </Button>
@@ -827,7 +807,7 @@ export default function PatientsPage() {
               },
             ]}
           >
-            <Input />
+            <Input size="large" />
           </Form.Item>
 
           <Form.Item
@@ -841,7 +821,7 @@ export default function PatientsPage() {
               },
             ]}
           >
-            <Input />
+            <Input size="large" />
           </Form.Item>
 
           <Form.Item
@@ -849,7 +829,7 @@ export default function PatientsPage() {
             name="birthday"
             rules={[{ required: true, message: "กรุณาระบุวันเกิด" }]}
           >
-            <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+            <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" size="large" />
           </Form.Item>
 
           <Form.Item
@@ -863,7 +843,7 @@ export default function PatientsPage() {
               },
             ]}
           >
-            <Input />
+            <Input size="large" />
           </Form.Item>
 
           <Form.Item
@@ -874,7 +854,7 @@ export default function PatientsPage() {
               { pattern: /^[0-9]{13}$/, message: "เลขบัตรต้องเป็นตัวเลข 13 หลัก" },
             ]}
           >
-            <Input maxLength={13} />
+            <Input maxLength={13} size="large" />
           </Form.Item>
 
           <Form.Item style={{ textAlign: "right", marginBottom: 0 }}>
@@ -887,20 +867,12 @@ export default function PatientsPage() {
 
       <Modal open={!!viewPatient} title="ข้อมูลผู้รับบริการ" footer={null} onCancel={() => setViewPatient(null)}>
         {viewPatient && (
-          <Space orientation="vertical">
-            <Text>
-              <b>ชื่อ:</b> {viewPatient.name}
-            </Text>
-            <Text>
-              <b>วันเกิด:</b> {formatThaiDate(viewPatient.birthday)}
-            </Text>
-            <Text>
-              <b>เบอร์โทร:</b> {viewPatient.phone || "-"}
-            </Text>
-            <Text>
-              <b>เลขบัตร:</b> {viewPatient.idcard || "-"}
-            </Text>
-          </Space>
+          <Descriptions column={1} bordered size="small">
+            <Descriptions.Item label="ชื่อ">{viewPatient.name}</Descriptions.Item>
+            <Descriptions.Item label="วันเกิด">{formatThaiDate(viewPatient.birthday)}</Descriptions.Item>
+            <Descriptions.Item label="เบอร์โทร">{viewPatient.phone || "-"}</Descriptions.Item>
+            <Descriptions.Item label="เลขบัตร">{viewPatient.idcard || "-"}</Descriptions.Item>
+          </Descriptions>
         )}
       </Modal>
     </div>

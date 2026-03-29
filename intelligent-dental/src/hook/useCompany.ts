@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { staffResponseList, staffList } from "../types/staff";
+import type { companyResponseList, companyList } from "@/types/company";
 import { withAuthHeaders } from "../app/utils/auth.client";
 
 type Meta = {
@@ -9,15 +9,8 @@ type Meta = {
   total_page: number;
 };
 
-export type StaffListItem = {
-  id: number;
-  name: string;
-  email?: string;
-  role: string;
-};
-
-export function useStaffs() {
-  const [staff, setStaff] = useState<staffList>([]);
+export function useCompany() {
+  const [company, setCompany] = useState<companyList>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
     limit: 10,
@@ -28,24 +21,22 @@ export function useStaffs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStaff = useCallback(async () => {
+  const fetchCompany = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/staffs?page=1&limit=200", {
+      const response = await fetch("/api/company", {
         headers: withAuthHeaders(),
       });
 
-      const result = (await response.json()) as staffResponseList;
+      const result = await response.json();
 
-      if (!response.ok) {
-        throw new Error("ไม่สามารถดึงข้อมูลรายชื่อได้");
-      }
+      if (!response.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
 
       const data = result.data || [];
 
-      setStaff(data);
+      setCompany(data);
 
       const limit = 10;
       const total = data.length;
@@ -64,15 +55,18 @@ export function useStaffs() {
     }
   }, []);
 
+
+
   useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+    fetchCompany();
+  }, [fetchCompany]);
 
   return {
-    staff,
-    meta, 
+    company,
+    meta,
     loading,
     error,
-    refresh: fetchStaff,
+
+    refresh: fetchCompany,
   };
 }

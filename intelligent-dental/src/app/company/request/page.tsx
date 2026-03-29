@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, Card, message, Row, Col, Space } from "antd";
+import { SendOutlined, ClearOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { House, SearchCheck } from "lucide-react";
@@ -100,7 +101,7 @@ export default function RequestServicePage() {
     return (
         <div style={{ padding: "24px", maxWidth: 1000, margin: '0 auto' }}>
             <Breadcrumb
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 24 }}
                 items={[
                     {
                         title: (
@@ -121,8 +122,13 @@ export default function RequestServicePage() {
                 ]}
             />
 
-            <Card title={<Title level={3} style={{ margin: 0 }}>เพิ่มการนัดหมายออกหน่วยตรวจฟัน</Title>} variant="borderless" style={{ borderRadius: 12 }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+            <Card 
+                title={<Title level={3} style={{ margin: 0 }}>เพิ่มการนัดหมายออกหน่วยตรวจฟัน</Title>} 
+                variant="borderless" 
+                style={{ borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}
+                styles={{ body: { padding: 32 } }}
+            >
+                <Text type="secondary" style={{ display: 'block', marginBottom: 32, fontSize: 16 }}>
                     กรุณากรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการประสานงานและการพิจารณาอนุมัติ
                 </Text>
 
@@ -135,12 +141,12 @@ export default function RequestServicePage() {
                     <Row gutter={24}>
                         <Col xs={24} md={12}>
                             <Form.Item
-                                label="วันที่ต้องการรับบริการ (date)"
+                                label={<span style={{ fontWeight: 500 }}>วันที่ต้องการรับบริการ</span>}
                                 name="date"
                                 rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
                             >
                                 <DatePicker
-                                    style={{ width: '100%' }}
+                                    style={{ width: '100%', borderRadius: 10 }}
                                     size="large"
                                     format="YYYY-MM-DD"
                                     disabledDate={(current) => {
@@ -152,17 +158,17 @@ export default function RequestServicePage() {
 
                         <Col xs={24} md={12}>
                             <Form.Item
-                                label="จำนวนผู้ป่วย (count)"
+                                label={<span style={{ fontWeight: 500 }}>จำนวนผู้ป่วย</span>}
                                 name="count"
                                 rules={[{ required: true, message: 'กรุณาระบุจำนวนคน' }]}
                             >
-                                <InputNumber style={{ width: '100%' }} min={1} placeholder="ระบุจำนวนคน" size="large" />
+                                <InputNumber style={{ width: '100%', borderRadius: 10 }} min={1} placeholder="ระบุจำนวนคน" size="large" />
                             </Form.Item>
                         </Col>
                     </Row>
 
                     <Form.Item
-                        label="สถานที่ออกหน่วย (address)"
+                        label={<span style={{ fontWeight: 500 }}>สถานที่ออกหน่วย</span>}
                         name="address"
                         rules={[
                             {
@@ -173,14 +179,24 @@ export default function RequestServicePage() {
                             },
                         ]}
                     >
-                        <TextArea rows={4} placeholder="ระบุ บ้านเลขที่, อาคาร, ชั้น, ถนน, เขต, จังหวัด, รหัสไปรษณีย์" size="large" />
+                        <TextArea rows={4} placeholder="ระบุ บ้านเลขที่, อาคาร, ชั้น, ถนน, เขต, จังหวัด, รหัสไปรษณีย์" size="large" style={{ borderRadius: 10 }} />
                     </Form.Item>
 
-                    <Form.Item style={{ textAlign: 'right', marginTop: 32 }}>
-                        <Button size="large" onClick={() => form.resetFields()} style={{ marginRight: 8 }}>
+                    <div style={{ background: "#e6f4ff", border: "1px solid #91d5ff", borderRadius: 12, padding: "16px 20px", marginBottom: 32, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ background: "#1677ff", color: "#fff", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, fontSize: 13, fontWeight: "bold" }}>i</div>
+                        <div>
+                            <div style={{ fontWeight: 600, color: "#0958d9", marginBottom: 4 }}>แจ้งทราบ</div>
+                            <div style={{ color: "#1677ff", fontSize: 14, lineHeight: 1.5 }}>
+                                หลังส่งคำขอแล้ว ทีมงานจะเก็บข้อมูลและติดต่อกลับเพื่อยืนยันวันนัดหมายตามเบอร์ที่ระบุไว้
+                            </div>
+                        </div>
+                    </div>
+
+                    <Form.Item style={{ textAlign: 'right' }}>
+                        <Button size="large" icon={<ClearOutlined />} onClick={() => form.resetFields()} style={{ marginRight: 8, borderRadius: 10 }}>
                             ล้างข้อมูล
                         </Button>
-                        <Button type="primary" htmlType="submit" size="large" loading={submitting}>
+                        <Button type="primary" htmlType="submit" size="large" loading={submitting} icon={<SendOutlined />} style={{ borderRadius: 10 }}>
                             ส่งคำขอรับบริการ
                         </Button>
                     </Form.Item>

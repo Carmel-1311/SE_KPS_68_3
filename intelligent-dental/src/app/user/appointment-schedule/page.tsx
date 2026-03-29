@@ -244,7 +244,7 @@ export default function UserAppointmentSchedulePage() {
                 disabledDate={(current) =>
                   current
                     ? current.isBefore(dayjs(), "day") ||
-                      current.isAfter(maxAppointmentDate, "day")
+                    current.isAfter(maxAppointmentDate, "day")
                     : false
                 }
               />
@@ -274,7 +274,15 @@ export default function UserAppointmentSchedulePage() {
                 showSearch
                 placeholder="เลือกหรือพิมพ์บริการ"
                 popupMatchSelectWidth={175}
+<<<<<<< HEAD
                 styles={{ popup: { root: { width: 320 } } }}
+=======
+                styles={{
+                  popup: {
+                    root: { width: 320 }
+                  }
+                }}
+>>>>>>> origin/api
                 options={serviceOptions}
                 value={newAppointmentService || undefined}
                 onChange={(value) => setNewAppointmentService(value)}

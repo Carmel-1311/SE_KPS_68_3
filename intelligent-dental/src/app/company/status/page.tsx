@@ -13,8 +13,10 @@ import {
     Space,
     Tooltip,
     Alert,
+    Badge,
 } from "antd";
 const { Title } = Typography;
+import { SearchOutlined, ClockCircleOutlined, CheckCircleOutlined, CloseCircleOutlined, SyncOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import { BookOpenText, X, RotateCcw, Users, SearchCheck, House } from "lucide-react";
 import Link from "next/link";
@@ -39,6 +41,24 @@ function getHighlightId(params: SearchParamsLike): number | null {
     const parsed = Number(raw);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
+
+const ActionBtn = React.forwardRef<HTMLDivElement, { children: React.ReactNode; bg?: string; disabled?: boolean; onClick?: (e?: React.MouseEvent<HTMLDivElement>) => void }> (
+    ({ children, bg, disabled, onClick, ...props }, ref) => (
+    <div 
+        ref={ref}
+        {...props}
+        onClick={disabled ? undefined : onClick}
+        style={{
+        width: 34, height: 34, borderRadius: 10,
+        background: disabled ? "#f5f5f5" : (bg || "#f0f5ff"),
+        display: "flex", alignItems: "center", justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "background 0.15s, transform 0.15s",
+    }}>
+        {children}
+    </div>
+));
+ActionBtn.displayName = "ActionBtn";
 
 export default function RequestsPage() {
     return (
@@ -173,13 +193,13 @@ function RequestsPageContent() {
         [updateStatus, updateLocalItem, fetchRequests]
     );
 
-    const statusMap: Record<MobileDentalStatus, { color: string; text: string }> = useMemo(
+    const statusMap: Record<MobileDentalStatus, { color: string; text: string; icon?: React.ReactNode }> = useMemo(
         () => ({
-            request: { color: "blue", text: "ส่งคำขอแล้ว" },
-            scheduled: { color: "green", text: "นัดหมายแล้ว" },
-            request_cancel: { color: "orange", text: "แจ้งขอยกเลิก" },
-            cancel: { color: "red", text: "ยกเลิกแล้ว" },
-            completed: { color: "default", text: "เสร็จสิ้น" },
+            request: { color: "gold", text: "รอดำเนินการ", icon: <SyncOutlined spin /> },
+            scheduled: { color: "green", text: "นัดหมายแล้ว", icon: <ClockCircleOutlined /> },
+            request_cancel: { color: "volcano", text: "แจ้งขอยกเลิก", icon: <ExclamationCircleOutlined /> },
+            cancel: { color: "default", text: "ยกเลิกแล้ว", icon: <CloseCircleOutlined /> },
+            completed: { color: "default", text: "เสร็จสิ้น", icon: <CheckCircleOutlined /> },
         }),
         []
     );
@@ -191,6 +211,8 @@ function RequestsPageContent() {
                 dataIndex: "mobile_dental_id",
                 key: "mobile_dental_id",
                 width: 100,
+                sorter: (a, b) => a.mobile_dental_id - b.mobile_dental_id,
+                defaultSortOrder: 'descend',
             },
             {
                 title: "สถานที่ขอบริการ",
@@ -203,6 +225,11 @@ function RequestsPageContent() {
                 dataIndex: "date",
                 key: "date",
                 width: 150,
+                sorter: (a, b) => {
+                    const dateA = a.date ? new Date(a.date).getTime() : 0;
+                    const dateB = b.date ? new Date(b.date).getTime() : 0;
+                    return dateA - dateB;
+                },
                 render: (value?: string) => {
                     if (!value) return "-";
                     const dateObj = new Date(value);
@@ -220,41 +247,51 @@ function RequestsPageContent() {
                 key: "count",
                 width: 150,
                 align: "center",
+                sorter: (a, b) => (a.count ?? 0) - (b.count ?? 0),
             },
             {
                 title: "สถานะ",
                 dataIndex: "status",
                 key: "status",
                 width: 150,
+                sorter: (a, b) => {
+                    const statusOrder: Record<MobileDentalStatus, number> = {
+                        request: 1,
+                        request_cancel: 2,
+                        scheduled: 3,
+                        completed: 4,
+                        cancel: 5,
+                    };
+                    return statusOrder[a.status] - statusOrder[b.status];
+                },
                 render: (status: MobileDentalStatus) => {
                     const s = statusMap[status] || { color: "default", text: status };
-                    return <Tag color={s.color}>{s.text.toUpperCase()}</Tag>;
+                    return <Tag color={s.color} style={{ borderRadius: 12, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        {s.icon}
+                        {s.text.toUpperCase()}
+                    </Tag>;
                 },
             },
             {
                 title: "จัดการ",
                 key: "action",
-                width: 250,
+                width: 140,
                 align: "center",
                 render: (_, record) => {
                     if (record.status === "cancel") return null;
 
                     if (record.status === "request_cancel") {
                         return (
-                            <Space size="middle">
-                                <Popconfirm
-                                    title="ยืนยันการยกเลิกคำขอยกเลิก"
-                                    description="ต้องการยกเลิกคำขอยกเลิกนี้ใช่หรือไม่?"
-                                    okText="ยืนยัน"
-                                    cancelText="ไม่"
-                                    onConfirm={() => handleUndoCancelRequest(record)}
-                                >
+                            <Space size={8}>
+                                <Popconfirm title="ยืนยันการยกเลิกคำขอยกเลิก" description="ต้องการยกเลิกคำขอยกเลิกนี้ใช่หรือไม่?" okText="ยืนยัน" cancelText="ไม่" onConfirm={() => handleUndoCancelRequest(record)}>
                                     <Tooltip title="ยกเลิกคำขอยกเลิก">
-                                        {updatingIds.includes(record.mobile_dental_id) ? (
-                                            <RotateCcw size={18} style={{ opacity: 0.5 }} className="animate-spin" />
-                                        ) : (
-                                            <RotateCcw size={18} style={{ cursor: "pointer", color: "#1890ff" }} />
-                                        )}
+                                        <ActionBtn bg="#e6f4ff" disabled={updatingIds.includes(record.mobile_dental_id)}>
+                                            {updatingIds.includes(record.mobile_dental_id) ? (
+                                                <RotateCcw size={16} style={{ opacity: 0.5, color: "#1677ff" }} className="animate-spin" />
+                                            ) : (
+                                                <RotateCcw size={16} style={{ color: "#1677ff" }} />
+                                            )}
+                                        </ActionBtn>
                                     </Tooltip>
                                 </Popconfirm>
                             </Space>
@@ -263,23 +300,17 @@ function RequestsPageContent() {
 
                     if (record.status === "request") {
                         return (
-                            <Space size="middle">
+                            <Space size={8}>
                                 <Tooltip title="รอการนัดหมาย">
-                                    <BookOpenText size={18} style={{ cursor: "not-allowed", color: "#ccc" }} />
+                                    <ActionBtn bg="#f5f5f5" disabled>
+                                        <BookOpenText size={16} style={{ color: "#d9d9d9" }} />
+                                    </ActionBtn>
                                 </Tooltip>
-
-                                <Popconfirm
-                                    title="ยืนยันการยกเลิก"
-                                    okText="ยืนยัน"
-                                    cancelText="ยกเลิก"
-                                    onConfirm={() => handleCancelRequest(record)}
-                                >
+                                <Popconfirm title="ยืนยันการยกเลิก" okText="ยืนยัน" cancelText="ยกเลิก" onConfirm={() => handleCancelRequest(record)}>
                                     <Tooltip title="ยกเลิกคำขอ">
-                                        {updatingIds.includes(record.mobile_dental_id) ? (
-                                            <X size={18} style={{ opacity: 0.5 }} />
-                                        ) : (
-                                            <X size={18} style={{ cursor: "pointer", color: "#ff4d4f" }} />
-                                        )}
+                                        <ActionBtn bg="#f5f5f5" disabled={updatingIds.includes(record.mobile_dental_id)}>
+                                            <X size={16} style={{ color: updatingIds.includes(record.mobile_dental_id) ? "#d9d9d9" : "#ff4d4f" }} />
+                                        </ActionBtn>
                                     </Tooltip>
                                 </Popconfirm>
                             </Space>
@@ -288,30 +319,22 @@ function RequestsPageContent() {
 
                     if (record.status === "scheduled") {
                         return (
-                            <Space size="middle">
+                            <Space size={8}>
                                 <Tooltip title="ส่งรายชื่อผู้รับบริการ">
-                                    <Users
-                                        size={18}
-                                        style={{ cursor: "pointer", color: "#1890ff" }}
-                                        onClick={() =>
-                                            router.push(`/company/status/${record.mobile_dental_id}/patients`)
-                                        }
-                                    />
+                                    <ActionBtn bg="#e6f4ff" onClick={() => router.push(`/company/status/${record.mobile_dental_id}/patients`)}>
+                                        <Users size={16} style={{ color: "#1677ff" }} />
+                                    </ActionBtn>
                                 </Tooltip>
                             </Space>
                         );
                     }
 
                     return (
-                        <Space size="middle">
+                        <Space size={8}>
                             <Tooltip title="ดูรายชื่อ">
-                                <BookOpenText
-                                    size={18}
-                                    style={{ cursor: "pointer", color: "#1890ff" }}
-                                    onClick={() =>
-                                        router.push(`/company/status/${record.mobile_dental_id}/patients`)
-                                    }
-                                />
+                                <ActionBtn bg="#e6f4ff" onClick={() => router.push(`/company/status/${record.mobile_dental_id}/patients`)}>
+                                    <BookOpenText size={16} style={{ color: "#1677ff" }} />
+                                </ActionBtn>
                             </Tooltip>
                         </Space>
                     );
@@ -338,7 +361,7 @@ function RequestsPageContent() {
                 }
             `}</style>
             <Breadcrumb
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 24 }}
                 items={[
                     {
                         title: (
@@ -365,16 +388,18 @@ function RequestsPageContent() {
                         ตรวจสอบสถานะการรับบริการออกหน่วย
                     </Title>
                 }
+                variant="borderless"
+                style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+                styles={{ body: { padding: '24px 32px' }, header: { padding: '24px 32px' } }}
                 extra={
                     <Input
                         placeholder="ค้นหาด้วยรหัสคำขอ หรือ สถานที่"
                         allowClear
-                        style={{ width: 250 }}
+                        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
+                        style={{ width: 280 }}
                         onChange={(e) => setSearchText(e.target.value)}
                     />
                 }
-                variant="borderless"
-                style={{ borderRadius: 12 }}
             >
                 {error && (
                     <Alert message={error} type="error" showIcon style={{ marginBottom: 16 }} />
@@ -393,7 +418,7 @@ function RequestsPageContent() {
                     items={[
                         {
                             key: "1",
-                            label: "รอดำเนินการ",
+                            label: <Space size={4}>รอดำเนินการ <Badge count={pendingRequests.length} style={{ backgroundColor: '#ffc53d' }} overflowCount={999} /></Space>,
                             children: (
                                 <Table
                                     loading={loading || isFetching}
@@ -407,15 +432,21 @@ function RequestsPageContent() {
                                         onChange: (p) => setClientPage(p),
                                     }}
                                     sticky={{ offsetHeader: 1 }}
+                                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                                    components={{
+                                        header: {
+                                            cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                                        }
+                                    }}
                                     rowClassName={(record) =>
-                                        record.mobile_dental_id === highlightId ? "row-highlight" : ""
+                                        `${record.mobile_dental_id === highlightId ? "row-highlight " : ""}hover:bg-gray-50 transition-colors`
                                     }
                                 />
                             ),
                         },
                         {
                             key: "2",
-                            label: "นัดหมายแล้ว",
+                            label: <Space size={4}>นัดหมายแล้ว <Badge count={scheduledRequests.length} style={{ backgroundColor: '#73d13d' }} overflowCount={999} /></Space>,
                             children: (
                                 <Table
                                     loading={loading || isFetching}
@@ -429,15 +460,21 @@ function RequestsPageContent() {
                                         onChange: (p) => setClientPage(p),
                                     }}
                                     sticky={{ offsetHeader: 1 }}
+                                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                                    components={{
+                                        header: {
+                                            cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                                        }
+                                    }}
                                     rowClassName={(record) =>
-                                        record.mobile_dental_id === highlightId ? "row-highlight" : ""
+                                        `${record.mobile_dental_id === highlightId ? "row-highlight " : ""}hover:bg-gray-50 transition-colors`
                                     }
                                 />
                             ),
                         },
                         {
                             key: "3",
-                            label: "ประวัติอื่นๆ",
+                            label: <Space size={4}>ประวัติอื่นๆ <Badge count={otherRequests.length} style={{ backgroundColor: '#8c8c8c' }} overflowCount={999} /></Space>,
                             children: (
                                 <Table
                                     loading={loading || isFetching}
@@ -451,8 +488,14 @@ function RequestsPageContent() {
                                         onChange: (p) => setClientPage(p),
                                     }}
                                     sticky={{ offsetHeader: 1 }}
+                                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                                    components={{
+                                        header: {
+                                            cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                                        }
+                                    }}
                                     rowClassName={(record) =>
-                                        record.mobile_dental_id === highlightId ? "row-highlight" : ""
+                                        `${record.mobile_dental_id === highlightId ? "row-highlight " : ""}hover:bg-gray-50 transition-colors`
                                     }
                                 />
                             ),

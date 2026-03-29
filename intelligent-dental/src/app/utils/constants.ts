@@ -12,3 +12,4 @@ export enum ThemeWebColor {
   Sidebar = "#0FA3A3",
   Background = "#E6FDFD",
 }
+
