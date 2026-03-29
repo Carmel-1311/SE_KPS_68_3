@@ -1,5 +1,5 @@
 ﻿"use client";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import dayjs, { type Dayjs } from "dayjs";
 import {
@@ -87,6 +87,12 @@ const baseServiceOptions = [
 ];
 
 export default function UserAppointmentSchedulePage() {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
   const maxAppointmentDate = dayjs().add(3, "month").endOf("day");
@@ -268,7 +274,7 @@ export default function UserAppointmentSchedulePage() {
                 showSearch
                 placeholder="เลือกหรือพิมพ์บริการ"
                 popupMatchSelectWidth={175}
-                dropdownStyle={{ width: 320 }}
+                styles={{ popup: { root: { width: 320 } } }}
                 options={serviceOptions}
                 value={newAppointmentService || undefined}
                 onChange={(value) => setNewAppointmentService(value)}
