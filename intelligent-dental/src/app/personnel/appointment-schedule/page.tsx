@@ -42,11 +42,11 @@ const { Title, Text } = Typography;
 export default function AppointmentListPage() {
   const router = useRouter();
 
-  const [searchText,     setSearchText]     = useState('');
-  const [selectedDate,   setSelectedDate]   = useState('');
+  const [searchText, setSearchText] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [activeTab,      setActiveTab]      = useState('1');
-  const [currentPage,    setCurrentPage]    = useState(1);
+  const [activeTab, setActiveTab] = useState('1');
+  const [currentPage, setCurrentPage] = useState(1);
 
   const PAGE_SIZE = 5;
 
@@ -73,8 +73,8 @@ export default function AppointmentListPage() {
         ? item.status !== 'request_cancel'
         : item.status === 'request_cancel';
 
-    const matchName   = item.patient.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchDate   = selectedDate ? item.appointment_date.startsWith(selectedDate) : true;
+    const matchName = item.patient.name.toLowerCase().includes(searchText.toLowerCase());
+    const matchDate = selectedDate ? item.appointment_date.startsWith(selectedDate) : true;
     const matchStatus = selectedStatus === 'all' || item.status === selectedStatus;
 
     return matchTab && matchName && matchDate && matchStatus;
@@ -97,7 +97,7 @@ export default function AppointmentListPage() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Text>{dayjs(record.appointment_date).format('DD/MM/YYYY')}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-             {dayjs(`2000-01-01 ${record.appointment_time}`).subtract(7, 'hour').format('HH:mm')}
+            {dayjs(`2000-01-01 ${record.appointment_time}`).subtract(0, 'hour').format('HH:mm')}
           </Text>
         </div>
       ),
@@ -238,9 +238,9 @@ export default function AppointmentListPage() {
               style={{ width: 160 }}
               onChange={(value) => setSelectedStatus(value)}
               options={[
-                { value: 'all',       label: 'สถานะทั้งหมด' },
-                { value: 'scheduled', label: 'รอดำเนินการ'   },
-                { value: 'completed', label: 'เสร็จสิ้น'     },
+                { value: 'all', label: 'สถานะทั้งหมด' },
+                { value: 'scheduled', label: 'รอดำเนินการ' },
+                { value: 'completed', label: 'เสร็จสิ้น' },
               ]}
             />
           )}

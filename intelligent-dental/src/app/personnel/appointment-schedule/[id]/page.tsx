@@ -29,9 +29,9 @@ import { useEditAppointment } from '@/hook/useEditAppointment';
 const { Title, Text } = Typography;
 
 export default function EditAppointmentPage() {
-  const router   = useRouter();
-  const params   = useParams();
-  const idParam  = params.id as string;
+  const router = useRouter();
+  const params = useParams();
+  const idParam = params.id as string;
 
   const [form] = Form.useForm();
   const [isCancelModalVisible, setIsCancelModalVisible] = React.useState(false);
@@ -58,9 +58,9 @@ export default function EditAppointmentPage() {
     form.setFieldsValue({
       appointment_date: dateOnly,
       // ✅ เดิมพอ ไม่ต้องแก้
-appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7, 'hour').format('HH:mm'),
-      type:             appointment.type,
-      status:           appointment.status,
+      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(0, 'hour').format('HH:mm'),
+      type: appointment.type,
+      status: appointment.status,
     });
 
     // โหลด available slots ของวันที่ปัจจุบัน
@@ -84,11 +84,11 @@ appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7
 
     await updateAppointment(
       {
-        appointment_date: values.appointment_date, 
-        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(), 
-        type:             values.type,
-        status:           values.status,
-        staff_id:         appointment.staff.id,
+        appointment_date: values.appointment_date,
+        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(),
+        type: values.type,
+        status: values.status,
+        staff_id: appointment.staff.id,
       },
       () => router.push('/personnel/appointment-schedule')
     );
@@ -193,15 +193,18 @@ appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7
 
           <Divider />
 
-          <Form.Item name="status" label="สถานะ">
-            <Select size="large">
-              <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
-              <Select.Option value="completed">เสร็จสิ้น</Select.Option>
-              <Select.Option value="cancelled">ยกเลิกการนัดหมาย</Select.Option>
-              {appointment.status === 'request_cancel' && (
-                <Select.Option value="request_cancel">ส่งคำขอยกเลิกแล้ว</Select.Option>
-              )}
-            </Select>
+          <Form.Item label="สถานะ">
+            <Form.Item name="status" noStyle>
+              <Select size="large">
+                <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
+                <Select.Option value="completed">เสร็จสิ้น</Select.Option>
+                <Select.Option value="cancelled">ยกเลิกการนัดหมาย</Select.Option>
+                {appointment.status === 'request_cancel' && (
+                  <Select.Option value="request_cancel">ส่งคำขอยกเลิกแล้ว</Select.Option>
+                )}
+              </Select>
+            </Form.Item>
+
             {appointment.status === 'request_cancel' && (
               <Text type="warning" style={{ marginTop: '8px', display: 'block' }}>
                 * ผู้ป่วยส่งคำขอยกเลิกมา กรุณาเปลี่ยนสถานะเป็น "ยกเลิกการนัดหมาย" เพื่อยืนยัน
