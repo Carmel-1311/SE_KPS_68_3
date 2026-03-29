@@ -9,6 +9,13 @@ type Meta = {
   total_page: number;
 };
 
+export type StaffListItem = {
+  id: number;
+  name: string;
+  email?: string;
+  role: string;
+};
+
 export function useStaffs() {
   const [staff, setStaff] = useState<staffList>([]);
   const [meta, setMeta] = useState<Meta>({
@@ -26,7 +33,7 @@ export function useStaffs() {
     setError(null);
 
     try {
-      const response = await fetch("/api/staffs", {
+      const response = await fetch("/api/staffs?page=1&limit=200", {
         headers: withAuthHeaders(),
       });
 

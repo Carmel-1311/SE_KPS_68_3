@@ -26,7 +26,7 @@ export function usePatients() {
     setError(null);
 
     try {
-      const response = await fetch("/api/patients", {
+      const response = await fetch("/api/patients?page=1&limit=200", {
         headers: withAuthHeaders(),
       });
 

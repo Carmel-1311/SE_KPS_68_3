@@ -101,7 +101,7 @@ export default function CreateWorkSchedulePage() {
   const router = useRouter();
   const [form] = Form.useForm<FormValues>();
   const [submitting, setSubmitting] = useState(false);
-  const { data: staffData, loading: staffLoading } = useStaffs();
+  const { staff: staffData,meta,loading: staffLoading ,error} = useStaffs();
   const { createSchedule } = useWorkSchedule();
 
   const startTime = Form.useWatch('start_time', form);
