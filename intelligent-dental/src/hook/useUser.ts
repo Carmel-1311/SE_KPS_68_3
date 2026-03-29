@@ -16,6 +16,54 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const updateProfile = useCallback(
+    async (payload: {
+      id: number;
+      name: string;
+      birthday: string;
+      allergy?: string | null;
+      email: string;
+      phone: string;
+    }) => {
+      const allergy = payload.allergy ?? "";
+      const [firstName, ...rest] = payload.name.trim().split(" ");
+      const lastName = rest.join(" ");
+      const response = await fetch(`/api/patients/${payload.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...withAuthHeaders()
+        },
+        body: JSON.stringify({
+          first_name: firstName || payload.name,
+          last_name: lastName,
+          birthday: payload.birthday,
+          allergy,
+          email: payload.email,
+          phone: payload.phone
+        })
+      });
+
+      const result = (await response.json()) as {
+        data?: User;
+        error?: { message?: string };
+        message?: string;
+      };
+      if (!response.ok) {
+        throw new Error(
+          result?.error?.message ||
+            result?.message ||
+            "บันทึกไม่สำเร็จ"
+        );
+      }
+
+      const updated = result.data ?? { ...payload, allergy };
+      setUser(updated);
+      return updated;
+    },
+    []
+  );
+
   const fetchProfile = useCallback(async () => {
     const patientId = getPatientId();
     if (!patientId) {
@@ -52,6 +100,7 @@ export function useUser() {
     loading,
     error,
     refresh: fetchProfile,
-    setUser
+    setUser,
+    updateProfile
   };
 }

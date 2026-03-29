@@ -18,7 +18,6 @@ import {
 } from "antd";
 import { EditOutlined } from "@ant-design/icons";
 import { useUser } from "@/hook/useUser";
-import { withAuthHeaders } from "@/app/utils/auth.client";
 import type { User } from "@/types/user";
 
 const thaiMonthsShort = [
@@ -45,7 +44,7 @@ const formatThaiDate = (dateValue: string) => {
 
 function UserForm() {
   const [form] = Form.useForm<User>();
-  const { user, loading, error, setUser } = useUser();
+  const { user, loading, error, updateProfile } = useUser();
   const [formData, setFormData] = useState<User | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,36 +104,15 @@ function UserForm() {
       }
 
       const allergy = form.getFieldValue("allergy") ?? "";
-      const [firstName, ...rest] = formData.name.trim().split(" ");
-      const lastName = rest.join(" ");
-      const response = await fetch(`/api/patients/${formData.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...withAuthHeaders()
-        },
-        body: JSON.stringify({
-          first_name: firstName || formData.name,
-          last_name: lastName,
-          birthday: formData.birthday,
-          allergy,
-          email: formData.email,
-          phone: formData.phone
-        })
+      const updated = await updateProfile({
+        id: formData.id,
+        name: formData.name,
+        birthday: formData.birthday,
+        allergy,
+        email: formData.email,
+        phone: formData.phone
       });
-
-      const result = (await response.json()) as {
-        data?: User;
-        error?: { message?: string };
-        message?: string;
-      };
-      if (!response.ok) {
-        throw new Error(result?.error?.message || result?.message || "บันทึกไม่สำเร็จ");
-      }
-
-      const updated = result.data ?? { ...formData, allergy };
       setFormData(updated);
-      setUser(updated);
       setIsEditing(false);
       showNotification("success", "ข้อมูลได้รับการบันทึกเรียบร้อย");
     } catch (error) {
