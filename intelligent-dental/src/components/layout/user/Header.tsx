@@ -19,7 +19,6 @@ const { Header } = Layout;
 const { Text } = Typography;
 
 const menuItems = [
-  { key: "home", icon: <House size={16} />, label: "Home", path: "/user/home" },
   { key: "profile", icon: <User size={16} />, label: "Profile", path: "/user/profile" },
   { key: "appointments", icon: <CalendarCheck size={16} />, label: "Appointments", path: "/user/appointments" },
   { key: "treatments", icon: <FileText size={16} />, label: "Treatment History", path: "/user/treatments" },

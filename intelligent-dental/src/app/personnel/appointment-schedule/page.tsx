@@ -250,15 +250,7 @@ export default function AppointmentListPage() {
           columns={columns}
           dataSource={finalFilteredData}
           rowKey="appointment_id"
-<<<<<<< HEAD
-<<<<<<< HEAD
-          pagination={createTablePagination(5)}
-=======
           pagination={{ pageSize: PAGE_SIZE, current: currentPage, onChange: setCurrentPage }}
->>>>>>> origin/P01
-=======
-          pagination={{ pageSize: PAGE_SIZE, current: currentPage, onChange: setCurrentPage }}
->>>>>>> origin/api
           loading={loading}
           locale={{ emptyText: 'ไม่พบข้อมูลในสถานะนี้' }}
         />
