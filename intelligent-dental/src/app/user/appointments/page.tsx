@@ -22,7 +22,6 @@ import {
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import {
-<<<<<<< HEAD
   CalendarClock,
   CalendarDays,
   Clock3,
@@ -33,15 +32,10 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
-=======
-  type Datum,
-  Status,
-} from "@/mock/mockAppointment";
-import { useAppointments } from "@/hook/useAppointments2";
->>>>>>> origin/buckyz
-import { createTablePagination } from "@/app/utils/tablePagination";
-import { useAppointments } from "@/hook/useAppointments";
+
 import { type Datum, Status } from "@/mock/mockAppointment";
+import { useAppointments } from "@/hook/useAppointments2";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 const { Title, Text } = Typography;
 
@@ -464,8 +458,7 @@ export default function UserAppointmentsPage() {
                           onClick={() => handleCancelAppointment(record)}
                           style={{ borderRadius: 10 }}
                         >
-                          ยกเลิกนัด
-                        </Button>
+                                     ยกเลิกนัด              </Button>
                       </Space>
                     </Card>
                   ))}
