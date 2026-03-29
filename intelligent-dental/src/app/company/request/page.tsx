@@ -149,9 +149,13 @@ export default function RequestServicePage() {
                                     style={{ width: '100%', borderRadius: 10 }}
                                     size="large"
                                     format="YYYY-MM-DD"
+                                    placeholder="เลือกวันที่ (ล่วงหน้าอย่างน้อย 3 วัน)"
                                     disabledDate={(current) => {
-                                        return current && current < dayjs().startOf('day');
+                                        // ห้ามเลือกวันที่ก่อน (วันนี้ + 3 วัน)
+                                        const minDate = dayjs().add(3, 'day').startOf('day');
+                                        return current && current < minDate;
                                     }}
+            
                                 />
                             </Form.Item>
                         </Col>
@@ -185,9 +189,10 @@ export default function RequestServicePage() {
                     <div style={{ background: "#e6f4ff", border: "1px solid #91d5ff", borderRadius: 12, padding: "16px 20px", marginBottom: 32, display: "flex", gap: 12, alignItems: "flex-start" }}>
                         <div style={{ background: "#1677ff", color: "#fff", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, fontSize: 13, fontWeight: "bold" }}>i</div>
                         <div>
-                            <div style={{ fontWeight: 600, color: "#0958d9", marginBottom: 4 }}>แจ้งทราบ</div>
+                            <div style={{ fontWeight: 600, color: "#0958d9", marginBottom: 4 }}>ข้อกำหนดการจอง</div>
                             <div style={{ color: "#1677ff", fontSize: 14, lineHeight: 1.5 }}>
-                                หลังส่งคำขอแล้ว ทีมงานจะเก็บข้อมูลและติดต่อกลับเพื่อยืนยันวันนัดหมายตามเบอร์ที่ระบุไว้
+                                • กรุณาจองล่วงหน้าอย่างน้อย 3 วัน เพื่อให้ทีมงานมีเวลาเตรียมความพร้อม<br/>
+                                • หลังส่งคำขอแล้ว ทีมงานจะเก็บข้อมูลและติดต่อกลับเพื่อยืนยันวันนัดหมาย
                             </div>
                         </div>
                     </div>
