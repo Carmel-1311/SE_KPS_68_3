@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { staffResponseList, staffList } from "../types/staff";
+import type { patientResponseList, patientList } from "../types/patients";
 import { withAuthHeaders } from "../app/utils/auth.client";
 
 type Meta = {
@@ -9,8 +9,8 @@ type Meta = {
   total_page: number;
 };
 
-export function useStaffs() {
-  const [staff, setStaff] = useState<staffList>([]);
+export function usePatients() {
+  const [patients, setPatients] = useState<patientList>([]);
   const [meta, setMeta] = useState<Meta>({
     page: 1,
     limit: 10,
@@ -21,16 +21,16 @@ export function useStaffs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStaff = useCallback(async () => {
+  const fetchPatients = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch("/api/staffs", {
+      const response = await fetch("/api/patients", {
         headers: withAuthHeaders(),
       });
 
-      const result = (await response.json()) as staffResponseList;
+      const result = (await response.json()) as patientResponseList;
 
       if (!response.ok) {
         throw new Error("ไม่สามารถดึงข้อมูลรายชื่อได้");
@@ -38,7 +38,7 @@ export function useStaffs() {
 
       const data = result.data || [];
 
-      setStaff(data);
+      setPatients(data);
 
       const limit = 10;
       const total = data.length;
@@ -58,14 +58,14 @@ export function useStaffs() {
   }, []);
 
   useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+    fetchPatients();
+  }, [fetchPatients]);
 
   return {
-    staff,
+    patients,
     meta, 
     loading,
     error,
-    refresh: fetchStaff,
+    refresh: fetchPatients,
   };
 }
