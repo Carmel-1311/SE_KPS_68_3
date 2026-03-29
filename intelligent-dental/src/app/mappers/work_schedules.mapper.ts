@@ -40,13 +40,13 @@ export const workScheduleMap = {
    * 2. Create Mapping (แปลงจาก API Request -> Prisma Input)
    * ใช้สำหรับ POST /api/work_schedules
    */
-  toCreateInput(data: CreateScheduleInput): Prisma.work_scheduleCreateInput {
+  toCreateInput(data: CreateScheduleInput & { is_active?: boolean }): Prisma.work_scheduleCreateInput {
     return {
       date: data.date,
       // บังคับปี 1970 เพื่อให้ Prisma @db.Time ทำงานถูกต้อง
       start_time: new Date(`1970-01-01T${data.start_time}:00Z`),
       end_time: new Date(`1970-01-01T${data.end_time}:00Z`),
-      is_active: true,
+      is_active: typeof data.is_active === 'boolean' ? data.is_active : true,
       staff: { connect: { staff_id: data.staff_id } }
     };
   },

@@ -1,28 +1,71 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import dayjs, { Dayjs } from "dayjs";
 import { Form, Input, DatePicker, InputNumber, Button, Typography, Breadcrumb, Card, message, Row, Col, Space } from "antd";
+import { SendOutlined, ClearOutlined } from "@ant-design/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { House, SearchCheck } from "lucide-react";
+import { withAuthHeaders } from "@/app/utils/auth.client";
+import { clearMobileDentalsCache } from "@/hook/useAllMobileDentals";
+import type { paths } from "@/types/api";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+type CreateMobileDentalBody = paths["/api/mobile_dentals"]["post"]["requestBody"]["content"]["application/json"];
+type CreateRequestFormValues = { date: Dayjs; count: number; address: string };
 
-// Remove mockMobileDentals local import
+function getCompanyIdFromToken(): number | null {
+    if (typeof window === "undefined") return null;
+    const token = localStorage.getItem("auth_token");
+    if (!token) return null;
+
+    const payloadPart = token.split(".")[1];
+    if (!payloadPart) return null;
+
+    try {
+        const base64 = payloadPart.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+        const payload = JSON.parse(atob(padded)) as { id?: unknown };
+        const companyId = Number(payload.id);
+        return Number.isInteger(companyId) && companyId > 0 ? companyId : null;
+    } catch {
+        return null;
+    }
+}
+
+function mapCreateErrorMessage(status: number, apiMessage?: string) {
+    if (apiMessage) return apiMessage;
+    if (status === 400 || status === 422) return "ข้อมูลไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง";
+    if (status === 401) return "กรุณาเข้าสู่ระบบใหม่";
+    if (status === 403) return "คุณไม่มีสิทธิ์ทำรายการนี้";
+    if (status === 409) return "ข้อมูลซ้ำในระบบ";
+    if (status >= 500) return "ระบบขัดข้องชั่วคราว กรุณาลองใหม่อีกครั้ง";
+    return "ไม่สามารถส่งคำขอได้";
+}
+
 export default function RequestServicePage() {
     const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
+    const submitLockRef = useRef(false);
     const router = useRouter();
 
-    const onFinish = useCallback(async (values: { date: Dayjs; count: number; address: string }) => {
+    const onFinish = useCallback(async (values: CreateRequestFormValues) => {
+        if (submitLockRef.current) return;
+        submitLockRef.current = true;
         setSubmitting(true);
 
         try {
-            const payload = {
-                date: values.date ? values.date.format('YYYY-MM-DD') : "",
-                count: values.count || 0,
-                address: values.address || "",
+            const companyId = getCompanyIdFromToken();
+            if (!companyId) {
+                throw new Error("ไม่พบข้อมูลหน่วยงานจาก session กรุณาเข้าสู่ระบบใหม่");
+            }
+
+            const payload: CreateMobileDentalBody = {
+                date: values.date.format("YYYY-MM-DD"),
+                count: values.count,
+                address: values.address.trim(),
+                company_id: companyId,
             };
 
             const res = await fetch("/api/mobile_dentals", {
@@ -31,24 +74,34 @@ export default function RequestServicePage() {
                 body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Failed to create request");
+            if (!res.ok) {
+                let apiMessage: string | undefined;
+                try {
+                    const errJson = (await res.json()) as { error?: { message?: string }, message?: string };
+                    apiMessage = errJson.error?.message || errJson.message;
+                } catch { }
+                throw new Error(mapCreateErrorMessage(res.status, apiMessage));
+            }
 
             message.success('ส่งคำขอรับบริการออกหน่วยสำเร็จ!');
             form.resetFields();
+            clearMobileDentalsCache();
             router.push('/company/status');
 
         } catch (err) {
             console.error(err);
-            message.error("เกิดข้อผิดพลาด โปรดลองอีกครั้ง");
+            const errMessage = err instanceof Error ? err.message : "เกิดข้อผิดพลาด โปรดลองอีกครั้ง";
+            message.error(errMessage);
         } finally {
             setSubmitting(false);
+            submitLockRef.current = false;
         }
     }, [form, router]);
 
     return (
         <div style={{ padding: "24px", maxWidth: 1000, margin: '0 auto' }}>
             <Breadcrumb
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: 24 }}
                 items={[
                     {
                         title: (
@@ -69,8 +122,13 @@ export default function RequestServicePage() {
                 ]}
             />
 
-            <Card title={<Title level={3} style={{ margin: 0 }}>เพิ่มการนัดหมายออกหน่วยตรวจฟัน</Title>} variant="borderless" style={{ borderRadius: 12 }}>
-                <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
+            <Card 
+                title={<Title level={3} style={{ margin: 0 }}>เพิ่มการนัดหมายออกหน่วยตรวจฟัน</Title>} 
+                variant="borderless" 
+                style={{ borderRadius: 16, boxShadow: '0 4px 24px rgba(0,0,0,0.04)' }}
+                styles={{ body: { padding: 32 } }}
+            >
+                <Text type="secondary" style={{ display: 'block', marginBottom: 32, fontSize: 16 }}>
                     กรุณากรอกข้อมูลให้ครบถ้วนเพื่อความรวดเร็วในการประสานงานและการพิจารณาอนุมัติ
                 </Text>
 
@@ -83,12 +141,12 @@ export default function RequestServicePage() {
                     <Row gutter={24}>
                         <Col xs={24} md={12}>
                             <Form.Item
-                                label="วันที่ต้องการรับบริการ (date)"
+                                label={<span style={{ fontWeight: 500 }}>วันที่ต้องการรับบริการ</span>}
                                 name="date"
                                 rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
                             >
                                 <DatePicker
-                                    style={{ width: '100%' }}
+                                    style={{ width: '100%', borderRadius: 10 }}
                                     size="large"
                                     format="YYYY-MM-DD"
                                     disabledDate={(current) => {
@@ -100,28 +158,45 @@ export default function RequestServicePage() {
 
                         <Col xs={24} md={12}>
                             <Form.Item
-                                label="จำนวนผู้ป่วย (count)"
+                                label={<span style={{ fontWeight: 500 }}>จำนวนผู้ป่วย</span>}
                                 name="count"
                                 rules={[{ required: true, message: 'กรุณาระบุจำนวนคน' }]}
                             >
-                                <InputNumber style={{ width: '100%' }} min={1} placeholder="ระบุจำนวนคน" size="large" />
+                                <InputNumber style={{ width: '100%', borderRadius: 10 }} min={1} placeholder="ระบุจำนวนคน" size="large" />
                             </Form.Item>
                         </Col>
                     </Row>
 
                     <Form.Item
-                        label="สถานที่ออกหน่วย (address)"
+                        label={<span style={{ fontWeight: 500 }}>สถานที่ออกหน่วย</span>}
                         name="address"
-                        rules={[{ required: true, message: 'กรุณาระบุสถานที่' }]}
+                        rules={[
+                            {
+                                validator: (_, value: string | undefined) =>
+                                    value?.trim()
+                                        ? Promise.resolve()
+                                        : Promise.reject(new Error("กรุณาระบุสถานที่")),
+                            },
+                        ]}
                     >
-                        <TextArea rows={4} placeholder="ระบุ บ้านเลขที่, อาคาร, ชั้น, ถนน, เขต, จังหวัด, รหัสไปรษณีย์" size="large" />
+                        <TextArea rows={4} placeholder="ระบุ บ้านเลขที่, อาคาร, ชั้น, ถนน, เขต, จังหวัด, รหัสไปรษณีย์" size="large" style={{ borderRadius: 10 }} />
                     </Form.Item>
 
-                    <Form.Item style={{ textAlign: 'right', marginTop: 32 }}>
-                        <Button size="large" onClick={() => form.resetFields()} style={{ marginRight: 8 }}>
+                    <div style={{ background: "#e6f4ff", border: "1px solid #91d5ff", borderRadius: 12, padding: "16px 20px", marginBottom: 32, display: "flex", gap: 12, alignItems: "flex-start" }}>
+                        <div style={{ background: "#1677ff", color: "#fff", width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2, fontSize: 13, fontWeight: "bold" }}>i</div>
+                        <div>
+                            <div style={{ fontWeight: 600, color: "#0958d9", marginBottom: 4 }}>แจ้งทราบ</div>
+                            <div style={{ color: "#1677ff", fontSize: 14, lineHeight: 1.5 }}>
+                                หลังส่งคำขอแล้ว ทีมงานจะเก็บข้อมูลและติดต่อกลับเพื่อยืนยันวันนัดหมายตามเบอร์ที่ระบุไว้
+                            </div>
+                        </div>
+                    </div>
+
+                    <Form.Item style={{ textAlign: 'right' }}>
+                        <Button size="large" icon={<ClearOutlined />} onClick={() => form.resetFields()} style={{ marginRight: 8, borderRadius: 10 }}>
                             ล้างข้อมูล
                         </Button>
-                        <Button type="primary" htmlType="submit" size="large" loading={submitting}>
+                        <Button type="primary" htmlType="submit" size="large" loading={submitting} icon={<SendOutlined />} style={{ borderRadius: 10 }}>
                             ส่งคำขอรับบริการ
                         </Button>
                     </Form.Item>

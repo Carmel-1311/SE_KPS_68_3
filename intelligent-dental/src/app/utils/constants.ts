@@ -13,3 +13,4 @@ export enum ThemeWebColor {
   Background = "#E6FDFD",
   Primary = "Primary",
 }
+

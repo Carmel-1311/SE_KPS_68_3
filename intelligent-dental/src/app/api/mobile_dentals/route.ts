@@ -8,7 +8,7 @@ export async function GET(request: Request) {
     try {
         const user = getCurrentUser(request)
         if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
-        requireRole(user.role, ["staff", "company", "dentist"])
+        requireRole(user.role, ["staff", "company"])
 
         const { searchParams } = new URL(request.url)
         const page = Number(searchParams.get("page")) || 1
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     try {
         const user = getCurrentUser(request)
         if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
-        requireRole(user.role, ["staff", "company", "doctor"])
+        requireRole(user.role, ["staff","dentist", "company"])
         const body = await request.json()
         const newSchedule = await mobileService.createMobileDentals(body)
         return res.created(newSchedule)

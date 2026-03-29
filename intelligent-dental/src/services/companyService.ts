@@ -3,8 +3,20 @@ import { AppError } from "@/utils/AppError"
 import * as map from "@/app/mappers/company.mapper"
 
 export async function listCompanies() {
-  const companies = await repo.findCompanies()
+  const companies = await repo.findCompanies(0, 10)
   return map.companyMap.toResponseList(companies)
+}
+
+export async function listCompaniesPaginated(limit: number, page: number) {
+  const [companies, total] = await Promise.all([
+    repo.findCompanies((page - 1) * limit, limit),
+    repo.countCompanies()
+  ])
+
+  return {
+    data: map.companyMap.toResponseList(companies),
+    total
+  }
 }
 
 export async function getCompanyById(id: number) {

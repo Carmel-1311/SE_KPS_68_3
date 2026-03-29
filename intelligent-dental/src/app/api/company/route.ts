@@ -10,8 +10,12 @@ export async function GET(req:Request) {
     if (!user) return res.error(401, "AUTH-001", "validation fail", "VALIDATION")
     requireRole(user.role, ["staff", "company"]);
 
-    const result = await companyService.listCompanies();
-    return res.ok(result);
+    const { searchParams } = new URL(req.url);
+    const page = Number(searchParams.get("page")) || 1;
+    const limit = Number(searchParams.get("limit")) || 10;
+
+    const result = await companyService.listCompaniesPaginated(limit, page);
+    return res.okList(result.data, { page, limit, total: result.total });
   } catch (err: unknown) {
     return handleError(err);
   }

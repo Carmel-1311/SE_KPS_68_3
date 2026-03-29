@@ -3,6 +3,19 @@ import * as repo from "@/repositories/work_schedulesRepository"
 import { AppError } from "@/utils/AppError"
 import { CreateScheduleInput } from "@/app/mappers/work_schedules.mapper"
 
+function ensureDentistOwnsSchedule(
+    user: { id: number, role: string },
+    schedule: { staff_id: number } | null
+) {
+    if (!schedule) {
+        throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
+    }
+
+    if (user.role === "dentist" && schedule.staff_id !== user.id) {
+        throw new AppError(403, "AUTH-003", "Access denied for this work schedule", "AUTH")
+    }
+}
+
 export async function getAllWorkSchedulesByUser(
     user: { id: number, role: string },
     page: number,
@@ -25,38 +38,49 @@ export async function getAllWorkSchedulesByUser(
     }
 }
 
-export async function getWorkScheduleById(id: number)
+export async function getWorkScheduleById(id: number, user?: { id: number, role: string })
     : Promise<ReturnType<typeof map.workScheduleMap.toResponse>> {
 
     const schedule = await repo.findWorkScheduleById(id)
 
-    if (!schedule) {
+    if (user) {
+        ensureDentistOwnsSchedule(user, schedule)
+    } else if (!schedule) {
         throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
     }
 
     return map.workScheduleMap.toResponse(schedule)
 }
 
-export async function createWorkSchedule(data: CreateScheduleInput) {
-    const schedule = await repo.createWorkSchedule(map.workScheduleMap.toCreateInput(data))
-    return getWorkScheduleById(schedule.schedule_id)
+export async function createWorkSchedule(
+    data: CreateScheduleInput,
+    user?: { id: number, role: string }
+) {
+    const normalizedData = user?.role === "dentist"
+        ? { ...data, staff_id: user.id }
+        : data
+
+    const schedule = await repo.createWorkSchedule(map.workScheduleMap.toCreateInput(normalizedData))
+    return getWorkScheduleById(schedule.schedule_id, user)
 }
 
-export async function updateWorkSchedule(id: number, data: any) {
-    // Check if schedule exists before updating to provide meaningful error message
+export async function updateWorkSchedule(
+    id: number,
+    data: Parameters<typeof map.workScheduleMap.toUpdateInput>[0],
+    user?: { id: number, role: string }
+) {
     const existingSchedule = await repo.findWorkScheduleById(id)
-    if (!existingSchedule) {
-        throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
-    }
+    if (user) ensureDentistOwnsSchedule(user, existingSchedule)
+    else if (!existingSchedule) throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
+
     const updatedSchedule = await repo.updateWorkSchedule(id, map.workScheduleMap.toUpdateInput(data))
-    return getWorkScheduleById(updatedSchedule.schedule_id)
+    return getWorkScheduleById(updatedSchedule.schedule_id, user)
 }
 
-export async function deleteWorkSchedule(id: number) {
-    // Check if schedule exists before deleting to provide meaningful error message
+export async function deleteWorkSchedule(id: number, user?: { id: number, role: string }) {
     const existingSchedule = await repo.findWorkScheduleById(id)
-    if (!existingSchedule) {
-        throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
-    }
+    if (user) ensureDentistOwnsSchedule(user, existingSchedule)
+    else if (!existingSchedule) throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
+
     return repo.deleteWorkSchedule(id)
 }

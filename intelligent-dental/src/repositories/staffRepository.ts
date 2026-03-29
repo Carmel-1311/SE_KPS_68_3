@@ -11,6 +11,10 @@ export async function findStaffs(skip: number, take: number) {
   })
 }
 
+export async function countStaffs() {
+  return prisma.staff.count()
+}
+
 export async function findStaffById(id: number) {
   return prisma.staff.findUnique({
     where: { staff_id: id },

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getAuthToken, withAuthHeaders } from "@/app/utils/auth.client";
 
 export type WorkSchedule = {
   id: string;
@@ -23,69 +24,99 @@ type Meta = {
   total_pages?: number;
 };
 
+type ApiErrorShape = {
+  error?: { message?: string };
+  message?: string;
+};
+
+const readErrorMessage = (json: unknown, fallback: string) => {
+  const payload = json as ApiErrorShape | null;
+  return payload?.error?.message || payload?.message || fallback;
+};
+
 export function useWorkSchedule() {
   const [data, setData] = useState<WorkSchedule[]>([]);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
-  // 🔹 pagination
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [limit, setLimit] = useState(200);
 
-  // ===============================
-  // 🔹 GET LIST
-  // ===============================
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     try {
-      setLoading(true);
+      if (isMountedRef.current) {
+        setLoading(true);
+        setError(null);
+      }
 
-      const res = await fetch(
-        `/api/work_schedules?page=${page}&limit=${limit}`
-      );
+      const token = getAuthToken();
+      if (!token) {
+        if (isMountedRef.current) {
+          setData([]);
+          setMeta(null);
+          setError("Please log in to view work schedules.");
+          setLoading(false);
+        }
+        return;
+      }
 
-      if (!res.ok) throw new Error("Failed to fetch");
+      const res = await fetch(`/api/work_schedules?page=${page}&limit=${limit}`, {
+        cache: "no-store",
+        headers: withAuthHeaders(),
+      });
 
-      const json = await res.json();
+      const json = (await res.json()) as { data?: WorkSchedule[]; meta?: Meta } | ApiErrorShape;
 
-      setData(json.data);
-      setMeta(json.meta);
-    } catch (err: any) {
-      setError(err.message);
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Please log in again.");
+        }
+        throw new Error(readErrorMessage(json, "Failed to fetch work schedules."));
+      }
+
+      if (isMountedRef.current) {
+        setData(("data" in json && json.data) ? json.data : []);
+        setMeta(("meta" in json && json.meta) ? json.meta : null);
+      }
+    } catch (err: unknown) {
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "Unable to load work schedules.");
+      }
     } finally {
-      setLoading(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
     }
-  };
+  }, [limit, page]);
 
-  // ===============================
-  // 🔹 CREATE
-  // ===============================
   const createSchedule = async (payload: {
     staff_id: number;
     date: WorkSchedule["date"];
     start_time: string;
     end_time: string;
+    is_active?: boolean;
   }) => {
     try {
       const res = await fetch("/api/work_schedules", {
         method: "POST",
-        headers: {
+        headers: withAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error("Create failed");
 
-      await fetchSchedules(); // refresh
-    } catch (err: any) {
-      setError(err.message);
+      await fetchSchedules();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Create failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
-  // ===============================
-  // 🔹 UPDATE
-  // ===============================
   const updateSchedule = async (
     id: number,
     payload: {
@@ -93,62 +124,61 @@ export function useWorkSchedule() {
       start_time: string;
       end_time: string;
       is_active: boolean;
-    }
+    },
   ) => {
     try {
       const res = await fetch(`/api/work_schedules/${id}`, {
         method: "PUT",
-        headers: {
+        headers: withAuthHeaders({
           "Content-Type": "application/json",
-        },
+        }),
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error("Update failed");
 
       await fetchSchedules();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Update failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
-  // ===============================
-  // 🔹 DELETE
-  // ===============================
   const deleteSchedule = async (id: number) => {
     try {
       const res = await fetch(`/api/work_schedules/${id}`, {
         method: "DELETE",
+        headers: withAuthHeaders(),
       });
 
       if (!res.ok) throw new Error("Delete failed");
 
       await fetchSchedules();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Delete failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
-  // ===============================
-  // 🔹 LOAD ครั้งแรก + เปลี่ยน page
-  // ===============================
   useEffect(() => {
-    fetchSchedules();
-  }, [page, limit]);
+    isMountedRef.current = true;
+    void fetchSchedules();
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [fetchSchedules]);
 
   return {
     data,
     meta,
     loading,
     error,
-
-    // pagination
     page,
     limit,
     setPage,
     setLimit,
-
-    // actions
     fetchSchedules,
     createSchedule,
     updateSchedule,

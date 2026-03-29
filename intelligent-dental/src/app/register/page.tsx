@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
 import {
@@ -8,31 +8,54 @@ import {
   PhoneOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Button, Card, Col, Flex, Form, Grid, Input, Row, Space, Typography, message, Radio } from "antd";
+import { Button, Card, Col, DatePicker, Flex, Form, Grid, Input, Radio, Row, Space, Typography, message } from "antd";
+import dayjs, { type Dayjs } from "dayjs";
+import "dayjs/locale/th";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 const { Title, Text } = Typography;
 
+dayjs.locale("th");
+
 type RegisterForm = {
-  role: "patient" | "staff";
-  staff_role?: "staff" | "dentist";
-  first_name: string;
-  last_name: string;
-  birthday: string;
+  role: "patient" | "company";
+  first_name?: string;
+  last_name?: string;
+  birthday?: Dayjs;
+  id_card?: string;
   allergy?: string;
+  office_name?: string;
+  contact_name?: string;
+  address?: string;
   email: string;
   phone: string;
-  license_number?: string;
   password: string;
+  confirm_password: string;
 };
 
 const highlights = [
-  "บันทึกข้อมูลผู้ใช้งานใหม่เข้าสู่ระบบได้ทันที",
-  "รองรับข้อมูลพื้นฐานสำหรับผู้ป่วยตามโครงสร้างฐานข้อมูล",
+  "สมัครได้เฉพาะผู้ป่วยและหน่วยงานภายนอก",
+  "ยืนยันรหัสผ่าน 2 ครั้งก่อนส่งข้อมูล",
   "ส่งข้อมูลผ่าน API และจัดเก็บอย่างเป็นระบบ",
 ];
+
+function formatThaiIdCard(value?: string) {
+  const digits = (value || "").replace(/\D/g, "").slice(0, 13);
+  const parts = [1, 4, 2, 3, 2, 1];
+  const chunks: string[] = [];
+  let index = 0;
+
+  for (const size of parts) {
+    const chunk = digits.slice(index, index + size);
+    if (!chunk) break;
+    chunks.push(chunk);
+    index += size;
+  }
+
+  return chunks.join("-");
+}
 
 export default function RegisterPage() {
   const [form] = Form.useForm<RegisterForm>();
@@ -51,15 +74,18 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           role: values.role,
-          staff_role: values.role === "staff" ? values.staff_role : undefined,
-          first_name: values.first_name,
-          last_name: values.last_name,
-          birthday: values.birthday,
-          allergy: values.role === "patient" ? values.allergy || "" : "",
+          first_name: values.role === "patient" ? values.first_name : undefined,
+          last_name: values.role === "patient" ? values.last_name : undefined,
+          birthday: values.role === "patient" && values.birthday ? values.birthday.format("YYYY-MM-DD") : undefined,
+          id_card: values.role === "patient" ? values.id_card : undefined,
+          allergy: values.role === "patient" ? values.allergy || "" : undefined,
+          office_name: values.role === "company" ? values.office_name : undefined,
+          contact_name: values.role === "company" ? values.contact_name : undefined,
+          address: values.role === "company" ? values.address || "" : undefined,
           email: values.email,
           phone: values.phone,
-          license_number: values.role === "staff" ? values.license_number || "" : "",
           password: values.password,
+          confirm_password: values.confirm_password,
         }),
       });
 
@@ -140,7 +166,7 @@ export default function RegisterPage() {
                   สร้างบัญชีใหม่
                 </Title>
                 <Text style={{ color: "#d9fbff", fontSize: 14 }}>
-                  ลงทะเบียนผู้ใช้งานด้วยข้อมูลที่จำเป็นสำหรับผู้ป่วย
+                  ลงทะเบียนสำหรับผู้ป่วยหรือหน่วยงานภายนอกเท่านั้น
                 </Text>
 
                 <div style={{ marginTop: 18, display: "grid", gap: 10 }}>
@@ -170,7 +196,7 @@ export default function RegisterPage() {
                   Register
                 </Title>
                 <Text style={{ color: "#587284" }}>
-                  กรอกข้อมูล: first_name, last_name, birthday, allergy, email, phone
+                  เลือกประเภทบัญชี แล้วกรอกข้อมูลให้ครบก่อนบันทึก
                 </Text>
 
                 <Form<RegisterForm>
@@ -178,76 +204,159 @@ export default function RegisterPage() {
                   layout="vertical"
                   requiredMark={false}
                   onFinish={onFinish}
-                  initialValues={{ role: "patient", staff_role: "staff" }}
+                  initialValues={{ role: "patient" }}
                   style={{ marginTop: 16 }}
                 >
                   <Form.Item
                     name="role"
                     label={<Text strong style={{ color: "#16445f" }}>role</Text>}
-                    rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ role" }]}
+                    rules={[{ required: true, message: "กรุณาเลือก role" }]}
                   >
                     <Radio.Group>
                       <Radio value="patient">patient</Radio>
-                      <Radio value="staff">staff</Radio>
+                      <Radio value="company">company</Radio>
                     </Radio.Group>
                   </Form.Item>
 
                   <Form.Item shouldUpdate={(prev, next) => prev.role !== next.role} noStyle>
                     {({ getFieldValue }) =>
-                      getFieldValue("role") === "staff" ? (
-                        <Form.Item
-                          name="staff_role"
-                          label={<Text strong style={{ color: "#16445f" }}>staff_role</Text>}
-                          rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸ staff_role" }]}
-                        >
-                          <Radio.Group>
-                            <Radio value="staff">staff</Radio>
-                            <Radio value="dentist">dentist</Radio>
-                          </Radio.Group>
-                        </Form.Item>
-                      ) : null
+                      getFieldValue("role") === "patient" ? (
+                        <Row gutter={[12, 8]}>
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="first_name"
+                              label={<Text strong style={{ color: "#16445f" }}>first_name</Text>}
+                              rules={[{ required: true, message: "กรุณากรอก first_name" }]}
+                            >
+                              <Input
+                                prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                                placeholder="ชื่อ"
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="last_name"
+                              label={<Text strong style={{ color: "#16445f" }}>last_name</Text>}
+                              rules={[{ required: true, message: "กรุณากรอก last_name" }]}
+                            >
+                              <Input
+                                prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                                placeholder="นามสกุล"
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="birthday"
+                              label={<Text strong style={{ color: "#16445f" }}>birthday</Text>}
+                              rules={[{ required: true, message: "กรุณาเลือกวันเกิด" }]}
+                            >
+                              <DatePicker
+                                style={{ width: "100%", height: 44 }}
+                                format="DD/MM/YYYY"
+                                placeholder="เลือกวันเกิด"
+                                inputReadOnly
+                                allowClear
+                                disabledDate={(current) => Boolean(current && current.endOf("day").isAfter(dayjs()))}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="id_card"
+                              label={<Text strong style={{ color: "#16445f" }}>id_card</Text>}
+                              rules={[
+                                { required: true, message: "กรุณากรอกเลขบัตรประชาชน" },
+                                {
+                                  validator(_, value) {
+                                    const digits = (value || "").replace(/\D/g, "");
+                                    if (digits.length === 13) {
+                                      return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error("เลขบัตรประชาชนต้องมี 13 หลัก"));
+                                  },
+                                },
+                              ]}
+                            >
+                              <Input
+                                placeholder="1-2345-67-890-12-3"
+                                maxLength={17}
+                                onChange={(event) => {
+                                  form.setFieldValue("id_card", formatThaiIdCard(event.target.value));
+                                }}
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24}>
+                            <Form.Item
+                              name="allergy"
+                              label={<Text strong style={{ color: "#16445f" }}>allergy</Text>}
+                            >
+                              <Input.TextArea
+                                placeholder="ข้อมูลการแพ้ยา/แพ้อาหาร (ถ้ามี)"
+                                autoSize={{ minRows: 3, maxRows: 4 }}
+                                style={{ borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      ) : (
+                        <Row gutter={[12, 8]}>
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="office_name"
+                              label={<Text strong style={{ color: "#16445f" }}>office_name</Text>}
+                              rules={[{ required: true, message: "กรุณากรอก office_name" }]}
+                            >
+                              <Input
+                                prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                                placeholder="ชื่อหน่วยงาน"
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24} md={12}>
+                            <Form.Item
+                              name="contact_name"
+                              label={<Text strong style={{ color: "#16445f" }}>contact_name</Text>}
+                              rules={[{ required: true, message: "กรุณากรอก contact_name" }]}
+                            >
+                              <Input
+                                prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
+                                placeholder="ชื่อผู้ติดต่อ"
+                                style={{ height: 44, borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+
+                          <Col xs={24}>
+                            <Form.Item
+                              name="address"
+                              label={<Text strong style={{ color: "#16445f" }}>address</Text>}
+                              rules={[{ required: true, message: "กรุณากรอก address" }]}
+                            >
+                              <Input.TextArea
+                                placeholder="ที่อยู่หน่วยงาน"
+                                autoSize={{ minRows: 3, maxRows: 4 }}
+                                style={{ borderRadius: 10 }}
+                              />
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      )
                     }
                   </Form.Item>
 
                   <Row gutter={[12, 8]}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        name="first_name"
-                        label={<Text strong style={{ color: "#16445f" }}>first_name</Text>}
-                        rules={[{ required: true, message: "กรุณากรอก first_name" }]}
-                      >
-                        <Input
-                          prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
-                          placeholder="ชื่อ"
-                          style={{ height: 44, borderRadius: 10 }}
-                        />
-                      </Form.Item>
-                    </Col>
-
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        name="last_name"
-                        label={<Text strong style={{ color: "#16445f" }}>last_name</Text>}
-                        rules={[{ required: true, message: "กรุณากรอก last_name" }]}
-                      >
-                        <Input
-                          prefix={<UserOutlined style={{ color: "#88a1b2" }} />}
-                          placeholder="นามสกุล"
-                          style={{ height: 44, borderRadius: 10 }}
-                        />
-                      </Form.Item>
-                    </Col>
-
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        name="birthday"
-                        label={<Text strong style={{ color: "#16445f" }}>birthday</Text>}
-                        rules={[{ required: true, message: "กรุณาเลือกวันเกิด" }]}
-                      >
-                        <Input type="date" style={{ height: 44, borderRadius: 10 }} />
-                      </Form.Item>
-                    </Col>
-
                     <Col xs={24} md={12}>
                       <Form.Item
                         name="phone"
@@ -268,19 +377,6 @@ export default function RegisterPage() {
 
                     <Col xs={24} md={12}>
                       <Form.Item
-                        name="password"
-                        label={<Text strong style={{ color: "#16445f" }}>password</Text>}
-                        rules={[{ required: true, message: "à¸à¸£à¸¸à¸“à¸²à¸à¸£à¸­à¸ password" }]}
-                      >
-                        <Input.Password
-                          placeholder="password"
-                          style={{ height: 44, borderRadius: 10 }}
-                        />
-                      </Form.Item>
-                    </Col>
-
-                    <Col xs={24}>
-                      <Form.Item
                         name="email"
                         label={<Text strong style={{ color: "#16445f" }}>email</Text>}
                         rules={[
@@ -296,32 +392,43 @@ export default function RegisterPage() {
                       </Form.Item>
                     </Col>
 
-                    <Col xs={24}>
-                      <Form.Item shouldUpdate={(prev, next) => prev.role !== next.role} noStyle>
-                        {({ getFieldValue }) =>
-                          getFieldValue("role") === "patient" ? (
-                            <Form.Item
-                              name="allergy"
-                              label={<Text strong style={{ color: "#16445f" }}>allergy</Text>}
-                            >
-                              <Input.TextArea
-                                placeholder="à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸à¸²à¸£à¹à¸žà¹‰à¸¢à¸²/à¹à¸žà¹‰à¸­à¸²à¸«à¸²à¸£ (à¸–à¹‰à¸²à¸¡à¸µ)"
-                                autoSize={{ minRows: 3, maxRows: 4 }}
-                                style={{ borderRadius: 10 }}
-                              />
-                            </Form.Item>
-                          ) : (
-                            <Form.Item
-                              name="license_number"
-                              label={<Text strong style={{ color: "#16445f" }}>license_number</Text>}
-                            >
-                              <Input
-                                placeholder="DEN-123456"
-                                style={{ height: 44, borderRadius: 10 }}
-                              />
-                            </Form.Item>
-                          )
-                        }
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        name="password"
+                        label={<Text strong style={{ color: "#16445f" }}>password</Text>}
+                        rules={[
+                          { required: true, message: "กรุณากรอก password" },
+                          { min: 6, message: "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร" },
+                        ]}
+                      >
+                        <Input.Password
+                          placeholder="password"
+                          style={{ height: 44, borderRadius: 10 }}
+                        />
+                      </Form.Item>
+                    </Col>
+
+                    <Col xs={24} md={12}>
+                      <Form.Item
+                        name="confirm_password"
+                        dependencies={["password"]}
+                        label={<Text strong style={{ color: "#16445f" }}>confirm_password</Text>}
+                        rules={[
+                          { required: true, message: "กรุณายืนยัน password" },
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              if (!value || getFieldValue("password") === value) {
+                                return Promise.resolve();
+                              }
+                              return Promise.reject(new Error("รหัสผ่านไม่ตรงกัน"));
+                            },
+                          }),
+                        ]}
+                      >
+                        <Input.Password
+                          placeholder="confirm password"
+                          style={{ height: 44, borderRadius: 10 }}
+                        />
                       </Form.Item>
                     </Col>
                   </Row>
@@ -362,4 +469,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

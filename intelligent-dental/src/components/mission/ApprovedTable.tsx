@@ -4,6 +4,7 @@ import { Mission } from "@/mock/mockMission";
 import { Table, Tooltip } from "antd";
 import { ColumnsType } from "antd/es/table";
 import * as Icons from "lucide-react";
+import { createTablePagination } from "@/app/utils/tablePagination";
 
 type Props = {
   data: Mission[];
@@ -27,5 +28,5 @@ export default function ApprovedTable({ data }: Props) {
     },
   ];
 
-  return <Table columns={columns} dataSource={data} rowKey="id" />;
+  return <Table columns={columns} dataSource={data} rowKey="id" pagination={createTablePagination(10)} />;
 }
