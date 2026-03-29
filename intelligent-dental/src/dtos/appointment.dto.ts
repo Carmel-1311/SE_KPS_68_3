@@ -59,8 +59,8 @@ export const CreateAppointmentSchema = AppointmentSchema.omit({
 }).extend({
     patient_id: z.number(),
     staff_id: z.number(),
-    inspection_record_id: z.number().optional(),
-    medical_record_id: z.number().optional()
+    inspection_record: z.number().optional(),
+    medical_record: z.number().optional()
 });
 
 export type CreateAppointmentDTO = z.infer<typeof CreateAppointmentSchema>;

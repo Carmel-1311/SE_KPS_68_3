@@ -666,6 +666,8 @@ export interface paths {
                         /** @enum {string} */
                         status: "scheduled" | "completed" | "cancelled" | "request_cancel";
                         staff_id: number;
+                        medical_record_id?: string | null;
+                        inspection_record_id?: string | null;
                     };
                 };
             };

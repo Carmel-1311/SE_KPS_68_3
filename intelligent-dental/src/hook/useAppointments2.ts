@@ -20,6 +20,9 @@ type AppointmentUpdateInput = {
   type: string;
   status: Status;
   staff_id: number;
+  inspection_record_id?: number;
+  medical_record_id?: number;
+
 };
 
 const readErrorMessage = (json: unknown, fallback: string) => {
