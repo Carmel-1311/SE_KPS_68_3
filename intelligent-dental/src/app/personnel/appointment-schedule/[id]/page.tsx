@@ -13,6 +13,7 @@ import {
   Modal,
   Breadcrumb,
   Divider,
+  Tag,
 } from 'antd';
 import {
   SaveOutlined,
@@ -52,17 +53,15 @@ export default function EditAppointmentPage() {
   useEffect(() => {
     if (!appointment) return;
 
-    // แปลง ISO date → YYYY-MM-DD สำหรับ input type="date"
     const dateOnly = dayjs(appointment.appointment_date).format('YYYY-MM-DD');
 
     form.setFieldsValue({
       appointment_date: dateOnly,
-      appointment_time: appointment.appointment_time,
+      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7, 'hour').format('HH:mm'),
       type:             appointment.type,
       status:           appointment.status,
     });
 
-    // โหลด available slots ของวันที่ปัจจุบัน
     fetchAvailableSlots(appointment.appointment_date);
   }, [appointment, form, fetchAvailableSlots]);
 
@@ -83,8 +82,8 @@ export default function EditAppointmentPage() {
 
     await updateAppointment(
       {
-        appointment_date: new Date(values.appointment_date).toISOString(),
-        appointment_time: values.appointment_time,
+        appointment_date: values.appointment_date,
+        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(),
         type:             values.type,
         status:           values.status,
         staff_id:         appointment.staff.id,
@@ -105,6 +104,12 @@ export default function EditAppointmentPage() {
   }
 
   if (!appointment) return null;
+
+  // ── Derived State ─────────────────────────────────────────────────────────
+
+  const isRequestCancel = appointment.status === 'request_cancel';
+  const isCompleted     = appointment.status === 'completed';
+  const isReadOnly      = isRequestCancel || isCompleted;
 
   // ── แสดงผล ────────────────────────────────────────────────────────────────
 
@@ -148,7 +153,7 @@ export default function EditAppointmentPage() {
               <Input size="large" value={appointment.patient.name} disabled />
             </Form.Item>
             <Form.Item label="ทันตแพทย์" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" value={`ทพ./ทพญ. ${appointment.staff.name}`} disabled />
+              <Input size="large" value={appointment.staff.name} disabled />
             </Form.Item>
           </div>
 
@@ -159,7 +164,7 @@ export default function EditAppointmentPage() {
               style={{ flex: 1, minWidth: '250px' }}
               rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
             >
-              <Input type="date" size="large" onChange={handleDateChange} />
+              <Input type="date" size="large" onChange={handleDateChange} disabled={isReadOnly} />
             </Form.Item>
 
             <Form.Item
@@ -168,12 +173,15 @@ export default function EditAppointmentPage() {
               style={{ flex: 1, minWidth: '250px' }}
               rules={[{ required: true, message: 'กรุณาเลือกเวลา' }]}
             >
-              <Select size="large" placeholder="เลือกเวลา" loading={loadingSlots}>
-                {availableSlots.map((slot) => (
-                  <Select.Option key={slot.time} value={slot.time}>
-                    {slot.time} น.
-                  </Select.Option>
-                ))}
+              <Select size="large" placeholder="เลือกเวลา" loading={loadingSlots} disabled={isReadOnly || loadingSlots}>
+                {availableSlots.map((slot) => {
+                  const displayTime = dayjs(`2000-01-01 ${slot.time}`).subtract(7, 'hour').format('HH:mm');
+                  return (
+                    <Select.Option key={slot.time} value={displayTime}>
+                      {displayTime} น.
+                    </Select.Option>
+                  );
+                })}
               </Select>
             </Form.Item>
           </div>
@@ -183,7 +191,7 @@ export default function EditAppointmentPage() {
             label="ประเภทการรักษา"
             rules={[{ required: true, message: 'ระบุประเภทการนัดหมาย' }]}
           >
-            <Select size="large" placeholder="เลือกประเภทการรักษา">
+            <Select size="large" placeholder="เลือกประเภทการรักษา" disabled={isReadOnly}>
               {['ตรวจฟัน', 'อุดฟัน', 'ขูดหินปูน', 'ถอนฟัน', 'รักษารากฟัน', 'ครอบฟัน', 'ฟอกสีฟัน'].map((t) => (
                 <Select.Option key={t} value={t}>{t}</Select.Option>
               ))}
@@ -192,19 +200,27 @@ export default function EditAppointmentPage() {
 
           <Divider />
 
-          <Form.Item name="status" label="สถานะ">
-            <Select size="large">
-              <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
-              <Select.Option value="completed">เสร็จสิ้น</Select.Option>
-              <Select.Option value="cancelled">ยกเลิกการนัดหมาย</Select.Option>
-              {appointment.status === 'request_cancel' && (
-                <Select.Option value="request_cancel">ส่งคำขอยกเลิกแล้ว</Select.Option>
-              )}
-            </Select>
-            {appointment.status === 'request_cancel' && (
-              <Text type="warning" style={{ marginTop: '8px', display: 'block' }}>
-                * ผู้ป่วยส่งคำขอยกเลิกมา กรุณาเปลี่ยนสถานะเป็น "ยกเลิกการนัดหมาย" เพื่อยืนยัน
-              </Text>
+          <Form.Item label="สถานะ">
+            {isRequestCancel ? (
+              <div>
+                <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>
+                  คำขอยกเลิกจากผู้ใช้
+                </Tag>
+                <Text type="warning" style={{ marginLeft: '12px' }}>
+                  * ผู้ป่วยส่งคำขอยกเลิกมา กรุณากดปุ่ม "ยกเลิกการนัดหมาย" เพื่อยืนยัน
+                </Text>
+              </div>
+            ) : isCompleted ? (
+              <Tag color="green" style={{ fontSize: '14px', padding: '4px 12px' }}>
+                เสร็จสิ้น
+              </Tag>
+            ) : (
+              <Form.Item name="status" noStyle>
+                <Select size="large">
+                  <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
+                  <Select.Option value="completed">เสร็จสิ้น</Select.Option>
+                </Select>
+              </Form.Item>
             )}
           </Form.Item>
 
@@ -213,9 +229,11 @@ export default function EditAppointmentPage() {
               <Button size="large" onClick={() => router.push('/personnel/appointment-schedule')}>
                 ย้อนกลับ
               </Button>
-              <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
-                บันทึกการแก้ไข
-              </Button>
+              {!isReadOnly && (
+                <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                  บันทึกการแก้ไข
+                </Button>
+              )}
             </Space>
           </Form.Item>
         </Form>
