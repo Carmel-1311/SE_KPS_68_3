@@ -13,6 +13,7 @@ import {
   Tag,
   Alert,
   Space,
+  Grid,
 } from "antd";
 import {
   TeamOutlined,
@@ -45,13 +46,13 @@ const statusConfig: Record<MobileDentalStatus, { color: string; label: string; i
 
 export default function CompanyDashboard() {
   const { data, loading, error, isTruncated } = useAllMobileDentals();
-  const [currentTime, setCurrentTime] = useState<Date | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date | null>(() => new Date());
   const router = useRouter();
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   useEffect(() => {
-    setCurrentTime(new Date());
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    setTimeout(() => setCurrentTime(new Date()), 0); // Avoid sync setState warning
     return () => {
       clearInterval(timer);
     };
@@ -190,7 +191,7 @@ export default function CompanyDashboard() {
   );
 
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       <style jsx>{`
         .practical-card {
           transition: all 0.2s ease;
@@ -206,13 +207,13 @@ export default function CompanyDashboard() {
           background: #f0f0f0 !important;
         }
       `}</style>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 32 }}>
-        <Col>
+      <Row justify="space-between" align="middle" gutter={[16, 16]} style={{ marginBottom: 32 }}>
+        <Col xs={24} md={16}>
           <Title level={2} style={{ margin: 0 }}>
             <TeamOutlined style={{ marginRight: 8 }} />
             หน้าหลักหน่วยงานภายนอก
           </Title>
-          <Space style={{ color: "#8c8c8c", marginTop: 8 }} size="middle">
+          <Space wrap style={{ color: "#8c8c8c", marginTop: 8 }} size="middle">
             <Text type="secondary">ภาพรวมการขอออกหน่วยตรวจฟัน</Text>
             {currentTime && (
               <>
@@ -231,8 +232,8 @@ export default function CompanyDashboard() {
             )}
           </Space>
         </Col>
-        <Col>
-          <Card variant="borderless" style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.05)", minWidth: "180px" }}>
+        <Col xs={24} md="auto">
+          <Card variant="borderless" style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.05)", minWidth: isMobile ? "100%" : "180px" }}>
             <Statistic
               title={<Text type="secondary" style={{ fontSize: "12px", fontWeight: "bold" }}>คำขอทั้งหมด</Text>}
               value={totalRequests}
@@ -372,26 +373,77 @@ export default function CompanyDashboard() {
                 }}
                 styles={{ body: { padding: 0 } }}
               >
-                <Table
-                  columns={columns}
-                  dataSource={recentRequests}
-                  rowKey="mobile_dental_id"
-                  pagination={createTablePagination(5)}
-                  loading={loading}
-                  sticky={{ offsetHeader: 76 }}
-                  onRow={(record) => ({
-                    onClick: () => handleRowClick(record),
-                    style: { cursor: "pointer" },
-                  })}
-                  rowClassName={(record, index) => 
-                    index % 2 === 0 ? "table-row-light" : ""
-                  }
-                  components={{
-                    header: {
-                      cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626', fontSize: 14 }} />
+                {isMobile ? (
+                  <Space direction="vertical" size={12} style={{ display: "flex", padding: 16 }}>
+                    {recentRequests.map((record) => {
+                      const config = statusConfig[record.status];
+                      const recordDate = record.date
+                        ? new Date(record.date).toLocaleDateString("th-TH", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "-";
+
+                      return (
+                        <Card
+                          key={record.mobile_dental_id}
+                          size="small"
+                          hoverable
+                          onClick={() => handleRowClick(record)}
+                          style={{ borderRadius: 12 }}
+                        >
+                          <Space direction="vertical" size={10} style={{ display: "flex" }}>
+                            <Space align="start" style={{ justifyContent: "space-between", width: "100%" }}>
+                              <Text strong style={{ fontSize: 16 }}>
+                                #{record.mobile_dental_id}
+                              </Text>
+                              <Tag color={config.color} style={{ borderRadius: 12, display: "inline-flex", alignItems: "center", gap: 4, marginInlineEnd: 0 }}>
+                                {config.icon}
+                                {config.label}
+                              </Tag>
+                            </Space>
+                            <div>
+                              <Text type="secondary">สถานที่</Text>
+                              <div>{record.address || "-"}</div>
+                            </div>
+                            <Row gutter={[12, 12]}>
+                              <Col span={12}>
+                                <Text type="secondary">วันที่</Text>
+                                <div>{recordDate}</div>
+                              </Col>
+                              <Col span={12}>
+                                <Text type="secondary">ผู้รับบริการ</Text>
+                                <div>{record.count ?? "-"}</div>
+                              </Col>
+                            </Row>
+                          </Space>
+                        </Card>
+                      );
+                    })}
+                  </Space>
+                ) : (
+                  <Table
+                    columns={columns}
+                    dataSource={recentRequests}
+                    rowKey="mobile_dental_id"
+                    pagination={createTablePagination(5)}
+                    loading={loading}
+                    sticky={{ offsetHeader: 76 }}
+                    onRow={(record) => ({
+                      onClick: () => handleRowClick(record),
+                      style: { cursor: "pointer" },
+                    })}
+                    rowClassName={(record, index) => 
+                      index % 2 === 0 ? "table-row-light" : ""
                     }
-                  }}
-                />
+                    components={{
+                      header: {
+                        cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626', fontSize: 14 }} />
+                      }
+                    }}
+                  />
+                )}
               </Card>
             </>
           )}

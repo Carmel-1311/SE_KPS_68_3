@@ -18,6 +18,9 @@ import {
   Alert,
   Empty,
   Descriptions,
+  Grid,
+  Row,
+  Col,
 } from "antd";
 import { 
   TeamOutlined, 
@@ -119,6 +122,8 @@ ActionBtn.displayName = "ActionBtn";
 export default function PatientsPage() {
   const params = useParams();
   const mobileDentalId = String(params.id ?? "");
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
 
   const {
     patients,
@@ -324,7 +329,7 @@ export default function PatientsPage() {
     } finally {
       setSubmittingDraft(false);
     }
-  }, [addPatientsBulk, draftRows, targetCount, patients, currentCount]);
+  }, [addPatientsBulk, draftRows, targetCount, patients]);
 
   const onFinish = useCallback(
     async (values: PatientFormValues) => {
@@ -410,7 +415,7 @@ export default function PatientsPage() {
       isSubmittedMode,
       patients.length,
       targetCount,
-      updatePatient,
+      updatePatient
     ]
   );
 
@@ -551,8 +556,50 @@ export default function PatientsPage() {
     [handleDeleteSubmitted, openSubmittedEditModal, processingIds]
   );
 
+  const renderDraftAction = useCallback(
+    (record: DraftPatientRow) => (
+      <Space size={6}>
+        <ActionBtn tooltip="ดูข้อมูล" bg="#e6f4ff" onClick={() => setViewPatient({ name: `${record.first_name} ${record.last_name}`, birthday: record.birthday, phone: record.phone, idcard: record.idcard })}>
+          <BookOpenText size={16} style={{ color: "#1677ff" }} />
+        </ActionBtn>
+        <ActionBtn tooltip="แก้ไข" bg="#f5f5f5" onClick={() => openDraftEditModal(record)}>
+          <Pencil size={16} style={{ color: "#faad14" }} />
+        </ActionBtn>
+        <Popconfirm title="ยืนยันการลบ" description="ต้องการลบรายการนี้จากลิสต์หรือไม่?" okText="ยืนยัน" cancelText="ยกเลิก" onConfirm={() => handleDeleteDraft(record.draft_id)}>
+          <ActionBtn tooltip="ลบ" bg="#f5f5f5">
+            <Trash2 size={16} style={{ color: "#ff4d4f" }} />
+          </ActionBtn>
+        </Popconfirm>
+      </Space>
+    ),
+    [handleDeleteDraft, openDraftEditModal]
+  );
+
+  const renderSubmittedAction = useCallback(
+    (record: PatientMobile) => {
+      const disabled = processingIds.includes(record.id);
+
+      return (
+        <Space size={6}>
+          <ActionBtn tooltip="ดูข้อมูล" bg="#e6f4ff" disabled={disabled} onClick={() => setViewPatient({ name: record.name, birthday: (record as unknown as { birthday?: string }).birthday, phone: record.phone, idcard: record.idcard })}>
+            <BookOpenText size={16} style={{ color: disabled ? "#ccc" : "#1677ff" }} />
+          </ActionBtn>
+          <ActionBtn tooltip="แก้ไข" bg="#f5f5f5" disabled={disabled} onClick={() => { if (!disabled) openSubmittedEditModal(record); }}>
+            <Pencil size={16} style={{ color: disabled ? "#ccc" : "#faad14" }} />
+          </ActionBtn>
+          <Popconfirm title="ยืนยันการลบ" description="ต้องการลบผู้รับบริการรายนี้ใช่หรือไม่?" okText="ยืนยัน" cancelText="ยกเลิก" disabled={disabled} onConfirm={() => handleDeleteSubmitted(record.id)}>
+            <ActionBtn tooltip="ลบ" bg="#f5f5f5" disabled={disabled}>
+              <Trash2 size={16} style={{ color: disabled ? "#ccc" : "#ff4d4f" }} />
+            </ActionBtn>
+          </Popconfirm>
+        </Space>
+      );
+    },
+    [handleDeleteSubmitted, openSubmittedEditModal, processingIds]
+  );
+
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: isMobile ? 16 : 24 }}>
       <Breadcrumb
         style={{ marginBottom: 24 }}
         items={[
@@ -591,7 +638,7 @@ export default function PatientsPage() {
       <Card
         variant="borderless"
         style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
-        styles={{ body: { padding: '24px 32px' }, header: { padding: '24px 32px', borderBottom: '1px solid #f0f0f0' } }}
+        styles={{ body: { padding: isMobile ? 16 : '24px 32px' }, header: { padding: isMobile ? 16 : '24px 32px', borderBottom: '1px solid #f0f0f0' } }}
         title={
           <Space orientation="vertical" size={2}>
             <Title level={3} style={{ margin: 0 }}>
@@ -616,16 +663,16 @@ export default function PatientsPage() {
           </Space>
         }
         extra={
-          <Space>
+          <Space wrap style={{ width: isMobile ? "100%" : "auto", justifyContent: isMobile ? "stretch" : "flex-end" }}>
             <Input
               placeholder="ค้นหาชื่อ / เบอร์ / เลขบัตร"
               allowClear
               prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-              style={{ width: 260, borderRadius: 10 }}
+              style={{ width: isMobile ? "100%" : 260, borderRadius: 10 }}
               onChange={(e) => setSearchText(e.target.value)}
             />
 
-            <Button type="primary" icon={<UserAddOutlined />} onClick={openAddModal} style={{ borderRadius: 10 }}>
+            <Button type="primary" icon={<UserAddOutlined />} onClick={openAddModal} style={{ borderRadius: 10, width: isMobile ? "100%" : undefined }}>
               {isSubmittedMode ? "เพิ่มรายบุคคล" : "เพิ่มรายชื่อ"}
             </Button>
           </Space>
@@ -694,6 +741,33 @@ export default function PatientsPage() {
                 }
                 style={{ padding: '60px 0' }}
               />
+            ) : isMobile ? (
+              <Space direction="vertical" size={12} style={{ display: "flex" }}>
+                {filteredPatients.map((record, index) => (
+                  <Card key={record.id} size="small" style={{ borderRadius: 12 }}>
+                    <Space direction="vertical" size={12} style={{ display: "flex" }}>
+                      <Space style={{ justifyContent: "space-between", width: "100%" }} align="start">
+                        <Text strong>{index + 1}. {record.name}</Text>
+                        {renderSubmittedAction(record)}
+                      </Space>
+                      <Row gutter={[12, 12]}>
+                        <Col span={12}>
+                          <Text type="secondary">วันเกิด</Text>
+                          <div>{formatThaiDate((record as unknown as { birthday?: string }).birthday)}</div>
+                        </Col>
+                        <Col span={12}>
+                          <Text type="secondary">เบอร์โทร</Text>
+                          <div>{record.phone || "-"}</div>
+                        </Col>
+                        <Col span={24}>
+                          <Text type="secondary">เลขบัตร</Text>
+                          <div>{record.idcard || "-"}</div>
+                        </Col>
+                      </Row>
+                    </Space>
+                  </Card>
+                ))}
+              </Space>
             ) : (
               <Table
                 dataSource={filteredPatients}
@@ -732,23 +806,52 @@ export default function PatientsPage() {
               />
             ) : (
               <>
-                <Table
-                  dataSource={filteredDraftRows}
-                  columns={draftColumns}
-                  rowKey="draft_id"
-                  loading={loading}
-                  pagination={createTablePagination(20)}
-                  sticky={{ offsetHeader: 1 }}
-                  style={{ borderRadius: 12, overflow: 'hidden' }}
-                  components={{
-                    header: {
-                      cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
-                    }
-                  }}
-                  rowClassName={() => "hover:bg-gray-50 transition-colors"}
-                />
+                {isMobile ? (
+                  <Space direction="vertical" size={12} style={{ display: "flex" }}>
+                    {filteredDraftRows.map((record, index) => (
+                      <Card key={record.draft_id} size="small" style={{ borderRadius: 12 }}>
+                        <Space direction="vertical" size={12} style={{ display: "flex" }}>
+                          <Space style={{ justifyContent: "space-between", width: "100%" }} align="start">
+                            <Text strong>{index + 1}. {record.first_name} {record.last_name}</Text>
+                            {renderDraftAction(record)}
+                          </Space>
+                          <Row gutter={[12, 12]}>
+                            <Col span={12}>
+                              <Text type="secondary">วันเกิด</Text>
+                              <div>{formatThaiDate(record.birthday)}</div>
+                            </Col>
+                            <Col span={12}>
+                              <Text type="secondary">เบอร์โทร</Text>
+                              <div>{record.phone || "-"}</div>
+                            </Col>
+                            <Col span={24}>
+                              <Text type="secondary">เลขบัตร</Text>
+                              <div>{record.idcard || "-"}</div>
+                            </Col>
+                          </Row>
+                        </Space>
+                      </Card>
+                    ))}
+                  </Space>
+                ) : (
+                  <Table
+                    dataSource={filteredDraftRows}
+                    columns={draftColumns}
+                    rowKey="draft_id"
+                    loading={loading}
+                    pagination={createTablePagination(20)}
+                    sticky={{ offsetHeader: 1 }}
+                    style={{ borderRadius: 12, overflow: 'hidden' }}
+                    components={{
+                      header: {
+                        cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => <th {...props} style={{ ...props.style, background: '#fafafa', fontWeight: 600, color: '#262626' }} />
+                      }
+                    }}
+                    rowClassName={() => "hover:bg-gray-50 transition-colors"}
+                  />
+                )}
                 
-                <Space style={{ marginTop: 16, width: '100%', justifyContent: 'flex-end' }}>
+                <Space wrap style={{ marginTop: 16, width: '100%', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
                   <Popconfirm
                     title="ล้างรายชื่อทั้งหมด?"
                     description="คุณต้องการลบรายชื่อทั้งหมดในลิสต์ใช่หรือไม่?"
@@ -760,7 +863,7 @@ export default function PatientsPage() {
                       message.success("ล้างรายชื่อทั้งหมดแล้ว");
                     }}
                   >
-                    <Button danger icon={<DeleteOutlined />} style={{ borderRadius: 10 }}>
+                    <Button danger icon={<DeleteOutlined />} style={{ borderRadius: 10, width: isMobile ? "100%" : undefined }}>
                       ล้างทั้งหมด
                     </Button>
                   </Popconfirm>
@@ -771,7 +874,7 @@ export default function PatientsPage() {
                     icon={<CheckOutlined />}
                     loading={submittingDraft}
                     onClick={() => void handleBulkSubmit()}
-                    style={{ borderRadius: 10 }}
+                    style={{ borderRadius: 10, width: isMobile ? "100%" : undefined }}
                   >
                     ยืนยันส่งรายชื่อ ({draftRows.length} คน)
                   </Button>

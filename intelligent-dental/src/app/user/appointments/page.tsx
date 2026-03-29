@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import dayjs from "dayjs";
 import {
   Alert,
@@ -8,8 +9,10 @@ import {
   Col,
   DatePicker,
   Empty,
+  Grid,
   Input,
   Modal,
+  Pagination,
   Row,
   Select,
   Space,
@@ -101,6 +104,8 @@ const formatAppointmentTime = (timeValue: string) => {
 };
 
 export default function UserAppointmentsPage() {
+  const screens = Grid.useBreakpoint();
+  const isMobile = !screens.md;
   const {
     filteredAppointments,
     statusSummary,
@@ -114,6 +119,7 @@ export default function UserAppointmentsPage() {
     setDateFilter,
     requestCancel,
   } = useAppointments();
+  const [mobilePage, setMobilePage] = React.useState(1);
 
   const totalAppointments =
     statusSummary[Status.Scheduled] +
@@ -208,8 +214,13 @@ export default function UserAppointmentsPage() {
     },
   ];
 
+  const mobilePageSize = 8;
+  const pagedAppointments = isMobile
+    ? filteredAppointments.slice((mobilePage - 1) * mobilePageSize, mobilePage * mobilePageSize)
+    : filteredAppointments;
+
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", padding: 24 }}>
+    <div style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? 16 : 24 }}>
       <Space orientation="vertical" size={24} style={{ width: "100%" }}>
         <Space size={8} style={{ color: "#8c8c8c" }} wrap>
           <Link
@@ -338,7 +349,7 @@ export default function UserAppointmentsPage() {
         <Card
           variant="borderless"
           style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
-          styles={{ body: { padding: 24 } }}
+          styles={{ body: { padding: isMobile ? 16 : 24 } }}
         >
           <Space orientation="vertical" size={20} style={{ width: "100%" }}>
             <Row gutter={[16, 16]} align="middle" justify="space-between">
@@ -392,6 +403,78 @@ export default function UserAppointmentsPage() {
               </Col>
             </Row>
 
+            {isMobile ? (
+              filteredAppointments.length === 0 ? (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description="ไม่มีข้อมูลการนัดหมาย"
+                />
+              ) : (
+                <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+                  {pagedAppointments.map((record) => (
+                    <Card
+                      key={record.appointment_id}
+                      size="small"
+                      style={{
+                        borderRadius: 12,
+                        border: "1px solid rgba(0,0,0,0.06)",
+                        boxShadow: "0 2px 10px rgba(0,0,0,0.04)",
+                      }}
+                    >
+                      <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+                        <Space align="start" style={{ width: "100%", justifyContent: "space-between" }}>
+                          <Space orientation="vertical" size={2}>
+                            <Text strong>{formatThaiDate(record.appointment_date)}</Text>
+                            <Text type="secondary">
+                              {formatAppointmentTime(record.appointment_time)} à¸™.
+                            </Text>
+                          </Space>
+                          <Tag
+                            color={statusMeta[record.status].color}
+                            style={{ borderRadius: 999, paddingInline: 10, fontWeight: 500, marginInlineEnd: 0 }}
+                          >
+                            {statusMeta[record.status].label}
+                          </Tag>
+                        </Space>
+                        <div>
+                          <Text type="secondary">บริการ</Text>
+                          <div style={{ marginTop: 4 }}>
+                            <Space size={8}>
+                              <Stethoscope size={15} color="#1677ff" />
+                              <Text>{record.type}</Text>
+                            </Space>
+                          </div>
+                        </div>
+                        <div>
+                          <Text type="secondary">ทันตแพทย์</Text>
+                          <div style={{ marginTop: 4 }}>{record.staff?.name || "-"}</div>
+                        </div>
+                        <Button
+                          danger
+                          block
+                          icon={<XCircle size={14} />}
+                          disabled={record.status !== Status.Scheduled}
+                          onClick={() => handleCancelAppointment(record)}
+                          style={{ borderRadius: 10 }}
+                        >
+                          ยกเลิกนัด
+                        </Button>
+                      </Space>
+                    </Card>
+                  ))}
+                  {filteredAppointments.length > mobilePageSize && (
+                    <Pagination
+                      align="center"
+                      current={mobilePage}
+                      pageSize={mobilePageSize}
+                      total={filteredAppointments.length}
+                      onChange={(page) => setMobilePage(page)}
+                      size="small"
+                    />
+                  )}
+                </Space>
+              )
+            ) : (
             <Table
               rowKey="appointment_id"
               columns={columns}
@@ -425,6 +508,7 @@ export default function UserAppointmentsPage() {
               }}
               rowClassName={() => "hover:bg-gray-50 transition-colors"}
             />
+            )}
           </Space>
         </Card>
       </Space>
