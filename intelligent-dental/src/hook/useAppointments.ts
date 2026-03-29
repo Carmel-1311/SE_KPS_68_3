@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dayjs, { type Dayjs } from "dayjs";
 import { type Datum, Status } from "@/mock/mockAppointment";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 
 type StatusFilter = "all" | Status;
 
@@ -21,6 +22,7 @@ export function useAppointments() {
 
       const res = await fetch("/api/appointments?limit=200", {
         cache: "no-store",
+        headers: await withAuthHeaders({}),
       });
 
       if (!res.ok) throw new Error("fetch failed");
@@ -82,6 +84,7 @@ export function useAppointments() {
         item.appointment_date,
         item.appointment_time,
         item.staff?.name,
+        item.patient?.name,
         item.type,
       ]
         .join(" ")

@@ -134,6 +134,7 @@ export const appointmentListQuery =
 export type AppointmentList =
   Prisma.appointmentGetPayload<typeof appointmentListQuery>
 
+
 export function toAppointmentResponseList(
   appointments: AppointmentList[]
 ): AppointmentResponseDTO[] {
@@ -143,22 +144,36 @@ export function toAppointmentResponseList(
       id: a.patient.patient_id,
       name: `${a.patient.first_name} ${a.patient.last_name}`
     },
-
     staff: a.staff
       ? {
         id: a.staff.staff_id,
         name: `${a.staff.prefix} ${a.staff.first_name} ${a.staff.last_name}`
       }
       : undefined,
-
     appointment_date: a.appointment_date.toISOString(),
     appointment_time: a.appointment_time.toTimeString().slice(0, 5),
-
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
-
     medical_record_id: a.medical_records?.examination_id || null,
-    inspection_record_id: a.inspection_record?.inspection_record_id || null
+    inspection_record_id: a.inspection_record?.inspection_record_id || null,
+    medical_record: a.medical_records
+      ? {
+          id: a.medical_records.examination_id,
+          date: a.medical_records.examination_date
+            ? a.medical_records.examination_date.toISOString()
+            : "",
+          history: a.medical_records.examination_history ?? "",
+          status: a.medical_records.examination_status ?? ""
+        }
+      : null,
+    inspection_record: a.inspection_record
+      ? {
+          id: a.inspection_record.inspection_record_id,
+          date: a.inspection_record.date?.toISOString() ?? "",
+          history: a.inspection_record.history ?? "",
+          status: a.inspection_record.status ?? ""
+        }
+      : null
   }))
 }
 
@@ -181,7 +196,7 @@ export function toCreateAppointmentInput(
 
 
 export function toUpdateAppointmentInput(
-  data: UpdateAppointmentDTO
+  data: UpdateAppointmentDTO | Partial<UpdateAppointmentDTO>
 ): Prisma.appointmentUpdateInput {
   return removeUndefined({
     patient_id: data.patient_id,
@@ -191,6 +206,8 @@ export function toUpdateAppointmentInput(
       : undefined,
     appointment_time: data.appointment_time,
     type: data.type,
-    status: data.status
+    status: data.status,
+    examination_id: data.examination_id,
+    inspection_record_id: data.inspection_record_id
   })
 }

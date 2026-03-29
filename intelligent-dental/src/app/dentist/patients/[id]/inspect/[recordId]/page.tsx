@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { Form, DatePicker, Input, Select, Button, Card, Typography, Space, message } from "antd";
 import { ArrowLeftOutlined, SaveOutlined, HistoryOutlined } from "@ant-design/icons";
 import { useRouter, useParams } from "next/navigation";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 import dayjs from "dayjs";
 
 const { Title } = Typography;
@@ -14,20 +15,40 @@ export default function EditInspectionPage() {
   const [form] = Form.useForm();
 
   useEffect(() => {
-    // ในสถานการณ์จริง คุณจะ fetch ข้อมูลจาก API โดยใช้ params.recordId
-    // อันนี้คือการจำลองดึงข้อมูลเดิมมาใส่ (Prefill)
-    form.setFieldsValue({
-      date: dayjs("2024-03-01"),
-      history: "ตรวจสุขภาพประจำปี ความดันปกติ (ข้อมูลเดิมจากระบบ)",
-      status: "completed",
-    });
+    // fetch existing record to prefill
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/inspection_records/${params.recordId}`, { headers: withAuthHeaders() })
+        if (!res.ok) throw new Error('Not found')
+        const j = await res.json()
+        const data = j.data || j
+        form.setFieldsValue({
+          date: data.date ? dayjs(data.date) : undefined,
+          history: data.history,
+          status: data.status,
+        })
+      } catch (err) {
+        console.error('fetch record error', err)
+        message.error('ไม่สามารถโหลดข้อมูลบันทึกได้')
+      }
+    }
+    fetchData()
   }, [params.recordId, form]);
 
   const onFinish = (values: any) => {
-    const payload = { ...values, id: params.recordId, date: values.date.format("YYYY-MM-DD") };
-    console.log("Updating Inspection:", payload);
-    message.success("อัปเดตประวัติการตรวจสำเร็จ");
-    router.back();
+    const payload = { ...values, date: values.date.format("YYYY-MM-DD") };
+    fetch(`/api/inspection_records/${params.recordId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+      body: JSON.stringify(payload)
+    }).then(async res => {
+      if (!res.ok) throw new Error('Update failed')
+      message.success('อัปเดตประวัติการตรวจสำเร็จ')
+      router.back()
+    }).catch(err => {
+      console.error('update error', err)
+      message.error('ไม่สามารถอัปเดตข้อมูลได้')
+    })
   };
 
   return (
@@ -38,8 +59,15 @@ export default function EditInspectionPage() {
         <Form form={form} layout="vertical" onFinish={onFinish}>
           <Form.Item name="date" label="วันที่ตรวจ" rules={[{ required: true }]}><DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" /></Form.Item>
           <Form.Item name="history" label="รายละเอียดการตรวจ" rules={[{ required: true }]}><Input.TextArea rows={5} /></Form.Item>
-          <Form.Item name="status" label="สถานะ" rules={[{ required: true }]}>
-            <Select options={[{ value: 'scheduled', label: 'รอนัดหมาย' }, { value: 'completed', label: 'เสร็จสิ้น' }]} />
+          <Form.Item name="status" label="สถานะ" rules={[{ required: true }]}> 
+            <Select
+              options={[
+                { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
+                { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
+                { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
+                { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
+              ]}
+            />
           </Form.Item>
           <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
             <Button onClick={() => router.back()}>ยกเลิก</Button>

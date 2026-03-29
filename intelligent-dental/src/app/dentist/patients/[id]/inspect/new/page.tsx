@@ -8,14 +8,16 @@ import {
   ArrowLeftOutlined, SaveOutlined, HistoryOutlined, 
   CheckCircleOutlined 
 } from "@ant-design/icons";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 import dayjs from "dayjs";
+import React from "react";
 
 const { Title, Text } = Typography;
 
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
-  { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
+  { value: 'done', label: 'เสร็จสิ้น (Done)' },
   { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
   { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
 ];
@@ -24,23 +26,51 @@ export default function NewInspectionPage() {
   const router = useRouter();
   const params = useParams(); // รับ patient id จาก URL /patients/[id]/...
   const [form] = Form.useForm();
+  const searchParams = useSearchParams();
 
-  const onFinish = (values: any) => {
+  // รับ appointment_id จาก query string ถ้ามี
+  React.useEffect(() => {
+    const appointmentId = searchParams.get('appointment_id');
+    if (appointmentId) {
+      form.setFieldsValue({ appointment_id: Number(appointmentId) });
+    }
+  }, [searchParams, form]);
+  const onFinish = async (values: any) => {
     const payload = {
       ...values,
-      patient_id: params.id,
+      patient_id: Number(params.id),
       date: values.date.format("YYYY-MM-DD"),
     };
-
-    console.log("Saving Inspection Record:", payload);
-    
+    // สมมุติรับ appointment_id จาก form (หรือ query)
+    const appointmentId = values.appointment_id;
     message.loading({ content: 'กำลังบันทึกข้อมูลการตรวจ...', key: 'save_inspect' });
-    
-    // จำลองการเชื่อมต่อ API
-    setTimeout(() => {
+
+    try {
+      const res = await fetch('/api/inspection_records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const j = await res.json();
+      console.log('inspection record response:', j);
+
+      // ถ้ามี appointment_id ให้ PATCH appointment เพื่อเชื่อม inspection_record_id
+      const inspectionId = j?.data?.id;
+      if (appointmentId && inspectionId) {
+        await fetch(`/api/appointments/${appointmentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+          body: JSON.stringify({ inspection_record_id: inspectionId })
+        });
+      }
+
       message.success({ content: 'เพิ่มบันทึกการตรวจสำเร็จ', key: 'save_inspect' });
-      router.back();
-    }, 800);
+      router.push(`/dentist/appointment?inspection_record_id=${inspectionId}`);
+    } catch (err) {
+      console.error('Save error', err);
+      message.error({ content: 'ไม่สามารถบันทึกข้อมูลได้', key: 'save_inspect' });
+    }
   };
 
   return (
@@ -49,7 +79,7 @@ export default function NewInspectionPage() {
       <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16 }}>ย้อนกลับ</Button>
 
       <Card 
-        bordered={false} 
+        variant={"outlined"} 
         style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.08)', borderRadius: '16px' }}
       >
         <div style={{ marginBottom: 32 }}>
@@ -66,9 +96,14 @@ export default function NewInspectionPage() {
           onFinish={onFinish}
           initialValues={{ 
             date: dayjs(), 
-            status: 'completed' 
+            status: 'completed',
+            appointment_id: searchParams.get('appointment_id') ? Number(searchParams.get('appointment_id')) : undefined
           }}
         >
+          {/* Hidden field สำหรับ appointment_id */}
+          <Form.Item name="appointment_id" style={{ display: 'none' }}>
+            <Input type="hidden" />
+          </Form.Item>
           <Row gutter={24}>
             <Col xs={24} md={12}>
               <Form.Item 
@@ -87,10 +122,14 @@ export default function NewInspectionPage() {
               <Form.Item 
                 name="status" 
                 label="สถานะการบันทึก" 
-                rules={[{ required: true }]}
+                initialValue="completed"
+                hidden
               >
-                <Select size="large" options={STATUS_OPTIONS} />
+                <Input type="hidden" />
               </Form.Item>
+              <div style={{ marginTop: 32 }}>
+                <Text strong>สถานะการบันทึก: <span style={{ color: '#52c41a' }}>เสร็จสิ้น (Completed)</span></Text>
+              </div>
             </Col>
           </Row>
 

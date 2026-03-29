@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useAppointments } from "@/hook/useAppointments";
+import { useEffect } from "react";
 import { 
   Table, Typography, Tag, Input, Modal, Descriptions, 
   Tooltip, Button, Space, Card, message 
 } from "antd";
+import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { 
   SearchOutlined, ReadOutlined, IdcardOutlined,
   ClockCircleOutlined, CalendarOutlined, SolutionOutlined
@@ -29,36 +33,54 @@ interface Appointment {
 }
 
 export default function AppointmentPage() {
-  const [loading, setLoading] = useState(false);
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [searchText, setSearchText] = useState("");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ดึงข้อมูลเมื่อ Component mount
+  // ใช้ custom hook ดึงข้อมูลจาก API
+  const {
+    filteredAppointments,
+    appointments,
+    loading,
+    error,
+    setSearch,
+    refresh,
+  } = useAppointments();
+
   useEffect(() => {
-    fetchAppointments();
-  }, []);
+    console.debug("useAppointments -> appointments:", appointments?.length, appointments);
+  }, [appointments, filteredAppointments, loading, error]);
 
-  const fetchAppointments = async () => {
-    setLoading(true);
-    try {
-      // เปลี่ยน URL ตรงนี้เป็น API Endpoint ของคุณ
-      const response = await fetch("/api/appointments"); 
-      
-      if (!response.ok) {
-        throw new Error("ไม่สามารถดึงข้อมูลนัดหมายได้");
-      }
-
-      const result = await response.json();
-      setAppointments(result.data || []);
-    } catch (error) {
-      console.error("Fetch Error:", error);
-      message.error("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-    } finally {
-      setLoading(false);
+  // เมื่อกลับมาหน้านี้ ถ้ามี record id ใหม่ใน query string ให้อัปเดต selectedAppointment
+  useEffect(() => {
+    if (!selectedAppointment) return;
+    // รองรับทั้ง medical_record_id (เก่า) และ examination_id (ใหม่)
+    const medId = searchParams.get("examination_id") || searchParams.get("medical_record_id");
+    const inspId = searchParams.get("inspection_record_id");
+    let changed = false;
+    let updated = { ...selectedAppointment };
+    if (medId && !selectedAppointment.medical_record_id) {
+      updated.medical_record_id = Number(medId);
+      changed = true;
     }
-  };
+    if (inspId && !selectedAppointment.inspection_record_id) {
+      updated.inspection_record_id = Number(inspId);
+      changed = true;
+    }
+    if (changed) {
+      setSelectedAppointment(updated);
+      // ลบ query string ออก (optional)
+      const url = new URL(window.location.href);
+      url.searchParams.delete("examination_id");
+      url.searchParams.delete("medical_record_id");
+      url.searchParams.delete("inspection_record_id");
+      window.history.replaceState({}, document.title, url.pathname);
+      // refresh appointment list เพื่อ sync กับ backend
+      refresh();
+    }
+  }, [searchParams, selectedAppointment]);
 
   const columns = [
     { title: "ID", dataIndex: "appointment_id", key: "id", width: 70 },
@@ -93,7 +115,7 @@ export default function AppointmentPage() {
           request_cancel: { color: "orange", text: "Req. Cancel" }
         };
         const current = statusMap[status] || { color: "default", text: status };
-        return <Tag color={current.color} bordered={false}>{current.text.toUpperCase()}</Tag>;
+        return <Tag color={current.color} variant={"filled"}>{current.text.toUpperCase()}</Tag>;
       },
     },
     {
@@ -113,15 +135,18 @@ export default function AppointmentPage() {
     },
   ];
 
-  // คัดกรองข้อมูลจากชื่อคนไข้
-  const filteredData = appointments.filter(a => 
-    a.patient.name.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // หากผู้ใช้พิมพ์ชื่อ ใช้ local state เพื่ออัพเดต hook
+  const onSearchChange = (val: string) => {
+    setSearchText(val);
+    setSearch(val);
+  };
+
+  const filteredData = filteredAppointments || appointments || [];
 
   return (
     <div style={{ padding: '0px' }}>
       <Card 
-        bordered={false} 
+        variant={"outlined"} 
         style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}
         styles={{ body: { padding: '24px' } }}
       >
@@ -133,8 +158,8 @@ export default function AppointmentPage() {
           <Input 
             placeholder="ค้นหาชื่อคนไข้..." 
             prefix={<SearchOutlined style={{ color: '#1890ff' }} />} 
-            style={{ width: 300 }} 
-            onChange={(e) => setSearchText(e.target.value)}
+            style={{ width: 350 }} 
+            onChange={(e) => onSearchChange(e.target.value)}
             allowClear
           />
         </div>
@@ -160,7 +185,7 @@ export default function AppointmentPage() {
       >
         {selectedAppointment && (
           <div style={{ marginTop: '16px' }}>
-            <Descriptions bordered column={2} size="small" labelStyle={{ background: '#fafafa', fontWeight: 'bold' }}>
+            <Descriptions bordered column={2} size="small" styles={{ label: { background: '#fafafa', fontWeight: 'bold' } }}>
               <Descriptions.Item label="Appointment ID" span={2}><Text code>{selectedAppointment.appointment_id}</Text></Descriptions.Item>
               <Descriptions.Item label="ชื่อ-นามสกุล"><Text strong>{selectedAppointment.patient.name}</Text></Descriptions.Item>
               <Descriptions.Item label="Patient ID"><Tag icon={<IdcardOutlined />}>{selectedAppointment.patient.id}</Tag></Descriptions.Item>
@@ -173,6 +198,38 @@ export default function AppointmentPage() {
               <Descriptions.Item label="Medical Record ID">{selectedAppointment.medical_record_id ? <Text strong style={{ color: '#52c41a' }}>{selectedAppointment.medical_record_id}</Text> : <Text type="secondary">ไม่มีข้อมูล</Text>}</Descriptions.Item>
               <Descriptions.Item label="Inspection ID">{selectedAppointment.inspection_record_id ? <Text strong style={{ color: '#1890ff' }}>{selectedAppointment.inspection_record_id}</Text> : <Text type="secondary">ไม่มีข้อมูล</Text>}</Descriptions.Item>
             </Descriptions>
+            <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+              
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (selectedAppointment.medical_record_id) {
+                    router.push(`/dentist/patients/${selectedAppointment.patient.id}/medical/${selectedAppointment.medical_record_id}`);
+                  } else {
+                    // ส่ง appointment_id ไปหน้า new medical
+                    router.push(`/dentist/patients/${selectedAppointment.patient.id}/medical/new?appointment_id=${selectedAppointment.appointment_id}`);
+                  }
+                }}
+                style={{ background: '#52c41a', borderColor: '#52c41a' }}
+              >
+                {selectedAppointment.medical_record_id ? 'แก้ไขประวัติการรักษา' : 'เพิ่มประวัติการรักษา'}
+              </Button>
+
+              <Button
+                type="primary"
+                onClick={() => {
+                  if (selectedAppointment.inspection_record_id) {
+                    router.push(`/dentist/patients/${selectedAppointment.patient.id}/inspect/${selectedAppointment.inspection_record_id}`);
+                  } else {
+                    // ส่ง appointment_id ไปหน้า new inspection
+                    router.push(`/dentist/patients/${selectedAppointment.patient.id}/inspect/new?appointment_id=${selectedAppointment.appointment_id}`);
+                  }
+                }}
+                style={{ background: '#1890ff', borderColor: '#1890ff' }}
+              >
+                {selectedAppointment.inspection_record_id ? 'แก้ไขประวัติการตรวจ' : 'เพิ่มประวัติการตรวจ'}
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

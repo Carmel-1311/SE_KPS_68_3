@@ -8,49 +8,132 @@ import {
   ArrowLeftOutlined, SaveOutlined, PlusOutlined, 
   MinusCircleOutlined, MedicineBoxOutlined 
 } from "@ant-design/icons";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { withAuthHeaders } from "@/app/utils/auth.client";
 import dayjs from "dayjs";
+import { useEffect, useState } from "react";
 
 const { Title, Text } = Typography;
 
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
-  { value: 'completed', label: 'เสร็จสิ้น (Completed)' },
+  { value: 'done', label: 'เสร็จสิ้น (Done)' },
   { value: 'cancelled', label: 'ยกเลิก (Cancelled)' },
   { value: 'request_cancel', label: 'ขอเปิดยกเลิก (Request Cancel)' },
 ];
+
+interface ExaminationType {
+  id: number;
+  name: string;
+}
 
 export default function NewMedicalRecordPage() {
   const router = useRouter();
   const params = useParams(); // รับ patient id จาก URL
   const [form] = Form.useForm();
+  const [examTypes, setExamTypes] = useState<ExaminationType[]>([]);
+  const [loadingTypes, setLoadingTypes] = useState(false);
+  const [inspectionRecords, setInspectionRecords] = useState<any[]>([]);
+  const [loadingInspections, setLoadingInspections] = useState(false);
 
-  const onFinish = (values: any) => {
-    // รวมข้อมูลและจัดการ format วันที่ก่อนส่ง API
-    const payload = {
-      ...values,
-      patient_id: params.id,
-      date: values.date.format("YYYY-MM-DD"),
+  // รับ appointment_id จาก query string
+  const searchParams = useSearchParams();
+  const appointmentIdFromQuery = searchParams.get("appointment_id");
+
+  // ดึงข้อมูลประเภทการตรวจจาก API เมื่อโหลดหน้า
+  useEffect(() => {
+    const fetchExamTypes = async () => {
+      setLoadingTypes(true);
+      try {
+        const res = await fetch('/api/types', {
+          headers: { ...withAuthHeaders() }
+        });
+        if (!res.ok) throw new Error('Failed to fetch types');
+        const data = await res.json();
+        setExamTypes(Array.isArray(data) ? data : data.data || []);
+      } catch (err) {
+        console.error('Fetch exam types error:', err);
+        message.error('ไม่สามารถดึงข้อมูลประเภทการตรวจได้');
+      } finally {
+        setLoadingTypes(false);
+      }
     };
+    const fetchInspectionRecords = async () => {
+      setLoadingInspections(true);
+      try {
+        const res = await fetch(`/api/patients/${params.id}/inspection_records`, {
+          headers: { ...withAuthHeaders() }
+        });
+        if (!res.ok) throw new Error('Failed to fetch inspection records');
+        const data = await res.json();
+        setInspectionRecords(Array.isArray(data.data) ? data.data : data.data?.data || []);
+      } catch (err) {
+        console.error('Fetch inspection records error:', err);
+        message.error('ไม่สามารถดึงประวัติการตรวจได้');
+      } finally {
+        setLoadingInspections(false);
+      }
+    };
+    fetchExamTypes();
+    fetchInspectionRecords();
+  }, [params.id]);
 
-    console.log("Saving Medical Record:", payload);
-    
-    // จำลองการบันทึกข้อมูล
-    message.loading({ content: 'กำลังบันทึกข้อมูล...', key: 'save_md' });
-    
-    setTimeout(() => {
+  // เพิ่มรองรับ appointment_id (query string เท่านั้น)
+  const onFinish = async (values: any) => {
+    const payload: any = {
+      patient_id: Number(params.id),
+      date: values.date.format("YYYY-MM-DD"),
+      history: values.history,
+      status: values.status,
+      detail: (values.detail || []).map((d: any) => ({ 
+        type_id: Number(d.type_id), 
+        diagnosis: d.diagnosis 
+      }))
+    };
+    if (values.inspection_record_id) {
+      payload.inspection_record_id = Number(values.inspection_record_id);
+    }
+    // ใช้ appointment_id จาก query string เท่านั้น
+    const appointmentId = appointmentIdFromQuery ? Number(appointmentIdFromQuery) : undefined;
+
+    message.loading({ content: 'กำลังบันทึกประวัติการรักษา...', key: 'save_md' });
+
+    try {
+      const res = await fetch('/api/medical_records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Save failed');
+      const j = await res.json();
+
+      // ถ้ามี appointment_id ให้ PATCH appointment เพื่อเชื่อม examination_id (medical record)
+      const examinationId = j?.data?.id ?? j?.id;
+      if (appointmentId && examinationId) {
+        await fetch(`/api/appointments/${appointmentId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+          body: JSON.stringify({ examination_id: examinationId })
+        });
+      }
+
       message.success({ content: 'เพิ่มประวัติการรักษาสำเร็จ', key: 'save_md' });
-      router.back(); // กลับไปหน้าแฟ้มประวัติคนไข้
-    }, 1000);
+      router.push(`/dentist/appointment?examination_id=${examinationId}`);
+    } catch (err) {
+      console.error('Save error', err);
+      message.error({ content: 'ไม่สามารถบันทึกข้อมูลได้', key: 'save_md' });
+    }
   };
 
   return (
     <div style={{ padding: '24px', maxWidth: '900px', margin: '0 auto' }}>
       {/* Navigation Header */}
-      <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16 }}>ย้อนกลับ</Button>
+      <Button icon={<ArrowLeftOutlined />} onClick={() => router.back()} style={{ marginBottom: 16 }}>
+        ย้อนกลับ
+      </Button>
 
       <Card 
-        bordered={false} 
+        variant={"outlined"} 
         style={{ boxShadow: '0 4px 12px rgba(0,0,0,0.08)', borderRadius: '12px' }}
       >
         <div style={{ marginBottom: 24 }}>
@@ -67,10 +150,34 @@ export default function NewMedicalRecordPage() {
           onFinish={onFinish}
           initialValues={{ 
             date: dayjs(), 
-            status: 'completed',
-            detail: [{ type_id: '', diagnosis: '' }] // ค่าเริ่มต้นสำหรับรายการวินิจฉัย 1 รายการ
+            status: 'done',
+            detail: [{ type_id: undefined, diagnosis: '' }],
+            inspection_record_id: undefined,
+            appointment_id: appointmentIdFromQuery ? Number(appointmentIdFromQuery) : undefined
           }}
         >
+                    {/* Hidden field for appointment_id to ensure it is submitted */}
+                    <Form.Item name="appointment_id" hidden>
+                      <Input type="hidden" />
+                    </Form.Item>
+          <Form.Item
+            name="inspection_record_id"
+            label="เลือกประวัติการตรวจ (ถ้ามี)"
+          >
+            <Select
+              placeholder="เลือกประวัติการตรวจ"
+              loading={loadingInspections}
+              allowClear
+              showSearch
+              optionFilterProp="label"
+            >
+              {inspectionRecords.map((rec) => (
+                <Select.Option key={rec.id} value={rec.id} label={rec.date}>
+                  {rec.date} {rec.status ? `- ${rec.status}` : ''} {rec.history ? `: ${rec.history}` : ''}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
           <Row gutter={16}>
             <Col xs={24} sm={12}>
               <Form.Item 
@@ -85,10 +192,14 @@ export default function NewMedicalRecordPage() {
               <Form.Item 
                 name="status" 
                 label="สถานะการรักษา" 
-                rules={[{ required: true, message: 'กรุณาระบุสถานะ' }]}
+                initialValue="done"
+                hidden
               >
-                <Select size="large" options={STATUS_OPTIONS} />
+                <Input type="hidden" />
               </Form.Item>
+              <div style={{ marginTop: 32 }}>
+                <Text strong>สถานะการรักษา: <span style={{ color: '#52c41a' }}>เสร็จสิ้น (Done)</span></Text>
+              </div>
             </Col>
           </Row>
 
@@ -115,17 +226,28 @@ export default function NewMedicalRecordPage() {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <Row gutter={16} align="middle">
-                      <Col xs={24} sm={6}>
+                      <Col xs={24} sm={10}>
                         <Form.Item
                           {...restField}
                           name={[name, 'type_id']}
-                          label="รหัสประเภท"
-                          rules={[{ required: true, message: 'ระบุ ID' }]}
+                          label="ประเภทการตรวจ"
+                          rules={[{ required: true, message: 'กรุณาเลือกประเภท' }]}
                         >
-                          <Input placeholder="เช่น 001" />
+                          <Select 
+                            placeholder="เลือกประเภท" 
+                            loading={loadingTypes}
+                            showSearch
+                            optionFilterProp="label"
+                          >
+                            {examTypes.map(type => (
+                              <Select.Option key={type.id} value={type.id} label={type.name}>
+                                {type.name}
+                              </Select.Option>
+                            ))}
+                          </Select>
                         </Form.Item>
                       </Col>
-                      <Col xs={20} sm={15}>
+                      <Col xs={20} sm={11}>
                         <Form.Item
                           {...restField}
                           name={[name, 'diagnosis']}

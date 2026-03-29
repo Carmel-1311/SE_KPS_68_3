@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDentist } from "@/hook/useDentist"; // เรียกใช้ Hook
+import { withAuthHeaders } from "@/app/utils/auth.client";
 import { 
   Table, Button, Modal, Input, Space, Row, Col, 
   Tag, Tooltip, Tabs, Timeline, Card, Typography, Spin 
@@ -14,6 +15,11 @@ import {
 
 const { Title, Text } = Typography;
 
+const statusColor = (s?: string) => {
+  if (!s) return 'default'
+  return s === 'completed' ? 'green' : s === 'cancelled' ? 'red' : s === 'scheduled' ? 'blue' : 'orange'
+}
+
 export default function PatientsPage() {
   const router = useRouter();
   const { patients, loading, getPatientDetail } = useDentist(); // ใช้ข้อมูลจาก Hook
@@ -21,6 +27,9 @@ export default function PatientsPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [inspectionRecords, setInspectionRecords] = useState<any[]>([]);
+  const [medicalRecords, setMedicalRecords] = useState<any[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
 
   // ค้นหาเฉพาะ id, name, email ที่มีอยู่ใน table
   const filteredItems = patients.filter((item) => {
@@ -32,12 +41,53 @@ export default function PatientsPage() {
   const showDetail = async (record: any) => {
     setIsDetailOpen(true);
     setModalLoading(true);
-    const fullData = await getPatientDetail(record.id);
-    console.log("Patient Full Data:", fullData); // <--- เพิ่มบรรทัดนี้เพื่อเช็คค่า status
-    if (fullData) {
-      setSelectedPatient(fullData);
+    try {
+      const fullData = await getPatientDetail(record.id);
+      console.log("Patient Full Data:", fullData);
+      if (fullData) setSelectedPatient(fullData);
+
+      setRecordsLoading(true);
+      await Promise.all([
+        fetchInspectionRecords(record.id),
+        fetchMedicalRecords(record.id)
+      ]);
+    } catch (err) {
+      console.error("Error loading patient detail:", err);
+    } finally {
+      setModalLoading(false);
+      setRecordsLoading(false);
     }
-    setModalLoading(false);
+  };
+
+  const fetchInspectionRecords = async (patientId: number) => {
+    try {
+      const res = await fetch(`/api/patients/${patientId}/inspection_records?page=1&limit=50`, { headers: withAuthHeaders() });
+      if (!res.ok) {
+        setInspectionRecords([]);
+        return;
+      }
+      const j = await res.json();
+      // `okList` response uses { data, meta } or similar; handle both
+      setInspectionRecords(j.data || j || []);
+    } catch (err) {
+      console.error("fetchInspectionRecords error", err);
+      setInspectionRecords([]);
+    }
+  };
+
+  const fetchMedicalRecords = async (patientId: number) => {
+    try {
+      const res = await fetch(`/api/patients/${patientId}/medical_records?page=1&limit=50`, { headers: withAuthHeaders() });
+      if (!res.ok) {
+        setMedicalRecords([]);
+        return;
+      }
+      const j = await res.json();
+      setMedicalRecords(j.data || j || []);
+    } catch (err) {
+      console.error("fetchMedicalRecords error", err);
+      setMedicalRecords([]);
+    }
   };
 
   const columns = [
@@ -63,7 +113,7 @@ export default function PatientsPage() {
 
   return (
     <div style={{ padding: '0' }}>
-      <Card bordered={false} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
+      <Card variant={"outlined"} style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
             <Title level={3} style={{ margin: 0 }}>📋 ระบบจัดการข้อมูลผู้ป่วย</Title>
@@ -127,11 +177,18 @@ export default function PatientsPage() {
                     <Title level={5} style={{ margin: 0 }}>บันทึกการตรวจ</Title>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient?.id}/inspect/new`)}>เพิ่มบันทึก</Button>
                   </div>
-                  <Timeline items={selectedPatient?.inspection_records?.map((r: any) => ({
-                    children: (
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span><Tag color="blue">{r.date}</Tag> {r.history}</span>
-                        <Button type="link" icon={<EditOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/inspect/${r.id}`)}>แก้ไข</Button>
+                  <Timeline items={inspectionRecords.map((r: any) => ({
+                    content: (
+                      <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                        <div>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <Tag color="blue">{r.date}</Tag>
+                            <Tag color={statusColor(r.status)}>{(r.status || '').toString().toUpperCase()}</Tag>
+                          </div>
+                          <p style={{ margin: '8px 0' }}>{r.history}</p>
+                          <div><small>Inspection ID: <code>{r.id}</code></small></div>
+                        </div>
+                        <Button type="link" icon={<EditOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient?.id}/inspect/${r.id}`)}>แก้ไข</Button>
                       </div>
                     )
                   }))} />
@@ -146,14 +203,18 @@ export default function PatientsPage() {
                       <Title level={5} style={{ margin: 0 }}>บันทึกการรักษา</Title>
                       <Button type="primary" icon={<PlusOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient?.id}/medical/new`)}>เพิ่มบันทึก</Button>
                     </div>
-                    <Timeline items={selectedPatient?.medical_records?.map((r: any) => ({
-                      children: (
-                        <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <Timeline items={medicalRecords.map((r: any) => ({
+                      content: (
+                        <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', gap: 12 }}>
                           <div>
-                            <Tag color="green">{r.date}</Tag>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <Tag color="green">{r.date}</Tag>
+                              <Tag color={statusColor(r.status)}>{(r.status || '').toString().toUpperCase()}</Tag>
+                            </div>
                             <p style={{ margin: '8px 0' }}>{r.history}</p>
+                            <div><small>Medical ID: <code>{r.id}</code></small></div>
                           </div>
-                          <Button type="link" icon={<EditOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient.id}/medical/${r.id}`)}>แก้ไข</Button>
+                          <Button type="link" icon={<EditOutlined />} onClick={() => router.push(`/dentist/patients/${selectedPatient?.id}/medical/${r.id}`)}>แก้ไข</Button>
                         </div>
                       )
                     }))} />
