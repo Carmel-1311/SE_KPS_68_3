@@ -57,7 +57,8 @@ export default function EditAppointmentPage() {
 
     form.setFieldsValue({
       appointment_date: dateOnly,
-      appointment_time: appointment.appointment_time,
+      // ✅ เดิมพอ ไม่ต้องแก้
+appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(7, 'hour').format('HH:mm'),
       type:             appointment.type,
       status:           appointment.status,
     });
@@ -83,8 +84,8 @@ export default function EditAppointmentPage() {
 
     await updateAppointment(
       {
-        appointment_date: new Date(values.appointment_date).toISOString(),
-        appointment_time: values.appointment_time,
+        appointment_date: values.appointment_date, 
+        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(), 
         type:             values.type,
         status:           values.status,
         staff_id:         appointment.staff.id,
@@ -148,7 +149,7 @@ export default function EditAppointmentPage() {
               <Input size="large" value={appointment.patient.name} disabled />
             </Form.Item>
             <Form.Item label="ทันตแพทย์" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" value={`ทพ./ทพญ. ${appointment.staff.name}`} disabled />
+              <Input size="large" value={appointment.staff.name} disabled />
             </Form.Item>
           </div>
 

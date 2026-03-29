@@ -32,7 +32,6 @@ import dayjs from 'dayjs';
 
 import { useAppointment, APPOINTMENT_STATUS_META } from '@/hook/useAppointment';
 import type { Appointment } from '@/hook/useAppointment';
-import { createTablePagination } from '@/app/utils/tablePagination';
 
 const { Title, Text } = Typography;
 
@@ -47,6 +46,9 @@ export default function AppointmentListPage() {
   const [selectedDate,   setSelectedDate]   = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [activeTab,      setActiveTab]      = useState('1');
+  const [currentPage,    setCurrentPage]    = useState(1);
+
+  const PAGE_SIZE = 5;
 
   const { data, loading, updateStatus, requestCancelCount } = useAppointment();
 
@@ -86,7 +88,7 @@ export default function AppointmentListPage() {
       key: 'index',
       width: 70,
       align: 'center',
-      render: (_, __, index) => <Text strong>{index + 1}</Text>,
+      render: (_, __, index) => <Text strong>{(currentPage - 1) * PAGE_SIZE + index + 1}</Text>,
     },
     {
       title: 'วันและเวลา',
@@ -95,7 +97,7 @@ export default function AppointmentListPage() {
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <Text>{dayjs(record.appointment_date).format('DD/MM/YYYY')}</Text>
           <Text type="secondary" style={{ fontSize: '12px' }}>
-            {record.appointment_time}
+             {dayjs(`2000-01-01 ${record.appointment_time}`).subtract(7, 'hour').format('HH:mm')}
           </Text>
         </div>
       ),
@@ -113,7 +115,7 @@ export default function AppointmentListPage() {
     {
       title: 'ทันตแพทย์',
       key: 'staff_name',
-      render: (_, record) => <Text>ทพ./ทพญ. {record.staff.name}</Text>,
+      render: (_, record) => <Text> {record.staff.name}</Text>,
     },
     {
       title: 'สถานะ',
@@ -248,7 +250,7 @@ export default function AppointmentListPage() {
           columns={columns}
           dataSource={finalFilteredData}
           rowKey="appointment_id"
-          pagination={createTablePagination(5)}
+          pagination={{ pageSize: PAGE_SIZE, current: currentPage, onChange: setCurrentPage }}
           loading={loading}
           locale={{ emptyText: 'ไม่พบข้อมูลในสถานะนี้' }}
         />
