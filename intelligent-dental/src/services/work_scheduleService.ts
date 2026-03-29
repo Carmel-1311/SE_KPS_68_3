@@ -43,10 +43,12 @@ export async function getWorkScheduleById(id: number, user?: { id: number, role:
 
     const schedule = await repo.findWorkScheduleById(id)
 
+    if (!schedule) {
+        throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
+    }
+
     if (user) {
         ensureDentistOwnsSchedule(user, schedule)
-    } else if (!schedule) {
-        throw new AppError(404, "SCHED-001", "Work schedule not found", "NOT_FOUND")
     }
 
     return map.workScheduleMap.toResponse(schedule)
