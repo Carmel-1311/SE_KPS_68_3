@@ -308,7 +308,7 @@ export default function AppointmentPage() {
         items={[
           {
             title: (
-              <a onClick={() => router.push("/work-schedule")}>
+              <a onClick={() => router.push("/dentist/work-schedule")}>
                 <HomeOutlined /> หน้าหลัก
               </a>
             ),
