@@ -26,8 +26,15 @@ function getDuplicatePatientMessage(
 }
 
 export async function listPatients(limit: number, page: number) {
-  const patients = await repo.findPatients((page - 1) * limit, limit)
-  return map.patientMap.toResponseList(patients)
+  const [patients, total] = await Promise.all([
+    repo.findPatients((page - 1) * limit, limit),
+    repo.countPatients()
+  ])
+
+  return {
+    data: map.patientMap.toResponseList(patients),
+    total
+  }
 }
 
 export async function createPatient(data: CreatePatientInput) {

@@ -56,6 +56,7 @@ export type AppointmentWithRelations =
 export function toAppointmentResponse(
   a: AppointmentWithRelations
 ): AppointmentResponseDTO {
+  const formatTime = (value: Date) => value.toISOString().slice(11, 16)
   return {
     appointment_id: a.appointment_id,
     patient: {
@@ -69,7 +70,7 @@ export function toAppointmentResponse(
       }
       : undefined,
     appointment_date: a.appointment_date.toISOString(),
-    appointment_time: a.appointment_time.toTimeString().slice(0, 5),
+    appointment_time: formatTime(a.appointment_time),
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
     medical_record: a.medical_records
@@ -152,7 +153,7 @@ export function toAppointmentResponseList(
       : undefined,
 
     appointment_date: a.appointment_date.toISOString(),
-    appointment_time: a.appointment_time.toTimeString().slice(0, 5),
+    appointment_time: a.appointment_time.toISOString().slice(11, 16),
 
     type: a.type,
     status: a.status as "scheduled" | "completed" | "cancelled" | "request_cancel",
@@ -183,14 +184,52 @@ export function toCreateAppointmentInput(
 export function toUpdateAppointmentInput(
   data: UpdateAppointmentDTO
 ): Prisma.appointmentUpdateInput {
+
+  const normalizeAppointmentTime = (value: string | undefined) => {
+    if (!value) return undefined
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    if (trimmed.includes("T")) {
+      const parsed = new Date(trimmed)
+      return Number.isNaN(parsed.valueOf()) ? undefined : parsed
+    }
+    const parsed = new Date(`1970-01-01T${trimmed}:00Z`)
+    return Number.isNaN(parsed.valueOf()) ? undefined : parsed
+  }
+
   return removeUndefined({
     patient_id: data.patient_id,
     staff_id: data.staff_id,
+
+    // ✅ FIX
+    inspection_record: data.inspection_record !== undefined
+      ? data.inspection_record === null
+        ? { disconnect: true }
+        : {
+            connect: {
+              inspection_record_id: data.inspection_record
+            }
+          }
+      : undefined,
+
+    // ✅ FIX
+    medical_records: data.medical_record !== undefined
+      ? data.medical_record === null
+        ? { disconnect: true }
+        : {
+            connect: {
+              examination_id: data.medical_record
+            }
+          }
+      : undefined,
+
     appointment_date: data.appointment_date
       ? new Date(data.appointment_date)
       : undefined,
-    appointment_time: data.appointment_time,
+
+    appointment_time: normalizeAppointmentTime(data.appointment_time),
+
     type: data.type,
-    status: data.status
+    status: data.status,
   })
 }

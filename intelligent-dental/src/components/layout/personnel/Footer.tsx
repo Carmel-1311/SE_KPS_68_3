@@ -9,13 +9,17 @@ export default function PersonnelFooter() {
   return (
     <Footer
       style={{
-        textAlign: "center",
         background: ThemeWebColor.footer,
-        color: "#fff",
-        padding: "12px 20px",
+        color: "rgba(255,255,255,0.85)",
+        padding: "14px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        fontSize: 12,
       }}
     >
-      © {new Date().getFullYear()} Intelligent Dental
+      <span>ระบบบริหารจัดการคลินิกทันตกรรม</span>
+      <span>© {new Date().getFullYear()} Intelligent Dental</span>
     </Footer>
   );
 }

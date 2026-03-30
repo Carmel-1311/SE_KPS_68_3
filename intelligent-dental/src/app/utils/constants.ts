@@ -11,5 +11,6 @@ export enum ThemeWebColor {
   footer = "#086060",
   Sidebar = "#0FA3A3",
   Background = "#E6FDFD",
+  Primary = "Primary",
 }
 

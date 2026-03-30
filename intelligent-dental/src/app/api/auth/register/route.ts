@@ -2,24 +2,30 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/utils/prisma"
 import { AppError } from "@/utils/AppError"
 import { hashPassword } from "@/utils/password"
-import { Prisma, role_staff, status_user } from "@prisma/client"
+import { Prisma, status_user } from "@prisma/client"
 
 type RegisterBody = {
   role?: string
-  staff_role?: string
   first_name?: string
   last_name?: string
   birthday?: string
+  id_card?: string
   allergy?: string
+  office_name?: string
+  contact_name?: string
+  address?: string
   email?: string
   phone?: string
-  license_number?: string
   password?: string
+  confirm_password?: string
   username?: string
 }
 
-const validStaffRoles = new Set(Object.values(role_staff))
 const validPatientStatus = new Set(Object.values(status_user))
+
+function normalizeIdCard(value?: string) {
+  return value?.replace(/\D/g, "").trim() || ""
+}
 
 function parseDate(value: string) {
   const date = new Date(value)
@@ -32,28 +38,28 @@ function parseDate(value: string) {
 function normalizeRole(role?: string) {
   const raw = role?.trim().toLowerCase()
   if (!raw) return "patient"
-  if (raw === "patient" || raw === "staff" || raw === "dentist") return raw
-  throw new AppError(400, "AUTH-005", "Invalid role. Allowed values: patient, staff, dentist", "VALIDATION")
+  if (raw === "patient" || raw === "company") return raw
+  throw new AppError(400, "AUTH-005", "Invalid role. Allowed values: patient, company", "VALIDATION")
 }
 
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as RegisterBody
 
-    const firstName = body.first_name?.trim()
-    const lastName = body.last_name?.trim()
-    const birthdayRaw = body.birthday?.trim()
     const email = body.email?.trim()
     const phone = body.phone?.trim()
     const password = body.password?.trim()
+    const confirmPassword = body.confirm_password?.trim()
     const username = body.username?.trim() || email
     const role = normalizeRole(body.role)
 
-    if (!firstName || !lastName || !birthdayRaw || !email || !phone || !password || !username) {
+    if (!email || !phone || !password || !confirmPassword || !username) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
-    const birthday = parseDate(birthdayRaw)
+    if (password !== confirmPassword) {
+      return NextResponse.json({ message: "Password confirmation does not match" }, { status: 400 })
+    }
 
     const existingAccount = await prisma.account.findFirst({
       where: { OR: [{ email }, { username }] },
@@ -64,12 +70,27 @@ export async function POST(request: Request) {
     }
 
     if (role === "patient") {
+      const firstName = body.first_name?.trim()
+      const lastName = body.last_name?.trim()
+      const birthdayRaw = body.birthday?.trim()
+      const idCard = normalizeIdCard(body.id_card)
+
+      if (!firstName || !lastName || !birthdayRaw || !idCard) {
+        return NextResponse.json({ message: "Missing required patient fields" }, { status: 400 })
+      }
+
+      if (!/^\d{13}$/.test(idCard)) {
+        return NextResponse.json({ message: "Invalid id card. Use 13 digits" }, { status: 400 })
+      }
+
+      const birthday = parseDate(birthdayRaw)
+
       const duplicatePatient = await prisma.patient.findFirst({
-        where: { OR: [{ email }, { phone }] },
+        where: { OR: [{ email }, { phone }, { id_card: idCard }] },
         select: { patient_id: true }
       })
       if (duplicatePatient) {
-        return NextResponse.json({ message: "Patient with this email or phone already exists" }, { status: 409 })
+        return NextResponse.json({ message: "Patient with this email, phone, or id card already exists" }, { status: 409 })
       }
 
       const allergy = body.allergy?.trim() || ""
@@ -97,6 +118,7 @@ export async function POST(request: Request) {
               allergy,
               email,
               phone,
+              id_card: idCard,
               status: status as status_user,
               account_id: account.account_id
             }
@@ -139,22 +161,21 @@ export async function POST(request: Request) {
       )
     }
 
-    const staffRoleRaw = body.staff_role?.trim().toLowerCase()
-    const staffRole = staffRoleRaw || (role === "dentist" ? "dentist" : "staff")
-    if (!validStaffRoles.has(staffRole as role_staff)) {
-      throw new AppError(400, "STAFF-001", "Invalid staff role. Allowed values: staff, dentist", "VALIDATION")
+    const officeName = body.office_name?.trim()
+    const contactName = body.contact_name?.trim()
+    const address = body.address?.trim()
+
+    if (!officeName || !contactName || !address) {
+      return NextResponse.json({ message: "Missing required company fields" }, { status: 400 })
     }
 
-    const duplicateStaff = await prisma.staff.findFirst({
+    const duplicateCompany = await prisma.company.findFirst({
       where: { OR: [{ email }, { phone }] },
-      select: { staff_id: true }
+      select: { company_id: true }
     })
-    if (duplicateStaff) {
-      return NextResponse.json({ message: "Staff with this email or phone already exists" }, { status: 409 })
+    if (duplicateCompany) {
+      return NextResponse.json({ message: "Company with this email or phone already exists" }, { status: 409 })
     }
-
-    const licenseNumber = body.license_number?.trim() || null
-    const accountRole = staffRole === "dentist" ? "doctor" : "staff"
 
     const created = await prisma.$transaction(async (tx) => {
       const account = await tx.account.create({
@@ -162,24 +183,22 @@ export async function POST(request: Request) {
           username,
           email,
           password_hash: hashPassword(password),
-          account_role: accountRole
+          account_role: "company"
         }
       })
 
-      const staff = await tx.staff.create({
+      const company = await tx.company.create({
         data: {
-          first_name: firstName,
-          last_name: lastName,
-          birthday,
-          email,
+          contect_name: contactName,
+          office_name: officeName,
           phone,
-          license_number: licenseNumber,
-          role: staffRole as role_staff,
+          address,
+          email,
           account_id: account.account_id
         }
       })
 
-      return { account, staff }
+      return { account, company }
     })
 
     return NextResponse.json(
@@ -187,7 +206,7 @@ export async function POST(request: Request) {
         data: {
           id: created.account.account_id,
           email: created.account.email ?? "",
-          name: `${created.staff.first_name ?? ""} ${created.staff.last_name ?? ""}`.trim()
+          name: created.company.office_name ?? ""
         }
       },
       { status: 201 }

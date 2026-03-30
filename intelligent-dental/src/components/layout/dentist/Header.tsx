@@ -1,51 +1,35 @@
-﻿"use client";
+"use client";
 
 import { ThemeWebColor } from "@/app/utils/constants";
-import { Layout, Flex } from "antd";
-import { LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
+import { Layout } from "antd";
+import { usePathname } from "next/navigation";
 
 const { Header } = Layout;
 
-export default function DentistHeader() {
-  const router = useRouter();
-  const [displayName, setDisplayName] = useState("ผู้ใช้");
+const PAGE_TITLES: Record<string, string> = {
+  "work-schedule": "ตารางการทำงาน",
+  patients: "ตารางผู้ป่วย",
+};
 
-  useEffect(() => {
-    const name = getAccountName() || getAccountUsername();
-    if (name) setDisplayName(name);
-  }, []);
+export default function DentistHeader() {
+  const pathname = usePathname();
+  const seg = pathname.split("/").filter(Boolean)[1] || "";
+  const pageTitle = PAGE_TITLES[seg] || "ระบบคลินิกทันตกรรม";
 
   return (
     <Header
       style={{
-        textAlign: "right",
-        color: "#fff",
-        height: 70,
-        paddingInline: 30,
+        height: 64,
+        paddingInline: 24,
         backgroundColor: ThemeWebColor.header,
+        display: "flex",
+        alignItems: "center",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}
     >
-      <Flex justify="flex-end" align="center" gap={10}>
-        <span>{displayName}</span>
-
-        <div
-          onClick={() => router.push("/")}
-          style={{
-            width: 36,
-            height: 36,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            borderRadius: 8,
-          }}
-        >
-          <LogOut size={18} color="#fff" />
-        </div>
-      </Flex>
+      <span style={{ color: "#fff", fontWeight: 600, fontSize: 16 }}>
+        {pageTitle}
+      </span>
     </Header>
   );
 }

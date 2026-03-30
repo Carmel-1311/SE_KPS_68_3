@@ -15,7 +15,7 @@ export async function GET(
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION");
     requireRole(user.role, ["staff", "dentist"]);
-    const data = await workScheduleService.getWorkScheduleById(scheduleId);
+    const data = await workScheduleService.getWorkScheduleById(scheduleId, user);
     return res.ok(data);
   } catch (err: unknown) {
     return handleError(err);
@@ -37,6 +37,7 @@ export async function PUT(
     const updatedSchedule = await workScheduleService.updateWorkSchedule(
       scheduleId,
       body,
+      user,
     );
     return res.ok(updatedSchedule);
   } catch (err: unknown) {
@@ -55,7 +56,7 @@ export async function DELETE(
     if (!user)
       return res.error(401, "AUTH-001", "validation fail", "VALIDATION");
     requireRole(user.role, ["staff", "dentist"]);
-    await workScheduleService.deleteWorkSchedule(scheduleId);
+    await workScheduleService.deleteWorkSchedule(scheduleId, user);
     return res.noContent();
   } catch (err: unknown) {
     return handleError(err);

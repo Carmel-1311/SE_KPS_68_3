@@ -1,83 +1,172 @@
-﻿"use client";
+"use client";
 
-import { Layout, Menu, Row, Col, Typography } from "antd";
+import { Layout, Menu } from "antd";
 import { ThemeWebColor } from "@/app/utils/constants";
 import { useRouter, usePathname } from "next/navigation";
-import * as Icons from "lucide-react";
+import { User, CalendarCheck, FileText, Truck, UsersRound, LogOut } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getAccountName, getAccountUsername } from "@/app/utils/auth.client";
 
 const { Sider } = Layout;
-const { Title } = Typography;
+
+const menuItems = [
+  { key: "provider", icon: <User size={18} />, label: "ข้อมูลผู้ใช้", path: "/personnel/provider" },
+  { key: "appointment-schedule", icon: <CalendarCheck size={18} />, label: "ตารางแสดงการนัดหมาย", path: "/personnel/appointment-schedule" },
+  { key: "work-schedule", icon: <FileText size={18} />, label: "ตารางการทำงาน", path: "/personnel/work-schedule" },
+  { key: "mission", icon: <Truck size={18} />, label: "ตารางการออกหน่วย", path: "/personnel/mission" },
+];
 
 export default function PersonnelSidebar() {
   const router = useRouter();
   const pathname = usePathname();
+  const [displayName, setDisplayName] = useState("ผู้ใช้");
 
-  const menuItems = [
-    {
-      key: "provider",
-      icon: <Icons.User size={18} />,
-      label: "ข้อมูลผู้ใช้",
-      path: "/personnel/provider",
-    },
-    {
-      key: "appointment-schedule",
-      icon: <Icons.CalendarCheck size={18} />,
-      label: "ตารางแสดงการนัดหมาย",
-      path: "/personnel/appointment-schedule",
-    },
-    {
-      key: "work-schedule",
-      icon: <Icons.FileText size={18} />,
-      label: "ตารางการทำงาน",
-      path: "/personnel/work-schedule",
-    },
-    {
-      key: "mission",
-      icon: <Icons.Truck size={18} />,
-      label: "ตารางการออกหน่วย",
-      path: "/personnel/mission",
-    },
-  ];
+  useEffect(() => {
+    const name = getAccountName() || getAccountUsername();
+    if (name) setDisplayName(name);
+  }, []);
 
-  const getSelectedKey = (path: string) => {
-    const seg = path.split("/").filter(Boolean)[1];
-    return seg || "dashboard";
+  const selectedKey = pathname.split("/").filter(Boolean)[1] || "";
+
+  const handleLogout = () => {
+    if (typeof window !== "undefined") {
+      ["auth_token", "account_role", "account_id", "patient_id", "account_name", "account_username"]
+        .forEach((k) => localStorage.removeItem(k));
+    }
+    router.push("/login");
   };
 
   return (
-    <Sider width={300} style={{ padding: 10, background: ThemeWebColor.Sidebar }}>
-      <div style={{ marginBottom: 10 }}>
-        <Row>
-          <Col span={7} style={{ textAlign: "center", marginTop: 15 }}>
-            <Icons.User size={50} color="#fff" />
-          </Col>
-          <Col span={17}>
-            <Title style={{ margin: 0, color: "#fff" }} level={4}>
-              ระบบคลินิกทันตกรรม
-            </Title>
-            <Title style={{ margin: 0, color: "#fff" }} level={5}>
-              Intelligent Dental
-            </Title>
-          </Col>
-        </Row>
+    <Sider width={260} style={{ background: ThemeWebColor.Sidebar }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+        }}
+      >
+      {/* Brand */}
+      <div
+        style={{
+          padding: "20px 16px 16px",
+          borderBottom: "1px solid rgba(255,255,255,0.2)",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 12,
+            background: "rgba(255,255,255,0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <UsersRound size={22} color="#fff" />
+        </div>
+        <div style={{ lineHeight: 1.35 }}>
+          <div style={{ color: "#fff", fontWeight: 700, fontSize: 13 }}>
+            ระบบคลินิกทันตกรรม
+          </div>
+          <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>
+            Intelligent Dental
+          </div>
+        </div>
       </div>
 
-      <Menu
-        theme="light"
-        className="app-sidebar-menu personnel-sidebar-menu"
-        selectedKeys={[getSelectedKey(pathname)]}
-        mode="inline"
+      {/* Navigation */}
+      <div style={{ flex: 1, padding: "10px 0" }}>
+        <Menu
+          theme="light"
+          className="app-sidebar-menu personnel-sidebar-menu"
+          selectedKeys={[selectedKey]}
+          mode="inline"
+          style={{ background: "transparent", borderInlineEnd: "none" }}
+          items={menuItems.map((item) => ({
+            key: item.key,
+            icon: item.icon,
+            label: item.label,
+            onClick: () => router.push(item.path),
+          }))}
+        />
+      </div>
+
+      {/* User Profile + Logout */}
+      <div
         style={{
-          background: "transparent",
-          borderInlineEnd: "none",
+          padding: "14px 16px",
+          borderTop: "1px solid rgba(255,255,255,0.2)",
         }}
-        items={menuItems.map((item) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.path),
-        }))}
-      />
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.25)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              fontWeight: 700,
+              color: "#fff",
+              fontSize: 14,
+            }}
+          >
+            {displayName.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {displayName}
+            </div>
+            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>บุคลากร</div>
+          </div>
+        </div>
+
+        <button
+          onClick={handleLogout}
+          style={{
+            width: "100%",
+            padding: "7px 12px",
+            background: "rgba(255,255,255,0.12)",
+            border: "1px solid rgba(255,255,255,0.3)",
+            borderRadius: 8,
+            color: "#fff",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            fontSize: 13,
+            fontWeight: 500,
+            fontFamily: "inherit",
+            transition: "background 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.12)")}
+        >
+          <LogOut size={15} />
+          ออกจากระบบ
+        </button>
+      </div>
+      </div>
     </Sider>
   );
 }

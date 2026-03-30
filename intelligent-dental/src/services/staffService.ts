@@ -8,8 +8,15 @@ import { role_staff } from "@prisma/client"
 const validRoles = new Set(Object.values(role_staff))
 
 export async function listStaffs(limit: number, page: number) {
-  const staffs = await repo.findStaffs((page - 1) * limit, limit)
-  return map.staffMap.toResponseList(staffs)
+  const [staffs, total] = await Promise.all([
+    repo.findStaffs((page - 1) * limit, limit),
+    repo.countStaffs()
+  ])
+
+  return {
+    data: map.staffMap.toResponseList(staffs),
+    total
+  }
 }
 
 export async function createStaff(data: CreateStaffInput) {

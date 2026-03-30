@@ -1,209 +1,120 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Typography, Button, Input, Form, Select, message, Spin, Space, Modal, Breadcrumb, Divider, Tag } from 'antd';
-import { SaveOutlined, DeleteOutlined, HomeOutlined, EditOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import {
+  Card, Typography, Button, Input, Form,
+  Select, Spin, Space, Modal, Breadcrumb, Divider, Tag,
+} from 'antd';
+import {
+  SaveOutlined, DeleteOutlined, HomeOutlined,
+  EditOutlined, EnvironmentOutlined,
+} from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import dayjs from 'dayjs';
 
+import { useMobileDentalDetail } from '@/hook/useMobileDentalDetail';
+import type { MobileDentalStatus } from '@/hook/useMobileDentalDetail';
+
 const { Title, Text } = Typography;
 
-export interface CompanyData {
-  id: number;
-  name: string;
-  phone: string;
-}
+// ── Status helpers ─────────────────────────────────────────────────────────────
 
-export interface MobileDentalDetail {
-  id: number;
-  mobileDate: string;
-  address: string;
-  patientCount: number;
-  status: string;
-  createdAt: string;
-  Company?: CompanyData;
-}
+const STATUS_META: Record<MobileDentalStatus, { label: string; color: string }> = {
+  request:        { label: 'รออนุมัติ',           color: 'blue'    },
+  scheduled:      { label: 'อนุมัติแล้ว',          color: 'green'   },
+  completed:      { label: 'เสร็จสิ้น',            color: 'cyan' },
+  request_cancel: { label: 'คำขอยกเลิกจากผู้ใช้',  color: 'orange'  },
+  cancel:         { label: 'ยกเลิกการออกหน่วย',    color: 'red'     },
+};
 
-export default function EditMissionPage() {
-  const router = useRouter();
-  const params = useParams();
+// สถานะที่อนุญาตให้แก้ไขข้อมูลได้
+const EDITABLE_STATUSES: MobileDentalStatus[] = ['request'];
+
+// สถานะที่อนุญาตให้กดยกเลิกได้
+const CANCELLABLE_STATUSES: MobileDentalStatus[] = ['request', 'request_cancel'];
+
+// ── Component ──────────────────────────────────────────────────────────────────
+
+export default function MobileDentalDetailPage() {
+  const router  = useRouter();
+  const params  = useParams();
   const idParam = params.id as string;
-  
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  
-  const [missionData, setMissionData] = useState<MobileDentalDetail | null>(null);
-  const [currentStatus, setCurrentStatus] = useState<string>('');
 
+  const [form]              = Form.useForm();
+  const [isMounted, setIsMounted]                     = useState(false);
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
 
+  const { mobileDental, loading, saving, updateMobileDental } =
+    useMobileDentalDetail(idParam);
+
+  // ── Effects ──────────────────────────────────────────────────────────────────
+
+  useEffect(() => { setIsMounted(true); }, []);
+
+  // pre-fill form เมื่อได้ข้อมูลจาก API
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (isMounted && form && idParam) {
-      fetchMissionDetail();
-    }
-  }, [isMounted, idParam, form]);
-
-  const fetchMissionDetail = async () => {
-    try {
-      const token = localStorage.getItem("token") || ""; 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/mobile-dentals/${idParam}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        }
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        const data: MobileDentalDetail = responseData?.data || responseData;
-        
-        setMissionData(data);
-        setCurrentStatus(String(data.status));
-
-        const formattedDate = data.mobileDate ? dayjs(data.mobileDate).format('YYYY-MM-DD') : '';
-
-        form.setFieldsValue({
-          mobileDate: formattedDate,
-          address: data.address,
-          patientCount: data.patientCount || 0,
-          status: String(data.status)
-        });
-        setLoading(false);
-        return;
-      }
-    } catch (error) {
-      console.error('API Error:', error);
-    }
-
-    // --- Fallback โหมด Mock Data ---
-    message.warning('ไม่สามารถเชื่อมต่อ API ได้ กำลังแสดงข้อมูลจำลอง');
-    setTimeout(() => {
-      const mockData: MobileDentalDetail = {
-        id: Number(idParam),
-        mobileDate: '2026-02-10T00:00:00.000Z',
-        address: 'โรงเรียนอนุบาลขอนแก่น (หอประชุมใหญ่)',
-        patientCount: 50,
-        status: '1', // ทดสอบเป็นสถานะ 1 (รออนุมัติ)
-        createdAt: '2026-01-20T10:00:00.000Z',
-        Company: { id: 101, name: 'โรงเรียนอนุบาลขอนแก่น', phone: '0811111111' }
-      };
-
-      setMissionData(mockData);
-      setCurrentStatus(mockData.status);
+    if (mobileDental) {
       form.setFieldsValue({
-        mobileDate: dayjs(mockData.mobileDate).format('YYYY-MM-DD'),
-        address: mockData.address,
-        patientCount: mockData.patientCount,
-        status: mockData.status
+        date:    dayjs(mobileDental.date).format('YYYY-MM-DD'),
+        address: mobileDental.address,
+        count:   mobileDental.count,
+        status:  mobileDental.status,
       });
-      setLoading(false);
-    }, 500);
-  };
-
-  const handleUpdate = async (values: any) => {
-    setSaving(true);
-    try {
-      const payload = {
-        status: values.status,
-        mobileDate: dayjs(values.mobileDate).toISOString(),
-        address: values.address,
-        patientCount: Number(values.patientCount)
-      };
-
-      const token = localStorage.getItem("token") || ""; 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/mobile-dentals/${idParam}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        message.success('บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
-        router.push('/personnel/mission');
-      } else {
-        throw new Error('อัปเดตไม่สำเร็จ');
-      }
-    } catch (error) {
-      message.success('[Mock] บันทึกข้อมูลและอัปเดตสถานะสำเร็จ');
-      router.push('/personnel/mission');
-    } finally {
-      setSaving(false);
     }
+  }, [mobileDental, form]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────────
+
+  const currentStatus  = mobileDental?.status;
+  const isReadOnly     = !currentStatus || !EDITABLE_STATUSES.includes(currentStatus);
+  const canCancel      = !!currentStatus && CANCELLABLE_STATUSES.includes(currentStatus);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────────
+
+  const handleUpdate = async (values: { status: MobileDentalStatus }) => {
+    if (!mobileDental) return;
+    await updateMobileDental(
+      {
+        company: mobileDental.company, // ส่ง company object เดิมกลับไป
+        status:  values.status,
+      },
+      () => router.push('/personnel/mission'),
+    );
   };
 
-  const handleConfirmCancelMission = async () => {
-    setSaving(true);
-    try {
-      const formValues = form.getFieldsValue();
-      const payload = {
-        status: "4", // 4 = ยกเลิกการออกหน่วย
-        mobileDate: dayjs(formValues.mobileDate).toISOString(),
-        address: formValues.address,
-        patientCount: Number(formValues.patientCount),
-        cancel_reason: cancelReason 
-      };
-
-      const token = localStorage.getItem("token") || ""; 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/mobile-dentals/${idParam}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` 
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (response.ok) {
-        message.success('ยกเลิกการออกหน่วยเรียบร้อยแล้ว');
+  const handleConfirmCancel = async () => {
+    if (!mobileDental) return;
+    await updateMobileDental(
+      {
+        company: mobileDental.company,
+        status:  'cancel',
+      },
+      () => {
         setIsCancelModalVisible(false);
         router.push('/personnel/mission');
-      } else {
-        throw new Error('ยกเลิกไม่สำเร็จ');
-      }
-    } catch (error) {
-      message.success('[Mock] ยกเลิกการออกหน่วยเรียบร้อยแล้ว');
-      setIsCancelModalVisible(false);
-      router.push('/personnel/mission');
-    } finally {
-      setSaving(false);
-    }
+      },
+    );
   };
 
-  // 🌟 จุดสำคัญ: ล็อกการแก้ไขทันทีถ้าสถานะ ไม่ใช่ 1 (รออนุมัติ) 🌟
-  const isReadOnly = currentStatus !== '1'; 
-  
-  // ให้กดยกเลิกได้เฉพาะตอนรออนุมัติ (1) หรือ ผู้ใช้ส่งคำขอยกเลิกมา (5)
-  const canCancel = ['1', '5'].includes(currentStatus);
-
-  const getStatusTag = (status: string) => {
-    switch (status) {
-      case '1': return <Tag color="blue" style={{ fontSize: '14px', padding: '4px 12px' }}>รออนุมัติ</Tag>;
-      case '2': return <Tag color="green" style={{ fontSize: '14px', padding: '4px 12px' }}>อนุมัติแล้ว</Tag>;
-      case '3': return <Tag color="red" style={{ fontSize: '14px', padding: '4px 12px' }}>ไม่อนุมัติ</Tag>;
-      case '4': return <Tag color="default" style={{ fontSize: '14px', padding: '4px 12px' }}>ยกเลิกการออกหน่วย</Tag>;
-      case '5': return <Tag color="orange" style={{ fontSize: '14px', padding: '4px 12px' }}>คำขอยกเลิกจากผู้ใช้</Tag>;
-      default: return <Tag style={{ fontSize: '14px', padding: '4px 12px' }}>{status}</Tag>;
-    }
-  };
+  // ── Loading / Mount guard ─────────────────────────────────────────────────────
 
   if (!isMounted || loading) {
-    return <div style={{ textAlign: 'center', padding: '100px' }}><Spin size="large" /></div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '100px' }}>
+        <Spin size="large" />
+      </div>
+    );
   }
+
+  if (!mobileDental) return null;
+
+  const statusMeta = STATUS_META[mobileDental.status];
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      
+
       <Breadcrumb
         style={{ marginBottom: '24px', fontSize: '15px' }}
         items={[
@@ -213,67 +124,75 @@ export default function EditMissionPage() {
         ]}
       />
 
-      <Card variant="borderless" style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+      <Card
+        variant="borderless"
+        style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
+      >
+        {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
           <div>
-            <Title level={3} style={{ marginBottom: '4px' }}>รายละเอียดการออกหน่วย (รหัส: {idParam})</Title>
+            <Title level={3} style={{ marginBottom: '4px' }}>
+              รายละเอียดการออกหน่วย (รหัส: {idParam})
+            </Title>
             <Text type="secondary">ปรับปรุงข้อมูลหรือตรวจสอบสถานะของการออกหน่วย</Text>
           </div>
-          
-          <Button 
-            danger 
-            type={currentStatus === '5' ? 'primary' : 'default'} 
-            icon={<DeleteOutlined />} 
-            disabled={!canCancel} 
+
+          <Button
+            danger
+            type={currentStatus === 'request_cancel' ? 'primary' : 'default'}
+            icon={<DeleteOutlined />}
+            disabled={!canCancel}
             onClick={() => setIsCancelModalVisible(true)}
           >
-            {currentStatus === '5' ? 'ยืนยันการยกเลิก' : 'ยกเลิกการออกหน่วย'}
+            {currentStatus === 'request_cancel' ? 'ยืนยันการยกเลิก' : 'ยกเลิกการออกหน่วย'}
           </Button>
         </div>
 
         <Form form={form} layout="vertical" onFinish={handleUpdate}>
+
+          {/* ชื่อบริษัท — อ่านอย่างเดียว */}
+          <Form.Item label="ชื่อหน่วยงาน/บริษัท">
+            <Input size="large" disabled value={mobileDental.company?.office_name || 'ไม่ระบุ'} />
+          </Form.Item>
+
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Form.Item label="ชื่อหน่วยงาน/ชุมชน" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" disabled value={missionData?.Company?.name || 'ไม่ระบุ'} />
+            {/* วันที่ — อ่านอย่างเดียว (API ไม่รับ field นี้ใน PUT) */}
+            <Form.Item name="date" label="วันที่ออกหน่วย" style={{ flex: 1, minWidth: '250px' }}>
+              <Input type="date" size="large" disabled />
             </Form.Item>
 
-            <Form.Item label="เบอร์ติดต่อ" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" disabled value={missionData?.Company?.phone || 'ไม่ระบุ'} />
+            {/* จำนวนคน — อ่านอย่างเดียว (API ไม่รับ field นี้ใน PUT) */}
+            <Form.Item name="count" label="จำนวนคนไข้ (ประเมิน)" style={{ flex: 1, minWidth: '250px' }}>
+              <Input type="number" size="large" disabled />
             </Form.Item>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            {/* 🌟 ถ้า isReadOnly เป็น true ช่องเหล่านี้จะพิมพ์ไม่ได้เลย */}
-            <Form.Item name="mobileDate" label="วันที่ออกหน่วย" style={{ flex: 1, minWidth: '250px' }} rules={[{ required: true }]}>
-              <Input type="date" size="large" disabled={isReadOnly} />
-            </Form.Item>
-
-            <Form.Item name="patientCount" label="จำนวนคนไข้ (ประเมิน)" style={{ flex: 1, minWidth: '250px' }} rules={[{ required: true }]}>
-              <Input type="number" size="large" min={0} disabled={isReadOnly} />
-            </Form.Item>
-          </div>
-
-          <Form.Item name="address" label="สถานที่จัดกิจกรรม (Address)" rules={[{ required: true }]}>
-            <Input.TextArea rows={3} size="large" disabled={isReadOnly} placeholder="ระบุสถานที่ออกหน่วยให้ชัดเจน" />
+          {/* ที่อยู่ — อ่านอย่างเดียว (API ไม่รับ field นี้ใน PUT) */}
+          <Form.Item name="address" label="สถานที่จัดกิจกรรม">
+            <Input.TextArea rows={3} size="large" disabled />
           </Form.Item>
 
           <Divider />
 
-          <Form.Item label="สถานะ (Status)">
+          {/* สถานะ */}
+          <Form.Item label="สถานะ">
             {!isReadOnly ? (
-              // 🌟 แสดงกล่องเลือกสถานะ ให้เฉพาะ "รออนุมัติ (1)" เท่านั้น
               <Form.Item name="status" noStyle>
                 <Select size="large">
-                  <Select.Option value="1">รออนุมัติ (Pending)</Select.Option>
-                  <Select.Option value="2">อนุมัติ (Approve)</Select.Option>
-                  <Select.Option value="3">ไม่อนุมัติ (Reject)</Select.Option>
+                  <Select.Option value="request">รออนุมัติ (Request)</Select.Option>
+                  <Select.Option value="scheduled">อนุมัติแล้ว (Scheduled)</Select.Option>
+                  
                 </Select>
               </Form.Item>
             ) : (
-              // 🌟 ถ้าอนุมัติแล้ว/ไม่อนุมัติ/ยกเลิก จะโชว์แค่ป้าย Tag สวยๆ แก้ไม่ได้
               <div style={{ marginTop: '8px' }}>
-                {getStatusTag(currentStatus)}
-                {currentStatus === '5' && (
+                <Tag
+                  color={statusMeta.color}
+                  style={{ fontSize: '14px', padding: '4px 12px' }}
+                >
+                  {statusMeta.label}
+                </Tag>
+                {currentStatus === 'request_cancel' && (
                   <Text type="danger" style={{ marginLeft: '12px' }}>
                     * ผู้ใช้งานต้องการยกเลิก กรุณากดปุ่ม <b>"ยืนยันการยกเลิก"</b> ที่มุมขวาบน
                   </Text>
@@ -282,12 +201,20 @@ export default function EditMissionPage() {
             )}
           </Form.Item>
 
+          {/* ปุ่ม */}
           <Form.Item style={{ marginTop: '32px', marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button size="large" onClick={() => router.push('/personnel/mission')}>ย้อนกลับ</Button>
-              {/* 🌟 ซ่อนปุ่ม "บันทึกการแก้ไข" ทันทีถ้าสถานะไม่เท่ากับ 1 */}
+              <Button size="large" onClick={() => router.push('/personnel/mission')}>
+                ย้อนกลับ
+              </Button>
               {!isReadOnly && (
-                <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                <Button
+                  type="primary"
+                  size="large"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  loading={saving}
+                >
                   บันทึกการแก้ไข
                 </Button>
               )}
@@ -298,27 +225,20 @@ export default function EditMissionPage() {
 
       {/* Modal ยืนยันการยกเลิก */}
       <Modal
-        title={<span><DeleteOutlined style={{ color: '#ff4d4f', marginRight: '8px' }} />ยืนยันการยกเลิกการออกหน่วย</span>}
+        title={
+          <span>
+            <DeleteOutlined style={{ color: '#ff4d4f', marginRight: '8px' }} />
+            ยืนยันการยกเลิกการออกหน่วย
+          </span>
+        }
         open={isCancelModalVisible}
-        onOk={handleConfirmCancelMission}
+        onOk={handleConfirmCancel}
         onCancel={() => setIsCancelModalVisible(false)}
         okText="ยืนยันยกเลิก"
         cancelText="ปิด"
-        okButtonProps={{ danger: true, loading: saving, disabled: !cancelReason.trim() }}
+        okButtonProps={{ danger: true, loading: saving }}
       >
-        <div style={{ marginTop: '16px' }}>
-          <Text>คุณแน่ใจหรือไม่ที่จะยกเลิกคิวการออกหน่วยทันตกรรมเคลื่อนที่นี้?</Text>
-          <div style={{ marginTop: '12px' }}>
-            <Text type="secondary" strong>โปรดระบุเหตุผลการยกเลิก <span style={{ color: 'red' }}>*</span></Text>
-            <Input.TextArea
-              rows={3}
-              style={{ marginTop: '8px' }}
-              placeholder="ตัวอย่างเช่น: วันที่ตรงกับวันหยุด, เจ้าหน้าที่ไม่เพียงพอ..."
-              value={cancelReason}
-              onChange={(e) => setCancelReason(e.target.value)}
-            />
-          </div>
-        </div>
+        <Text>คุณแน่ใจหรือไม่ที่จะยกเลิกคิวการออกหน่วยทันตกรรมเคลื่อนที่นี้?</Text>
       </Modal>
 
     </div>

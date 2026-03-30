@@ -18,18 +18,41 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save } from "lucide-react";
 import { HomeOutlined, UserOutlined } from "@ant-design/icons";
+import { useCreatePatient } from "@/hook/useCreatePatient";
+import dayjs from "dayjs";
 
 export default function CreateUserPage() {
   const { Title, Text } = Typography;
   const [form] = Form.useForm();
   const router = useRouter();
+  const { createPatient, loading } = useCreatePatient();
 
-  const onSubmit = () => {
-    form.validateFields().then((values) => {
-      console.log("mock create patient:", values);
-      message.success("บันทึกข้อมูลสำเร็จ");
-      router.push("/personnel/provider");
-    });
+
+
+  const onSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      const payload = {
+        first_name: values.firstName,
+        last_name: values.lastName,
+        citizen_id: values.citizenId,
+        birthday: values.birthDate.format("YYYY-MM-DD"),
+        phone: values.phone,
+        email: values.email,
+        address: values.address,
+        allergy: values.allergy,
+      };
+
+      const success = await createPatient(payload);
+
+      if (success) {
+        message.success("บันทึกข้อมูลสำเร็จ");
+        router.push("/personnel/provider");
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -39,7 +62,6 @@ export default function CreateUserPage() {
         display: "flex",
         justifyContent: "center",
         padding: 40,
-        background: "#f6f7fb"
       }}
     >
       <div style={{ width: 900 }}>
@@ -78,10 +100,10 @@ export default function CreateUserPage() {
           <Row justify="space-between" align="middle">
             <Col>
               <Title level={4} style={{ marginBottom: 4 }}>
-                เพิ่มผู้ให้บริการใหม่
+                เพิ่มผู้ป่วย
               </Title>
               <Text type="secondary">
-                กรอกข้อมูลผู้ใช้งานใหม่เข้าสู่ระบบ
+                กรอกข้อมูลผู้ป่วยเข้าสู่ระบบ
               </Text>
             </Col>
 
@@ -216,6 +238,7 @@ export default function CreateUserPage() {
                   type="primary"
                   icon={<Save size={16} />}
                   onClick={onSubmit}
+                  loading={loading}
                 >
                   บันทึกข้อมูล
                 </Button>

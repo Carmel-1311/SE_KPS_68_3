@@ -1,25 +1,34 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useMemo, useState } from "react";
 import dayjs from "dayjs";
 import {
+  Alert,
   Button,
   Card,
-  Divider,
+  Col,
+  Empty,
   Input,
+  Row,
+  Space,
   Table,
   Tag,
   Typography,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import { Search } from "lucide-react";
 import {
-  mockTreatmentList,
-  type Data as TreatmentData,
-  type Detail as TreatmentDetail,
-} from "@/mock/mockTreatmentById";
+  ClipboardPlus,
+  FileText,
+  House,
+  Search,
+  Stethoscope,
+  UserRound,
+} from "lucide-react";
+import Link from "next/link";
+import { createTablePagination } from "@/app/utils/tablePagination";
+import { useTreatments } from "@/hook/useTreatments";
+import { type Detail as TreatmentDetail } from "@/mock/mockTreatmentById";
 
-const { Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const thaiMonthsShort = [
   "ม.ค.",
@@ -35,267 +44,427 @@ const thaiMonthsShort = [
   "พ.ย.",
   "ธ.ค.",
 ];
+
 const formatThaiDate = (dateValue: string | Date) => {
   const date = dayjs(dateValue);
   if (!date.isValid()) return String(dateValue);
-  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.format(
-    "YYYY",
-  )}`;
+  return `${date.format("DD")} ${thaiMonthsShort[date.month()]} ${date.year() + 543}`;
 };
 
-const getStatusColor = (status: string) =>
-  status === "เสร็จสิ้น"
-    ? "green"
-    : status === "กำลังรักษา"
-      ? "blue"
-      : status === "ยกเลิก"
-        ? "red"
-        : "gold";
+const normalizeStatus = (status: string) => {
+  const normalized = status.trim().toLowerCase();
+  if (normalized === "done") return "completed";
+  return normalized;
+};
+
+const formatStatusLabel = (status: string) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed") return "เสร็จสิ้น";
+  if (normalized === "cancelled" || normalized === "canceled") return "ยกเลิก";
+  if (normalized === "request_cancel" || normalized === "request cancel") return "ขอยกเลิก";
+  if (normalized === "scheduled") return "นัดหมายแล้ว";
+  if (normalized === "in_progress" || normalized === "in progress") return "กำลังรักษา";
+  return status || "-";
+};
+
+const getStatusColor = (status: string) => {
+  const normalized = normalizeStatus(status);
+  if (normalized === "completed" || normalized === "เสร็จสิ้น") return "green";
+  if (normalized === "cancelled" || normalized === "canceled" || normalized === "ยกเลิก") return "red";
+  if (normalized === "request_cancel" || normalized === "request cancel" || normalized === "ขอยกเลิก") return "orange";
+  if (normalized === "scheduled" || normalized === "นัดหมายแล้ว") return "blue";
+  if (normalized === "in_progress" || normalized === "in progress" || normalized === "กำลังรักษา") return "processing";
+  return "default";
+};
 
 export default function UserTreatmentsPage() {
-  const [search, setSearch] = useState("");
+  const {
+    search,
+    setSearch,
+    error,
+    treatments,
+    filteredTreatments,
+    activeId,
+    setActiveId,
+    activeTreatment,
+    filteredDetails,
+    hasActiveTreatment,
+  } = useTreatments();
 
-  const treatments = useMemo(() => {
-    return [...mockTreatmentList].sort((a, b) => {
-      const aValue = dayjs(a.date).valueOf();
-      const bValue = dayjs(b.date).valueOf();
-      return bValue - aValue;
-    });
-  }, []);
-
-  const filteredTreatments = useMemo(() => {
-    if (!search.trim()) return treatments;
-    const normalized = search.trim().toLowerCase();
-    return treatments.filter((item) => {
-      const thaiDate = formatThaiDate(item.date).toLowerCase();
-      const isoDate = dayjs(item.date).format("YYYY-MM-DD");
-      return thaiDate.includes(normalized) || isoDate.includes(normalized);
-    });
-  }, [search, treatments]);
-
-  const [activeId, setActiveId] = useState<number>(treatments[0]?.id ?? 0);
-
-  useEffect(() => {
-    if (filteredTreatments.length === 0) return;
-    const hasActive = filteredTreatments.some((item) => item.id === activeId);
-    if (!hasActive) setActiveId(filteredTreatments[0].id);
-  }, [activeId, filteredTreatments]);
-
-  const activeTreatment =
-    filteredTreatments.find((item) => item.id === activeId) ??
-    filteredTreatments[0] ??
-    treatments[0];
-
-  const filteredDetails = activeTreatment?.detail ?? [];
-  const hasActiveTreatment = Boolean(activeTreatment);
+  const inspection = activeTreatment?.inspection_record;
+  const hasInspectionRecord = Boolean(
+    inspection && (inspection.date || inspection.history || inspection.status)
+  );
 
   const columns: ColumnsType<TreatmentDetail> = [
     {
       title: "ประเภทการรักษา",
       dataIndex: ["examination_type", "name"],
       key: "examination_type",
-      width: 220,
+      width: 260,
+      render: (value: string) => (
+        <Space size={8}>
+          <Stethoscope size={15} color="#1677ff" />
+          <Text>{value}</Text>
+        </Space>
+      ),
     },
     {
       title: "ผลการวินิจฉัย",
       dataIndex: "diagnosis",
       key: "diagnosis",
+      render: (value: string) => value || "-",
     },
   ];
 
   if (!hasActiveTreatment && treatments.length === 0) {
     return (
-      <Card
-        title="ประวัติการรักษา"
-        style={{ maxWidth: 900, margin: "0 auto" }}
-        styles={{ body: { padding: "1rem" } }}
-      >
-        <Text>ไม่มีข้อมูลการรักษา</Text>
-      </Card>
+      <div style={{ maxWidth: 1120, margin: "0 auto", padding: 16 }}>
+        <Card
+          variant="borderless"
+          style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+          styles={{ body: { padding: 24 } }}
+        >
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="ยังไม่มีข้อมูลประวัติการรักษา"
+          />
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card
-      title="ประวัติการรักษา"
-      style={{ maxWidth: 900, margin: "0 auto" }}
-      styles={{ body: { padding: "1rem" } }}
-    >
-      <div className="date-picker">
-        <Text className="section-title">เลือกวันที่เข้ารับบริการ</Text>
-        <Text className="date-counter">
-          ทั้งหมด {filteredTreatments.length} รายการ
-        </Text>
-        <div className="search-row">
-          <Search size={18} />
-          <Input
-            placeholder="ค้นหาวันที่นัดหมาย (เช่น 2024-03-14 หรือ 14 มี.ค. 2024)"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            allowClear
-            style={{ flex: 1 }}
+    <div style={{ maxWidth: 1120, margin: "0 auto", padding: 16 }}>
+      <Space orientation="vertical" size={16} style={{ width: "100%" }}>
+        <Space size={8} style={{ color: "#8c8c8c" }} wrap>
+          <Link
+            href="/user/profile"
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "inherit" }}
+          >
+            <House size={16} />
+            <span>หน้าหลักผู้ใช้</span>
+          </Link>
+          <Text type="secondary">/</Text>
+          <Space size={8}>
+            <FileText size={16} />
+            <Text type="secondary">ประวัติการรักษา</Text>
+          </Space>
+        </Space>
+
+        <Card
+          variant="borderless"
+          style={{
+            borderRadius: 16,
+            background: "linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.04)",
+            border: "1px solid rgba(22, 119, 255, 0.08)",
+          }}
+          styles={{ body: { padding: 20 } }}
+        >
+          <Row gutter={[16, 16]} align="middle">
+            <Col xs={24} lg={16}>
+              <Space orientation="vertical" size={6} style={{ width: "100%" }}>
+                <Tag color="blue" style={{ width: "fit-content", borderRadius: 999 }}>
+                  Treatment History
+                </Tag>
+                <Title level={3} style={{ margin: 0 }}>
+                  ตรวจสอบประวัติการรักษา
+                </Title>
+                <Text type="secondary" style={{ fontSize: 14 }}>
+                  ดูวันเข้ารับบริการ รายละเอียดการรักษา และบันทึกการตรวจจากรายการที่ผ่านมาได้ในหน้าเดียว
+                </Text>
+                {activeTreatment ? (
+                  <Space
+                    size={12}
+                    wrap
+                    style={{
+                      marginTop: 4,
+                      padding: "10px 12px",
+                      borderRadius: 14,
+                      background: "rgba(22, 119, 255, 0.06)",
+                      border: "1px solid rgba(22, 119, 255, 0.08)",
+                    }}
+                  >
+                    <Space size={8}>
+                      <ClipboardPlus size={16} color="#1677ff" />
+                      <Text strong>{formatThaiDate(activeTreatment.date)}</Text>
+                    </Space>
+                    <Tag color={getStatusColor(activeTreatment.status)} style={{ borderRadius: 999 }}>
+                      {formatStatusLabel(activeTreatment.status)}
+                    </Tag>
+                    <Space size={8}>
+                      <UserRound size={16} color="#1677ff" />
+                      <Text>{activeTreatment.detail.length} รายการตรวจ</Text>
+                    </Space>
+                  </Space>
+                ) : null}
+              </Space>
+            </Col>
+
+            <Col xs={24} lg={8}>
+              <Card
+                variant="borderless"
+                style={{
+                  borderRadius: 16,
+                  background: "#ffffff",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+                  border: "1px solid rgba(0, 0, 0, 0.05)",
+                }}
+                styles={{ body: { padding: 16 } }}
+              >
+                <Text type="secondary">รายการประวัติทั้งหมด</Text>
+                <Title level={3} style={{ margin: "4px 0 2px" }}>
+                  {filteredTreatments.length}
+                </Title>
+                <Text type="secondary">แสดงตามผลลัพธ์ที่ค้นหาในขณะนี้</Text>
+              </Card>
+            </Col>
+          </Row>
+        </Card>
+
+        {error && (
+          <Alert
+            type="error"
+            showIcon
+            title="เกิดข้อผิดพลาด"
+            description={error}
           />
-        </div>
-        <div className="date-list">
-          {filteredTreatments.map((item) => (
-            <Button
-              key={item.id}
-              size="small"
-              type={item.id === activeId ? "primary" : "default"}
-              onClick={() => setActiveId(item.id)}
-            >
-              {formatThaiDate(item.date)}
-            </Button>
-          ))}
-        </div>
-      </div>
+        )}
 
-      {hasActiveTreatment ? (
-        <>
-          <div className="summary">
-            <div>
-              <Text className="summary-label">วันที่นัดหมาย</Text>
-              <Text className="summary-value">
-                {formatThaiDate(activeTreatment.date)}
-              </Text>
-            </div>
-            <div>
-              <Text className="summary-label">สถานะ</Text>
-              <Tag color={getStatusColor(activeTreatment.status)} className="summary-tag">
-                {activeTreatment.status}
-              </Tag>
-            </div>
-            <div>
-              <Text className="summary-label">จำนวนรายการตรวจ</Text>
-              <Text className="summary-value">
-                {activeTreatment.detail.length} รายการ
-              </Text>
-            </div>
-            <div>
-              <Text className="summary-label">รายละเอียด</Text>
-              <Text className="summary-value">{activeTreatment.history}</Text>
-            </div>
-          </div>
+        <Card
+          variant="borderless"
+          style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+          styles={{ body: { padding: 18 } }}
+        >
+          <Space orientation="vertical" size={14} style={{ width: "100%" }}>
+            <Row gutter={[12, 12]} align="middle" justify="space-between">
+              <Col xs={24} lg={10}>
+                <Space orientation="vertical" size={4}>
+                  <Title level={4} style={{ margin: 0 }}>
+                    เลือกประวัติการรักษา
+                  </Title>
+                  <Text type="secondary">
+                    ค้นหาวันที่ที่เคยเข้ารับบริการ แล้วเลือกดูรายละเอียดของรอบการรักษานั้น
+                  </Text>
+                </Space>
+              </Col>
 
-          <Divider className="divider" />
+              <Col xs={24} lg={10}>
+                <Input
+                  prefix={<Search size={16} color="#8c8c8c" />}
+                  placeholder="ค้นหาวันที่นัดหมาย เช่น 2024-03-14 หรือ 14 มี.ค. 2567"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  allowClear
+                  style={{ borderRadius: 10 }}
+                />
+              </Col>
+            </Row>
 
-          <div className="record">
-            <Text className="section-title">บันทึกการตรวจ</Text>
-            <Text className="record-line">
-              วันที่ตรวจ: {formatThaiDate(activeTreatment.inspection_record.date)}
-            </Text>
-            <Text className="record-line">
-              ประวัติ: {activeTreatment.inspection_record.history}
-            </Text>
-            <Text className="record-line">
-              สถานะ: {activeTreatment.inspection_record.status}
-            </Text>
-          </div>
-        </>
-      ) : (
-        <Text className="record-line">ไม่พบวันที่นัดหมาย</Text>
-      )}
+            {filteredTreatments.length === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description="ไม่พบประวัติการรักษาตามคำค้นหา"
+              />
+            ) : (
+              <Row gutter={[12, 12]}>
+                {filteredTreatments.map((item) => {
+                  const active = item.id === activeId;
 
-      <Table
-        columns={columns}
-        dataSource={filteredDetails}
-        rowKey="id"
-        pagination={false}
-        locale={{ emptyText: "ไม่มีข้อมูลการตรวจ" }}
-      />
+                  return (
+                    <Col xs={24} sm={12} lg={8} xl={6} key={item.id}>
+                      <Button
+                        block
+                        type={active ? "primary" : "default"}
+                        onClick={() => setActiveId(item.id)}
+                        style={{
+                          height: "auto",
+                          borderRadius: 14,
+                          padding: "10px 12px",
+                          textAlign: "left",
+                        }}
+                      >
+                        <Space orientation="vertical" size={2} style={{ width: "100%", alignItems: "flex-start" }}>
+                          <Text
+                            strong
+                            style={{ color: active ? "#ffffff" : "#262626" }}
+                          >
+                            {formatThaiDate(item.date)}
+                          </Text>
+                          <Text style={{ color: active ? "rgba(255,255,255,0.85)" : "#8c8c8c" }}>
+                            {formatStatusLabel(item.status)}
+                          </Text>
+                        </Space>
+                      </Button>
+                    </Col>
+                  );
+                })}
+              </Row>
+            )}
+          </Space>
+        </Card>
 
-      <style jsx global>{`
-        .date-picker {
-          margin-bottom: 16px;
-        }
+        {hasActiveTreatment ? (
+          <Row gutter={[16, 16]}>
+            <Col xs={24} xl={9}>
+              <Card
+                variant="borderless"
+                style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)", height: "100%" }}
+                styles={{ body: { padding: 18 } }}
+                title={<Text strong>สรุปรายการที่เลือก</Text>}
+              >
+                <div style={{ maxHeight: "calc(100vh - 390px)", overflowY: "auto", paddingRight: 4 }}>
+                  <Space orientation="vertical" size={12} style={{ width: "100%" }}>
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      background: "rgba(22, 119, 255, 0.05)",
+                      border: "1px solid rgba(22, 119, 255, 0.08)",
+                    }}
+                  >
+                    <Text type="secondary" style={{ display: "block", marginBottom: 6 }}>
+                      วันที่เข้ารับบริการ
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>
+                      {formatThaiDate(activeTreatment.date)}
+                    </Text>
+                  </div>
 
-        .date-list {
-          margin-top: 8px;
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-        }
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      background: "rgba(0, 0, 0, 0.02)",
+                      border: "1px solid rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <Text type="secondary" style={{ display: "block", marginBottom: 6 }}>
+                      สถานะ
+                    </Text>
+                    <Tag color={getStatusColor(activeTreatment.status)} style={{ borderRadius: 999 }}>
+                      {formatStatusLabel(activeTreatment.status)}
+                    </Tag>
+                  </div>
 
-        .date-counter {
-          display: inline-block;
-          margin-left: 8px;
-          font-size: 12px;
-          color: #6b7b83;
-        }
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      background: "rgba(82, 196, 26, 0.05)",
+                      border: "1px solid rgba(82, 196, 26, 0.08)",
+                    }}
+                  >
+                    <Text type="secondary" style={{ display: "block", marginBottom: 6 }}>
+                      จำนวนรายการตรวจ
+                    </Text>
+                    <Text strong style={{ fontSize: 16 }}>
+                      {activeTreatment.detail.length} รายการ
+                    </Text>
+                  </div>
 
-        .summary {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 12px;
-          background: #f6f7f9;
-          border: 1px solid #e7ecef;
-          border-radius: 16px;
-          padding: 16px;
-        }
+                  <div
+                    style={{
+                      borderRadius: 14,
+                      padding: "12px 14px",
+                      background: "#ffffff",
+                      border: "1px solid rgba(0, 0, 0, 0.05)",
+                    }}
+                  >
+                    <Text type="secondary" style={{ display: "block", marginBottom: 6 }}>
+                      รายละเอียดเพิ่มเติม
+                    </Text>
+                    <Paragraph style={{ marginBottom: 0 }}>
+                      {activeTreatment.history || "ไม่มีรายละเอียดเพิ่มเติม"}
+                    </Paragraph>
+                  </div>
+                  </Space>
+                </div>
+              </Card>
+            </Col>
 
-        .summary-label {
-          display: block;
-          font-size: 12px;
-          color: #6b7b83;
-          text-transform: uppercase;
-          letter-spacing: 0.08em;
-          margin-bottom: 6px;
-        }
+            <Col xs={24} xl={15}>
+              <Card
+                variant="borderless"
+                style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+                styles={{ body: { padding: 18 } }}
+                title={<Text strong>ผลการตรวจและการวินิจฉัย</Text>}
+              >
+                <div style={{ maxHeight: "calc(100vh - 390px)", overflowY: "auto", paddingRight: 4 }}>
+                  <Space orientation="vertical" size={14} style={{ width: "100%" }}>
+                  {hasInspectionRecord && (
+                    <div
+                      style={{
+                        borderRadius: 14,
+                        padding: "12px 14px",
+                        background: "#fafafa",
+                        border: "1px solid rgba(0, 0, 0, 0.06)",
+                      }}
+                    >
+                      <Space orientation="vertical" size={6} style={{ width: "100%" }}>
+                        <Text strong>บันทึกการตรวจ</Text>
+                        <Text>
+                          วันที่ตรวจ: {inspection?.date ? formatThaiDate(inspection.date) : "-"}
+                        </Text>
+                        <Text>
+                          สถานะ: {inspection?.status ? formatStatusLabel(inspection.status) : "-"}
+                        </Text>
+                        <Text>
+                          ประวัติ: {inspection?.history || "-"}
+                        </Text>
+                      </Space>
+                    </div>
+                  )}
 
-        .summary-value {
-          display: block;
-          font-size: 15px;
-          color: #1f2a33;
-          font-weight: 600;
-        }
-
-        .summary-tag {
-          margin-top: 4px;
-        }
-
-        .divider {
-          margin: 18px 0;
-        }
-
-        .record {
-          background: #ffffff;
-          border: 1px solid #e7ecef;
-          border-radius: 16px;
-          padding: 14px 16px;
-          margin-bottom: 18px;
-        }
-
-        .section-title {
-          display: block;
-          font-weight: 600;
-          color: #1f2a33;
-          margin-bottom: 6px;
-        }
-
-        .record-line {
-          display: block;
-          color: #4b5a61;
-        }
-
-        .search-row {
-          margin-bottom: 16px;
-          display: flex;
-          gap: 12px;
-          align-items: center;
-        }
-
-        @media (max-width: 900px) {
-          .summary {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .summary {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-    </Card>
+                  <Table
+                    columns={columns}
+                    dataSource={filteredDetails}
+                    rowKey="id"
+                    locale={{
+                      emptyText: (
+                        <Empty
+                          image={Empty.PRESENTED_IMAGE_SIMPLE}
+                          description="ไม่มีข้อมูลผลการตรวจ"
+                      />
+                    ),
+                  }}
+                    pagination={createTablePagination(3)}
+                    style={{ borderRadius: 12, overflow: "hidden" }}
+                    components={{
+                      header: {
+                        cell: (props: React.ThHTMLAttributes<HTMLTableCellElement>) => (
+                          <th
+                            {...props}
+                            style={{
+                              ...props.style,
+                              background: "#fafafa",
+                              fontWeight: 600,
+                              color: "#262626",
+                            }}
+                          />
+                        ),
+                      },
+                    }}
+                  />
+                  </Space>
+                </div>
+              </Card>
+            </Col>
+          </Row>
+        ) : (
+          <Card
+            variant="borderless"
+            style={{ borderRadius: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.04)" }}
+            styles={{ body: { padding: 24 } }}
+          >
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description="ไม่พบรายละเอียดของประวัติการรักษาที่เลือก"
+            />
+          </Card>
+        )}
+      </Space>
+    </div>
   );
 }
