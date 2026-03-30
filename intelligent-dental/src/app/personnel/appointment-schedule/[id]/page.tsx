@@ -2,27 +2,28 @@
 
 import React, { useEffect } from 'react';
 import {
-  Card,
-  Typography,
-  Button,
-  Input,
-  Form,
-  Select,
-  Spin,
-  Space,
-  Modal,
+  Alert,
   Breadcrumb,
-  Divider,
-  Tag,
+  Button,
+  Card,
+  Col,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Typography,
 } from 'antd';
 import {
-  SaveOutlined,
-  DeleteOutlined,
-  HomeOutlined,
-  EditOutlined,
   CalendarOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  HomeOutlined,
+  SaveOutlined,
 } from '@ant-design/icons';
-import { useRouter, useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 
 import { useEditAppointment } from '@/hook/useEditAppointment';
@@ -48,25 +49,20 @@ export default function EditAppointmentPage() {
     deleteAppointment,
   } = useEditAppointment(idParam);
 
-  // ── เติมข้อมูลฟอร์ม ───────────────────────────────────────────────────────
-
   useEffect(() => {
     if (!appointment) return;
 
-    const dateOnly = dayjs(appointment.appointment_date).format('YYYY-MM-DD');
-
     form.setFieldsValue({
-      appointment_date: dateOnly,
-      // ✅ เดิมพอ ไม่ต้องแก้
-      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).subtract(0, 'hour').format('HH:mm'),
+      appointment_date: dayjs(appointment.appointment_date).format('YYYY-MM-DD'),
+      appointment_time: dayjs(`2000-01-01 ${appointment.appointment_time}`).format(
+        'HH:mm'
+      ),
       type: appointment.type,
       status: appointment.status,
     });
 
     fetchAvailableSlots(appointment.appointment_date);
   }, [appointment, form, fetchAvailableSlots]);
-
-  // ── ฟังก์ชันจัดการ ────────────────────────────────────────────────────────
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     form.setFieldValue('appointment_time', undefined);
@@ -77,14 +73,18 @@ export default function EditAppointmentPage() {
     appointment_date: string;
     appointment_time: string;
     type: string;
-    status: "scheduled" | "completed" | "cancelled" | "request_cancel";
+    status: 'scheduled' | 'completed' | 'cancelled' | 'request_cancel';
   }) => {
     if (!appointment) return;
 
     await updateAppointment(
       {
         appointment_date: values.appointment_date,
-        appointment_time: new Date(`2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`).add(7, 'hour').format('HH:mm:ss')}`).toISOString(),
+        appointment_time: new Date(
+          `2026-01-01T${dayjs(`2000-01-01 ${values.appointment_time}`)
+            .add(7, 'hour')
+            .format('HH:mm:ss')}`
+        ).toISOString(),
         type: values.type,
         status: values.status,
         staff_id: appointment.staff.id,
@@ -101,132 +101,209 @@ export default function EditAppointmentPage() {
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '100px' }}><Spin size="large" /></div>;
+    return (
+      <div style={{ textAlign: 'center', padding: '100px' }}>
+        <Spin size="large" />
+      </div>
+    );
   }
 
   if (!appointment) return null;
 
-  // ── Derived State ─────────────────────────────────────────────────────────
-
   const isRequestCancel = appointment.status === 'request_cancel';
-  const isCompleted     = appointment.status === 'completed';
-  const isReadOnly      = isRequestCancel || isCompleted;
-
-  // ── แสดงผล ────────────────────────────────────────────────────────────────
+  const isCompleted = appointment.status === 'completed';
+  const isReadOnly = isRequestCancel || isCompleted;
 
   return (
-    <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-
+    <div style={{ padding: 24, maxWidth: 900, margin: '0 auto' }}>
       <Breadcrumb
-        style={{ marginBottom: '24px', fontSize: '15px' }}
         items={[
-          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
-          { title: <a onClick={() => router.push('/personnel/appointment-schedule')}><CalendarOutlined /> ตารางการนัดหมาย</a> },
-          { title: <span><EditOutlined /> แก้ไขการนัดหมาย</span> },
+          {
+            title: (
+              <a onClick={() => router.push('/')}>
+                <HomeOutlined /> หน้าหลัก
+              </a>
+            ),
+          },
+          {
+            title: (
+              <a onClick={() => router.push('/personnel/appointment-schedule')}>
+                <CalendarOutlined /> ตารางการนัดหมาย
+              </a>
+            ),
+          },
+          {
+            title: (
+              <span>
+                <EditOutlined /> แก้ไขการนัดหมาย
+              </span>
+            ),
+          },
         ]}
       />
 
-      <Card
-        variant="borderless"
-        style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
-          <div>
-            <Title level={3} style={{ marginBottom: '4px' }}>
+      <Card style={{ marginTop: 16 }}>
+        <Row
+          gutter={[16, 16]}
+          align="middle"
+          justify="space-between"
+          style={{ marginBottom: 24 }}
+        >
+          <Col xs={24} md={16}>
+            <Title level={3} style={{ margin: 0 }}>
               แก้ไขการนัดหมาย (รหัส: {appointment.appointment_id})
             </Title>
             <Text type="secondary">ปรับปรุงข้อมูลหรือสถานะของการนัดหมายนี้</Text>
-          </div>
-          <Button
-            danger
-            icon={<DeleteOutlined />}
-            disabled={appointment.status === 'cancelled'}
-            onClick={() => setIsCancelModalVisible(true)}
-          >
-            ยกเลิกการนัดหมาย
-          </Button>
-        </div>
+          </Col>
+
+          <Col xs={24} md="auto">
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              disabled={appointment.status === 'cancelled'}
+              onClick={() => setIsCancelModalVisible(true)}
+            >
+              ยกเลิกการนัดหมาย
+            </Button>
+          </Col>
+        </Row>
+
+        {isRequestCancel && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 24 }}
+            message="ผู้ป่วยส่งคำขอยกเลิกมาแล้ว"
+            description='กรุณาเปลี่ยนสถานะเป็น &quot;ยกเลิกการนัดหมาย&quot; เพื่อยืนยัน'
+          />
+        )}
+
+        {isCompleted && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 24 }}
+            message="นัดหมายนี้เสร็จสิ้นแล้ว"
+            description="ระบบปิดการแก้ไขรายละเอียดนัดหมายนี้"
+          />
+        )}
 
         <Form form={form} layout="vertical" onFinish={handleUpdate}>
+          <Row gutter={16}>
+            <Col xs={24} md={12}>
+              <Form.Item label="คนไข้">
+                <Input size="large" value={appointment.patient.name} disabled />
+              </Form.Item>
+            </Col>
 
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Form.Item label="คนไข้" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" value={appointment.patient.name} disabled />
-            </Form.Item>
-            <Form.Item label="ทันตแพทย์" style={{ flex: 1, minWidth: '250px' }}>
-              <Input size="large" value={appointment.staff.name} disabled />
-            </Form.Item>
-          </div>
+            <Col xs={24} md={12}>
+              <Form.Item label="ทันตแพทย์">
+                <Input size="large" value={appointment.staff.name} disabled />
+              </Form.Item>
+            </Col>
 
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Form.Item
-              name="appointment_date"
-              label="วันที่นัด"
-              style={{ flex: 1, minWidth: '250px' }}
-              rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
-            >
-              <Input type="date" size="large" onChange={handleDateChange} disabled={isReadOnly} />
-            </Form.Item>
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="appointment_date"
+                label="วันที่นัด"
+                rules={[{ required: true, message: 'กรุณาเลือกวันที่' }]}
+              >
+                <Input
+                  type="date"
+                  size="large"
+                  onChange={handleDateChange}
+                  disabled={isReadOnly}
+                />
+              </Form.Item>
+            </Col>
 
-            <Form.Item
-              name="appointment_time"
-              label="เวลา (เฉพาะช่วงที่ว่าง)"
-              style={{ flex: 1, minWidth: '250px' }}
-              rules={[{ required: true, message: 'กรุณาเลือกเวลา' }]}
-            >
-              <Select size="large" placeholder="เลือกเวลา" loading={loadingSlots} disabled={isReadOnly || loadingSlots}>
-                {availableSlots.map((slot) => {
-                  const displayTime = dayjs(`2000-01-01 ${slot.time}`).subtract(7, 'hour').format('HH:mm');
-                  return (
-                    <Select.Option key={slot.time} value={displayTime}>
-                      {displayTime} น.
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="appointment_time"
+                label="เวลา"
+                rules={[{ required: true, message: 'กรุณาเลือกเวลา' }]}
+              >
+                <Select
+                  size="large"
+                  placeholder="เลือกเวลา"
+                  loading={loadingSlots}
+                  disabled={isReadOnly || loadingSlots}
+                >
+                  {availableSlots.map((slot) => {
+                    const displayTime = dayjs(`2000-01-01 ${slot.time}`)
+                      .subtract(7, 'hour')
+                      .format('HH:mm');
+
+                    return (
+                      <Select.Option key={slot.time} value={displayTime}>
+                        {displayTime} น.
+                      </Select.Option>
+                    );
+                  })}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={24}>
+              <Form.Item
+                name="type"
+                label="ประเภทการรักษา"
+                rules={[{ required: true, message: 'ระบุประเภทการนัดหมาย' }]}
+              >
+                <Select
+                  size="large"
+                  placeholder="เลือกประเภทการรักษา"
+                  disabled={isReadOnly}
+                >
+                  {[
+                    'ตรวจฟัน',
+                    'อุดฟัน',
+                    'ขูดหินปูน',
+                    'ถอนฟัน',
+                    'รักษารากฟัน',
+                    'ครอบฟัน',
+                    'ฟอกสีฟัน',
+                  ].map((type) => (
+                    <Select.Option key={type} value={type}>
+                      {type}
                     </Select.Option>
-                  );
-                })}
-              </Select>
-            </Form.Item>
-          </div>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
-          <Form.Item
-            name="type"
-            label="ประเภทการรักษา"
-            rules={[{ required: true, message: 'ระบุประเภทการนัดหมาย' }]}
-          >
-            <Select size="large" placeholder="เลือกประเภทการรักษา" disabled={isReadOnly}>
-              {['ตรวจฟัน', 'อุดฟัน', 'ขูดหินปูน', 'ถอนฟัน', 'รักษารากฟัน', 'ครอบฟัน', 'ฟอกสีฟัน'].map((t) => (
-                <Select.Option key={t} value={t}>{t}</Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
+            <Col span={24}>
+              <Form.Item name="status" label="สถานะ">
+                <Select size="large" disabled={isReadOnly}>
+                  <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
+                  <Select.Option value="completed">เสร็จสิ้น</Select.Option>
+                  <Select.Option value="cancelled">ยกเลิกการนัดหมาย</Select.Option>
+                  {appointment.status === 'request_cancel' && (
+                    <Select.Option value="request_cancel">
+                      ส่งคำขอยกเลิกแล้ว
+                    </Select.Option>
+                  )}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Divider />
-
-          <Form.Item label="สถานะ">
-            <Form.Item name="status" noStyle>
-              <Select size="large">
-                <Select.Option value="scheduled">รอดำเนินการ</Select.Option>
-                <Select.Option value="completed">เสร็จสิ้น</Select.Option>
-                <Select.Option value="cancelled">ยกเลิกการนัดหมาย</Select.Option>
-                {appointment.status === 'request_cancel' && (
-                  <Select.Option value="request_cancel">ส่งคำขอยกเลิกแล้ว</Select.Option>
-                )}
-              </Select>
-            </Form.Item>
-
-            {appointment.status === 'request_cancel' && (
-              <Text type="warning" style={{ marginTop: '8px', display: 'block' }}>
-                * ผู้ป่วยส่งคำขอยกเลิกมา กรุณาเปลี่ยนสถานะเป็น "ยกเลิกการนัดหมาย" เพื่อยืนยัน
-              </Text>
-            )}
-          </Form.Item>
-
-          <Form.Item style={{ marginTop: '32px', marginBottom: 0, textAlign: 'right' }}>
+          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button size="large" onClick={() => router.push('/personnel/appointment-schedule')}>
+              <Button
+                size="large"
+                onClick={() => router.push('/personnel/appointment-schedule')}
+              >
                 ย้อนกลับ
               </Button>
               {!isReadOnly && (
-                <Button type="primary" size="large" htmlType="submit" icon={<SaveOutlined />} loading={saving}>
+                <Button
+                  type="primary"
+                  size="large"
+                  htmlType="submit"
+                  icon={<SaveOutlined />}
+                  loading={saving}
+                >
                   บันทึกการแก้ไข
                 </Button>
               )}
@@ -236,7 +313,12 @@ export default function EditAppointmentPage() {
       </Card>
 
       <Modal
-        title={<span><DeleteOutlined style={{ color: '#ff4d4f', marginRight: '8px' }} />ยืนยันการยกเลิกนัดหมาย</span>}
+        title={
+          <span>
+            <DeleteOutlined style={{ color: '#ff4d4f', marginRight: 8 }} />
+            ยืนยันการยกเลิกนัดหมาย
+          </span>
+        }
         open={isCancelModalVisible}
         onOk={handleConfirmDelete}
         onCancel={() => setIsCancelModalVisible(false)}
@@ -244,7 +326,9 @@ export default function EditAppointmentPage() {
         cancelText="ปิด"
         okButtonProps={{ danger: true }}
       >
-        <Text>คุณแน่ใจหรือไม่ที่จะยกเลิกการนัดหมายนี้? การกระทำนี้ไม่สามารถย้อนกลับได้</Text>
+        <Text>
+          คุณแน่ใจหรือไม่ที่จะยกเลิกการนัดหมายนี้? การกระทำนี้ไม่สามารถย้อนกลับได้
+        </Text>
       </Modal>
     </div>
   );

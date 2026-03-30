@@ -313,10 +313,10 @@ export default function PatientsPage() {
     return (
       <Timeline
         items={records.map((record) => ({
-          children: (
+          content: (
             <Card size="small" style={{ borderRadius: 10 }}>
               <Space
-                direction="vertical"
+                orientation="vertical"
                 size={10}
                 style={{ width: "100%" }}
               >
@@ -522,7 +522,7 @@ export default function PatientsPage() {
                   ),
                   children: (
                     <Space
-                      direction="vertical"
+                      orientation="vertical"
                       size={16}
                       style={{ width: "100%" }}
                     >
@@ -550,7 +550,7 @@ export default function PatientsPage() {
                   ),
                   children: (
                     <Space
-                      direction="vertical"
+                      orientation="vertical"
                       size={16}
                       style={{ width: "100%" }}
                     >

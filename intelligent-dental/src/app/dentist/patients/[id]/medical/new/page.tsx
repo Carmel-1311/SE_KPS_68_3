@@ -15,6 +15,22 @@ import { useEffect, useState } from "react";
 
 const { Title, Text } = Typography;
 
+const formatInspectionRecordLabel = (record: {
+  date?: string;
+  status?: string;
+  history?: string;
+}) => {
+  const formattedDate = record.date
+    ? dayjs(record.date).format("DD/MM/YYYY HH:mm")
+    : "-";
+
+  return [
+    formattedDate,
+    record.status ? `- ${record.status}` : "",
+    record.history ? `: ${record.history}` : "",
+  ].join(" ");
+};
+
 const STATUS_OPTIONS = [
   { value: 'scheduled', label: 'รอนัดหมาย (Scheduled)' },
   { value: 'done', label: 'เสร็จสิ้น (Done)' },
@@ -172,8 +188,12 @@ export default function NewMedicalRecordPage() {
               optionFilterProp="label"
             >
               {inspectionRecords.map((rec) => (
-                <Select.Option key={rec.id} value={rec.id} label={rec.date}>
-                  {rec.date} {rec.status ? `- ${rec.status}` : ''} {rec.history ? `: ${rec.history}` : ''}
+                <Select.Option
+                  key={rec.id}
+                  value={rec.id}
+                  label={formatInspectionRecordLabel(rec)}
+                >
+                  {formatInspectionRecordLabel(rec)}
                 </Select.Option>
               ))}
             </Select>

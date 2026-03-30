@@ -1,29 +1,31 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from 'react';
 import {
-  Table,
-  Tag,
-  Card,
-  Typography,
-  Button,
-  Input,
-  DatePicker,
-  Space,
-  Tooltip,
-  message,
-  Breadcrumb,
-  Popconfirm,
-  Tabs,
   Badge,
+  Breadcrumb,
+  Button,
+  Card,
+  Col,
+  DatePicker,
+  Input,
+  Popconfirm,
+  Row,
   Select,
+  Space,
+  Table,
+  Tabs,
+  Tag,
+  Tooltip,
+  Typography,
+  message,
 } from 'antd';
 import {
-  SearchOutlined,
+  CalendarOutlined,
+  HomeOutlined,
   PlusOutlined,
   ReadOutlined,
-  HomeOutlined,
-  CalendarOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import Link from 'next/link';
@@ -35,24 +37,17 @@ import type { Appointment } from '@/hook/useAppointment';
 
 const { Title, Text } = Typography;
 
-// ---------------------------------------------------------------------------
-// หน้าหลัก
-// ---------------------------------------------------------------------------
-
 export default function AppointmentListPage() {
   const router = useRouter();
 
   const [searchText, setSearchText] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [activeTab, setActiveTab] = useState('1');
+  const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const PAGE_SIZE = 5;
-
+  const pageSize = 10;
   const { data, loading, updateStatus, requestCancelCount } = useAppointment();
-
-  // ── ฟังก์ชันจัดการ ────────────────────────────────────────────────────────
 
   const handleConfirmCancel = async (id: number) => {
     try {
@@ -63,24 +58,27 @@ export default function AppointmentListPage() {
     }
   };
 
-  // ── กรองข้อมูล ────────────────────────────────────────────────────────────
-
-  const finalFilteredData = data.filter((item) => {
+  const filteredAppointments = data.filter((item) => {
     if (item.status === 'cancelled') return false;
 
-    const matchTab =
-      activeTab === '1'
+    const matchesTab =
+      activeTab === 'all'
         ? item.status !== 'request_cancel'
         : item.status === 'request_cancel';
 
-    const matchName = item.patient.name.toLowerCase().includes(searchText.toLowerCase());
-    const matchDate = selectedDate ? item.appointment_date.startsWith(selectedDate) : true;
-    const matchStatus = selectedStatus === 'all' || item.status === selectedStatus;
+    const matchesName = item.patient.name
+      .toLowerCase()
+      .includes(searchText.toLowerCase());
+    const matchesDate = selectedDate
+      ? item.appointment_date.startsWith(selectedDate)
+      : true;
+    const matchesStatus =
+      activeTab === 'request' || selectedStatus === 'all'
+        ? true
+        : item.status === selectedStatus;
 
-    return matchTab && matchName && matchDate && matchStatus;
+    return matchesTab && matchesName && matchesDate && matchesStatus;
   });
-
-  // ── คอลัมน์ตาราง ──────────────────────────────────────────────────────────
 
   const columns: ColumnsType<Appointment> = [
     {
@@ -88,24 +86,26 @@ export default function AppointmentListPage() {
       key: 'index',
       width: 70,
       align: 'center',
-      render: (_, __, index) => <Text strong>{(currentPage - 1) * PAGE_SIZE + index + 1}</Text>,
+      render: (_value, _record, index) => (
+        <Text strong>{(currentPage - 1) * pageSize + index + 1}</Text>
+      ),
     },
     {
       title: 'วันและเวลา',
       key: 'datetime',
-      render: (_, record) => (
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
+      render: (_value, record) => (
+        <Space orientation="vertical" size={0}>
           <Text>{dayjs(record.appointment_date).format('DD/MM/YYYY')}</Text>
-          <Text type="secondary" style={{ fontSize: '12px' }}>
-            {dayjs(`2000-01-01 ${record.appointment_time}`).subtract(0, 'hour').format('HH:mm')}
+          <Text type="secondary">
+            {dayjs(`2000-01-01 ${record.appointment_time}`).format('HH:mm')}
           </Text>
-        </div>
+        </Space>
       ),
     },
     {
       title: 'ชื่อคนไข้',
       key: 'patient_name',
-      render: (_, record) => <Text>{record.patient.name}</Text>,
+      render: (_value, record) => <Text strong>{record.patient.name}</Text>,
     },
     {
       title: 'บริการ/การรักษา',
@@ -115,28 +115,25 @@ export default function AppointmentListPage() {
     {
       title: 'ทันตแพทย์',
       key: 'staff_name',
-      render: (_, record) => <Text> {record.staff.name}</Text>,
+      render: (_value, record) => <Text>{record.staff.name}</Text>,
     },
     {
       title: 'สถานะ',
       key: 'status',
-      render: (_, record) => {
+      render: (_value, record) => {
         const meta = APPOINTMENT_STATUS_META[record.status];
         return <Tag color={meta.color}>{meta.label}</Tag>;
       },
     },
     {
-      title: 'จัดการ',
+      title: '',
       key: 'action',
-      render: (_, record) => (
+      width: 180,
+      render: (_value, record) => (
         <Space size="middle">
-          <Tooltip title="รายละเอียด" placement="top">
+          <Tooltip title="รายละเอียด">
             <Link href={`/personnel/appointment-schedule/${record.appointment_id}`}>
-              <Button
-                type="text"
-                icon={<ReadOutlined style={{ fontSize: '20px', color: '#1890ff' }} />}
-                style={{ padding: 0 }}
-              />
+              <Button type="text" icon={<ReadOutlined />} />
             </Link>
           </Tooltip>
 
@@ -149,7 +146,7 @@ export default function AppointmentListPage() {
               cancelText="ปิด"
               okButtonProps={{ danger: true }}
             >
-              <Button type="primary" danger size="small" style={{ borderRadius: '4px' }}>
+              <Button type="primary" danger size="small">
                 ยืนยันยกเลิก
               </Button>
             </Popconfirm>
@@ -159,99 +156,126 @@ export default function AppointmentListPage() {
     },
   ];
 
-  // ── รายการแท็บ ────────────────────────────────────────────────────────────
-
-  const tabItems = [
-    {
-      key: '1',
-      label: 'ตารางนัดหมายทั้งหมด',
-    },
-    {
-      key: '2',
-      label: (
-        <span>
-          คำขอยกเลิกนัดหมาย{' '}
-          <Badge
-            count={requestCancelCount}
-            style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }}
-            offset={[0, -2]}
-          />
-        </span>
-      ),
-    },
-  ];
-
-  // ── แสดงผล ────────────────────────────────────────────────────────────────
-
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: 24 }}>
       <Breadcrumb
-        style={{ marginBottom: '24px', fontSize: '15px' }}
         items={[
-          { title: <a onClick={() => router.push('/')}><HomeOutlined /> หน้าหลัก</a> },
-          { title: <span><CalendarOutlined /> ตารางการนัดหมาย</span> },
+          {
+            title: (
+              <a onClick={() => router.push('/')}>
+                <HomeOutlined /> หน้าหลัก
+              </a>
+            ),
+          },
+          {
+            title: (
+              <span>
+                <CalendarOutlined /> ตารางการนัดหมาย
+              </span>
+            ),
+          },
         ]}
       />
 
-      <Card
-        variant="borderless"
-        style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div>
-            <Title level={3} style={{ margin: 0 }}>ตารางการนัดหมาย</Title>
+      <Card style={{ marginTop: 16 }}>
+        <Row
+          gutter={[16, 16]}
+          align="middle"
+          justify="space-between"
+          style={{ marginBottom: 16 }}
+        >
+          <Col xs={24} md={16}>
+            <Title level={3} style={{ margin: 0 }}>
+              ตารางการนัดหมาย
+            </Title>
             <Text type="secondary">จัดการและตรวจสอบคิวการนัดหมาย</Text>
-          </div>
-          <Link href="/personnel/appointment-schedule/create">
-            <Button type="primary" size="large" icon={<PlusOutlined />} style={{ borderRadius: '8px' }}>
-              เพิ่มการนัดหมาย
-            </Button>
-          </Link>
-        </div>
+          </Col>
+
+          <Col xs={24} md="auto">
+            <Link href="/personnel/appointment-schedule/create">
+              <Button type="primary" icon={<PlusOutlined />}>
+                เพิ่มการนัดหมาย
+              </Button>
+            </Link>
+          </Col>
+        </Row>
+
+        <Row gutter={16} style={{ marginBottom: 16 }}>
+          <Col xs={24} md={10} lg={8}>
+            <Input
+              placeholder="ค้นหาชื่อคนไข้..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              allowClear
+            />
+          </Col>
+
+          <Col xs={24} md={7} lg={5}>
+            <DatePicker
+              placeholder="เลือกวันที่"
+              style={{ width: '100%' }}
+              onChange={(_value, dateString) =>
+                setSelectedDate(
+                  Array.isArray(dateString) ? dateString[0] : dateString
+                )
+              }
+            />
+          </Col>
+
+          {activeTab === 'all' && (
+            <Col xs={24} md={7} lg={5}>
+              <Select
+                value={selectedStatus}
+                style={{ width: '100%' }}
+                onChange={setSelectedStatus}
+                options={[
+                  { value: 'all', label: 'สถานะทั้งหมด' },
+                  { value: 'scheduled', label: 'รอดำเนินการ' },
+                  { value: 'completed', label: 'เสร็จสิ้น' },
+                ]}
+              />
+            </Col>
+          )}
+        </Row>
 
         <Tabs
           activeKey={activeTab}
-          onChange={setActiveTab}
-          items={tabItems}
-          style={{ marginBottom: '16px' }}
+          onChange={(key) => {
+            setActiveTab(key);
+            setCurrentPage(1);
+          }}
+          items={[
+            {
+              key: 'all',
+              label: 'ตารางนัดหมายทั้งหมด',
+            },
+            {
+              key: 'request',
+              label: (
+                <span>
+                  คำขอยกเลิกนัดหมาย{' '}
+                  <Badge
+                    count={requestCancelCount}
+                    style={{ backgroundColor: '#ff4d4f', marginLeft: 4 }}
+                    offset={[0, -2]}
+                  />
+                </span>
+              ),
+            },
+          ]}
         />
-
-        <div style={{ marginBottom: '20px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          <Input
-            placeholder="ค้นหาชื่อคนไข้..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 250, borderRadius: '8px' }}
-            allowClear
-          />
-          <DatePicker
-            placeholder="เลือกวันที่"
-            style={{ borderRadius: '8px', width: 150 }}
-            onChange={(_, dateString) =>
-              setSelectedDate(Array.isArray(dateString) ? dateString[0] : dateString)
-            }
-          />
-          {activeTab === '1' && (
-            <Select
-              defaultValue="all"
-              style={{ width: 160 }}
-              onChange={(value) => setSelectedStatus(value)}
-              options={[
-                { value: 'all', label: 'สถานะทั้งหมด' },
-                { value: 'scheduled', label: 'รอดำเนินการ' },
-                { value: 'completed', label: 'เสร็จสิ้น' },
-              ]}
-            />
-          )}
-        </div>
 
         <Table
           columns={columns}
-          dataSource={finalFilteredData}
+          dataSource={filteredAppointments}
           rowKey="appointment_id"
-          pagination={{ pageSize: PAGE_SIZE, current: currentPage, onChange: setCurrentPage }}
           loading={loading}
+          pagination={{
+            pageSize,
+            current: currentPage,
+            onChange: setCurrentPage,
+          }}
           locale={{ emptyText: 'ไม่พบข้อมูลในสถานะนี้' }}
         />
       </Card>
